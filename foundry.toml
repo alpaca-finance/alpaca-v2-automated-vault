@@ -2,5 +2,14 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+fs_permissions = [{ access = "read-write", path = "./" }]
+optimizer-runs = 200
 
-# See more config options https://github.com/foundry-rs/foundry/tree/master/config
+[fmt]
+line_length = 120
+tab_width = 2
+bracket_spacing = true
+
+[rpc_endpoints]
+bsc_mainnet = "${BSC_RPC_URL}"
+local = "http://localhost:8545"
