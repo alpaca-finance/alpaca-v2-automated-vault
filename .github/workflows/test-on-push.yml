@@ -1,0 +1,47 @@
+name: test
+
+on:
+  push:
+    branches:
+      - "release/**"
+      - "releases/**"
+      - "feat/**"
+      - "feature/**"
+      - "fix/**"
+      - "hotfix/**"
+      - "chore/**"
+      - "test/**"
+      - "unit/**"
+      - "refactor/**"
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  check:
+    strategy:
+      fail-fast: true
+
+    name: Foundry project
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --force --sizes
+        id: build
+
+      - name: Run Forge tests
+        env:
+          BSC_RPC_URL: https://bsc-dataseed.binance.org/
+        run: |
+          forge test -vvv
+        id: test
