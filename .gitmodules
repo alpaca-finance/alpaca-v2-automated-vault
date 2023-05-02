@@ -4,3 +4,6 @@
 [submodule "lib/alpaca-v2-money-market"]
 	path = lib/alpaca-v2-money-market
 	url = https://github.com/alpaca-finance/alpaca-v2-money-market
+[submodule "lib/solmate"]
+	path = lib/solmate
+	url = https://github.com/transmissions11/solmate
