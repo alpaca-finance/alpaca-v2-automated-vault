@@ -15,8 +15,14 @@ import { AutomatedVaultERC20 } from "src/AutomatedVaultERC20.sol";
 import { IExecutor } from "src/interfaces/IExecutor.sol";
 import { IWorker } from "src/interfaces/IWorker.sol";
 import { IAutomatedVaultERC20 } from "src/interfaces/IAutomatedVaultERC20.sol";
+import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
 
-contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradeable {
+contract AutomatedVaultManager is
+  Initializable,
+  Ownable2StepUpgradeable,
+  ReentrancyGuardUpgradeable,
+  IAutomatedVaultManager
+{
   using SafeTransferLib for ERC20;
 
   error AutomatedVaultManager_VaultNotExist(address _vaultToken);
@@ -34,8 +40,9 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
 
   // vault's ERC20 address => vault info
   mapping(address => VaultInfo) public vaultInfos;
-  /// @dev execution scope to tell debt manager who executors are acting on behalf of
-  address public VAULT_IN_SCOPE;
+  /// @dev execution scope to tell downstream contracts (Bank, Worker, etc.)
+  ///      that current executor is acting on behalf of vault and can be trusted
+  address public EXECUTOR_IN_SCOPE;
 
   event LogOpenVault(address indexed _vaultToken, VaultInfo _vaultInfo);
   event LogDeposit(address indexed _vault, address indexed _depositor, uint256 _amount0, uint256 _amount1);
@@ -67,10 +74,10 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     }
   }
 
-  function _execute(address _vaultToken, IExecutor _executor, bytes memory _params) internal {
-    VAULT_IN_SCOPE = _vaultToken;
+  function _execute(IExecutor _executor, bytes memory _params) internal {
+    EXECUTOR_IN_SCOPE = address(_executor);
     _executor.execute(_params);
-    VAULT_IN_SCOPE = address(0);
+    EXECUTOR_IN_SCOPE = address(0);
   }
 
   function deposit(address _vaultToken, uint256 _amount0, uint256 _amount1) external {
@@ -79,9 +86,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     ERC20(_vaultInfo.worker.token0()).safeTransferFrom(msg.sender, address(_vaultInfo.depositExecutor), _amount0);
     ERC20(_vaultInfo.worker.token1()).safeTransferFrom(msg.sender, address(_vaultInfo.depositExecutor), _amount1);
 
-    _execute(_vaultToken, _vaultInfo.depositExecutor, abi.encode(_amount0, _amount1));
-
-    // TODO: call worker to increase liquidity
+    _execute(_vaultInfo.depositExecutor, abi.encode(_amount0, _amount1));
 
     // TODO: get equity change and mint
     IAutomatedVaultERC20(_vaultToken).mint(msg.sender, 0);

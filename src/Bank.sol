@@ -17,8 +17,7 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
   using SafeCastLib for uint256;
   using SafeTransferLib for ERC20;
 
-  error Bank_Unauthorized();
-  error Bank_NotInExecutionScope();
+  error Bank_ExecutorNotInScope();
 
   IMoneyMarket public moneyMarket;
   IAutomatedVaultManager public vaultManager;
@@ -31,14 +30,12 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
 
   // vault address => token => debt shares
   mapping(address => mapping(address => VaultDebtInfo)) public vaultDebtInfoMap;
-  mapping(address => bool) public executorsOk;
 
-  event LogSetExecutorsOk(address[] _executors, bool _isOk);
-  event LogBorrowOnBehalfOf(address indexed _vault, address indexed _executor, address _token, uint256 _amount);
-  event LogRepayOnBehalfOf(address indexed _vault, address indexed _executor, address _token, uint256 _amount);
+  event LogBorrowOnBehalfOf(address indexed _vaultToken, address indexed _executor, address _token, uint256 _amount);
+  event LogRepayOnBehalfOf(address indexed _vaultToken, address indexed _executor, address _token, uint256 _amount);
 
-  modifier onlyExecutor() {
-    if (!executorsOk[msg.sender]) revert Bank_Unauthorized();
+  modifier onlyExecutorWithinScope() {
+    if (msg.sender != vaultManager.EXECUTOR_IN_SCOPE()) revert Bank_ExecutorNotInScope();
     _;
   }
 
@@ -55,51 +52,29 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     vaultManager = IAutomatedVaultManager(_vaultManager);
   }
 
-  function setExecutorsOk(address[] calldata _executors, bool _isOk) external onlyOwner {
-    uint256 _len = _executors.length;
-    for (uint256 _i; _i < _len;) {
-      executorsOk[_executors[_i]] = _isOk;
-      unchecked {
-        ++_i;
-      }
-    }
-    emit LogSetExecutorsOk(_executors, _isOk);
-  }
-
-  function _getVaultInScope() internal view returns (address _vault) {
-    _vault = vaultManager.VAULT_IN_SCOPE();
-    if (_vault == address(0)) revert Bank_NotInExecutionScope();
-  }
-
-  function borrowOnBehalfOf(address _token, uint256 _amount) external onlyExecutor {
-    // checks
-    address _vault = _getVaultInScope();
-
+  function borrowOnBehalfOf(address _vaultToken, address _token, uint256 _amount) external onlyExecutorWithinScope {
     // effects
     // safe to use unchecked since overflow amount would revert on borrow or transfer anyway
     unchecked {
-      vaultDebtInfoMap[_vault][_token].debt += _amount.safeCastTo216();
+      vaultDebtInfoMap[_vaultToken][_token].debt += _amount.safeCastTo216();
     }
 
     // interactions
     moneyMarket.nonCollatBorrow(_token, _amount);
 
-    ERC20(_token).safeTransfer(_vault, _amount);
+    ERC20(_token).safeTransfer(_vaultToken, _amount);
 
-    emit LogBorrowOnBehalfOf(_vault, msg.sender, _token, _amount);
+    emit LogBorrowOnBehalfOf(_vaultToken, msg.sender, _token, _amount);
   }
 
-  function repayOnBehalfOf(address _token, uint256 _amount) external onlyExecutor {
-    // checks
-    address _vault = _getVaultInScope();
-
-    ERC20(_token).safeTransferFrom(_vault, address(this), _amount);
+  function repayOnBehalfOf(address _vaultToken, address _token, uint256 _amount) external onlyExecutorWithinScope {
+    ERC20(_token).safeTransferFrom(_vaultToken, address(this), _amount);
 
     // will revert underflow if repay more than debt
-    vaultDebtInfoMap[_vault][_token].debt -= _amount.safeCastTo216();
+    vaultDebtInfoMap[_vaultToken][_token].debt -= _amount.safeCastTo216();
 
     moneyMarket.nonCollatRepay(address(this), _token, _amount);
 
-    emit LogRepayOnBehalfOf(_vault, msg.sender, _token, _amount);
+    emit LogRepayOnBehalfOf(_vaultToken, msg.sender, _token, _amount);
   }
 }
