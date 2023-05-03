@@ -45,7 +45,7 @@ contract AutomatedVaultManager is
   address public EXECUTOR_IN_SCOPE;
 
   event LogOpenVault(address indexed _vaultToken, VaultInfo _vaultInfo);
-  event LogDeposit(address indexed _vault, address indexed _depositor, uint256 _amount0, uint256 _amount1);
+  event LogDeposit(address indexed _vault, address indexed _depositor, DepositTokenParams[] _deposits);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -80,17 +80,25 @@ contract AutomatedVaultManager is
     EXECUTOR_IN_SCOPE = address(0);
   }
 
-  function deposit(address _vaultToken, uint256 _amount0, uint256 _amount1) external {
+  // to support pool with arbitrary number of tokens
+  struct DepositTokenParams {
+    address token;
+    uint256 amount;
+  }
+
+  function deposit(address _vaultToken, DepositTokenParams[] calldata _deposits) external {
     VaultInfo memory _vaultInfo = _getVaultInfo(_vaultToken);
 
-    ERC20(_vaultInfo.worker.token0()).safeTransferFrom(msg.sender, address(_vaultInfo.depositExecutor), _amount0);
-    ERC20(_vaultInfo.worker.token1()).safeTransferFrom(msg.sender, address(_vaultInfo.depositExecutor), _amount1);
+    uint256 _depositLength = _deposits.length;
+    for (uint256 _i; _i < _depositLength;) {
+      ERC20(_deposits[_i].token).safeTransferFrom(msg.sender, address(_vaultInfo.depositExecutor), _deposits[_i].amount);
+    }
 
-    _execute(_vaultInfo.depositExecutor, abi.encode(_amount0, _amount1));
+    _execute(_vaultInfo.depositExecutor, abi.encode(_deposits));
 
     // TODO: get equity change and mint
     IAutomatedVaultERC20(_vaultToken).mint(msg.sender, 0);
 
-    emit LogDeposit(_vaultToken, msg.sender, _amount0, _amount1);
+    emit LogDeposit(_vaultToken, msg.sender, _deposits);
   }
 }
