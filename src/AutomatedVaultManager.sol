@@ -58,6 +58,7 @@ contract AutomatedVaultManager is
   }
 
   function openVault(string calldata _name, string calldata _symbol, VaultInfo calldata _vaultInfo) external onlyOwner {
+    // TODO: use minimal proxy to deploy
     address _vaultToken = address(new AutomatedVaultERC20(_name, _symbol));
 
     // TODO: sanity check vaultInfo
@@ -92,6 +93,9 @@ contract AutomatedVaultManager is
     uint256 _depositLength = _deposits.length;
     for (uint256 _i; _i < _depositLength;) {
       ERC20(_deposits[_i].token).safeTransferFrom(msg.sender, address(_vaultInfo.depositExecutor), _deposits[_i].amount);
+      unchecked {
+        ++_i;
+      }
     }
 
     _execute(_vaultInfo.depositExecutor, abi.encode(_deposits));
