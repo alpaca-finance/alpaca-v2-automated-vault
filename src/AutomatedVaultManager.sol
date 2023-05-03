@@ -75,13 +75,9 @@ contract AutomatedVaultManager is
     EXECUTOR_IN_SCOPE = address(0);
   }
 
-  // to support pool with arbitrary number of tokens
-  struct DepositTokenParams {
-    address token;
-    uint256 amount;
-  }
-
-  function deposit(address _vaultToken, DepositTokenParams[] calldata _deposits) external {
+  function deposit(address _vaultToken, DepositTokenParams[] calldata _deposits, bytes calldata _executorParams)
+    external
+  {
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
 
     uint256 _depositLength = _deposits.length;
@@ -94,7 +90,7 @@ contract AutomatedVaultManager is
       }
     }
 
-    _execute(_cachedVaultInfo.depositExecutor, abi.encode(_deposits));
+    _execute(_cachedVaultInfo.depositExecutor, abi.encode(_executorParams));
 
     // TODO: get equity change and mint
     IAutomatedVaultERC20(_vaultToken).mint(msg.sender, 0);

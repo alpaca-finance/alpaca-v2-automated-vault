@@ -62,13 +62,13 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     // interactions
     moneyMarket.nonCollatBorrow(_token, _amount);
 
-    ERC20(_token).safeTransfer(_vaultToken, _amount);
+    ERC20(_token).safeTransfer(msg.sender, _amount);
 
     emit LogBorrowOnBehalfOf(_vaultToken, msg.sender, _token, _amount);
   }
 
   function repayOnBehalfOf(address _vaultToken, address _token, uint256 _amount) external onlyExecutorWithinScope {
-    ERC20(_token).safeTransferFrom(_vaultToken, address(this), _amount);
+    ERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
 
     // will revert underflow if repay more than debt
     vaultDebtInfoMap[_vaultToken][_token].debt -= _amount.safeCastTo216();
