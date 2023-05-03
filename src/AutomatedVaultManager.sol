@@ -28,14 +28,8 @@ contract AutomatedVaultManager is
   error AutomatedVaultManager_VaultNotExist(address _vaultToken);
 
   struct VaultInfo {
-    IExecutor depositExecutor;
-    // packed slot for worker info
     IWorker worker;
-    int24 posTickLower;
-    int24 posTickUpper;
-    // packed slot for reinvest
-    address performanceFeeBucket;
-    uint16 performanceFeeBps;
+    IExecutor depositExecutor;
   }
 
   // vault's ERC20 address => vault info
@@ -88,17 +82,19 @@ contract AutomatedVaultManager is
   }
 
   function deposit(address _vaultToken, DepositTokenParams[] calldata _deposits) external {
-    VaultInfo memory _vaultInfo = _getVaultInfo(_vaultToken);
+    VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
 
     uint256 _depositLength = _deposits.length;
     for (uint256 _i; _i < _depositLength;) {
-      ERC20(_deposits[_i].token).safeTransferFrom(msg.sender, address(_vaultInfo.depositExecutor), _deposits[_i].amount);
+      ERC20(_deposits[_i].token).safeTransferFrom(
+        msg.sender, address(_cachedVaultInfo.depositExecutor), _deposits[_i].amount
+      );
       unchecked {
         ++_i;
       }
     }
 
-    _execute(_vaultInfo.depositExecutor, abi.encode(_deposits));
+    _execute(_cachedVaultInfo.depositExecutor, abi.encode(_deposits));
 
     // TODO: get equity change and mint
     IAutomatedVaultERC20(_vaultToken).mint(msg.sender, 0);
