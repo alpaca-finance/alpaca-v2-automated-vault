@@ -34,8 +34,8 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
   mapping(address => bool) public executorsOk;
 
   event LogSetExecutorsOk(address[] _executors, bool _isOk);
-  event LogBorrowOnBehalfOf(address indexed _vault, address _token, uint256 _amount);
-  event LogRepayOnBehalfOf(address indexed _vault, address _token, uint256 _amount);
+  event LogBorrowOnBehalfOf(address indexed _vault, address indexed _executor, address _token, uint256 _amount);
+  event LogRepayOnBehalfOf(address indexed _vault, address indexed _executor, address _token, uint256 _amount);
 
   modifier onlyExecutor() {
     if (!executorsOk[msg.sender]) revert Bank_Unauthorized();
@@ -86,7 +86,7 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
 
     ERC20(_token).safeTransfer(_vault, _amount);
 
-    emit LogBorrowOnBehalfOf(_vault, _token, _amount);
+    emit LogBorrowOnBehalfOf(_vault, msg.sender, _token, _amount);
   }
 
   function repayOnBehalfOf(address _token, uint256 _amount) external onlyExecutor {
@@ -100,6 +100,6 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
 
     moneyMarket.nonCollatRepay(address(this), _token, _amount);
 
-    emit LogRepayOnBehalfOf(_vault, _token, _amount);
+    emit LogRepayOnBehalfOf(_vault, msg.sender, _token, _amount);
   }
 }

@@ -23,13 +23,13 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
 
   struct VaultInfo {
     IExecutor depositExecutor;
-    // packed slot
+    // packed slot for worker info
+    IWorker worker;
     int24 posTickLower;
     int24 posTickUpper;
-    IWorker worker;
-    // packed slot
-    uint16 performanceFeeBps;
+    // packed slot for reinvest
     address performanceFeeBucket;
+    uint16 performanceFeeBps;
   }
 
   // vault's ERC20 address => vault info
@@ -80,6 +80,8 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     ERC20(_vaultInfo.worker.token1()).safeTransferFrom(msg.sender, address(_vaultInfo.depositExecutor), _amount1);
 
     _execute(_vaultToken, _vaultInfo.depositExecutor, abi.encode(_amount0, _amount1));
+
+    // TODO: call worker to increase liquidity
 
     // TODO: get equity change and mint
     IAutomatedVaultERC20(_vaultToken).mint(msg.sender, 0);
