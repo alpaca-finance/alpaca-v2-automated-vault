@@ -4,3 +4,12 @@
 [submodule "lib/alpaca-v2-money-market"]
 	path = lib/alpaca-v2-money-market
 	url = https://github.com/alpaca-finance/alpaca-v2-money-market
+[submodule "lib/solmate"]
+	path = lib/solmate
+	url = https://github.com/transmissions11/solmate
+[submodule "lib/openzeppelin-contracts"]
+	path = lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "lib/openzeppelin-contracts-upgradeable"]
+	path = lib/openzeppelin-contracts-upgradeable
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable
