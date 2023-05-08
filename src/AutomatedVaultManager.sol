@@ -13,7 +13,6 @@ import { AutomatedVaultERC20 } from "src/AutomatedVaultERC20.sol";
 
 // interfaces
 import { IExecutor } from "src/interfaces/IExecutor.sol";
-import { IWorker } from "src/interfaces/IWorker.sol";
 import { IAutomatedVaultERC20 } from "src/interfaces/IAutomatedVaultERC20.sol";
 import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
 
@@ -28,8 +27,8 @@ contract AutomatedVaultManager is
   error AutomatedVaultManager_VaultNotExist(address _vaultToken);
 
   struct VaultInfo {
-    IWorker worker;
-    IExecutor depositExecutor;
+    address worker;
+    address depositExecutor;
   }
 
   // vault's ERC20 address => vault info
@@ -51,9 +50,13 @@ contract AutomatedVaultManager is
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
   }
 
-  function openVault(string calldata _name, string calldata _symbol, VaultInfo calldata _vaultInfo) external onlyOwner {
+  function openVault(string calldata _name, string calldata _symbol, VaultInfo calldata _vaultInfo)
+    external
+    onlyOwner
+    returns (address _vaultToken)
+  {
     // TODO: use minimal proxy to deploy
-    address _vaultToken = address(new AutomatedVaultERC20(_name, _symbol));
+    _vaultToken = address(new AutomatedVaultERC20(_name, _symbol));
 
     // TODO: sanity check vaultInfo
 
@@ -64,14 +67,14 @@ contract AutomatedVaultManager is
 
   function _getVaultInfo(address _vaultToken) internal view returns (VaultInfo memory _vaultInfo) {
     _vaultInfo = vaultInfos[_vaultToken];
-    if (address(_vaultInfo.worker) == address(0)) {
+    if (_vaultInfo.worker == address(0)) {
       revert AutomatedVaultManager_VaultNotExist(_vaultToken);
     }
   }
 
-  function _execute(IExecutor _executor, bytes memory _params) internal {
-    EXECUTOR_IN_SCOPE = address(_executor);
-    _executor.execute(_params);
+  function _execute(address _executor, bytes memory _params) internal {
+    EXECUTOR_IN_SCOPE = _executor;
+    IExecutor(_executor).execute(_params);
     EXECUTOR_IN_SCOPE = address(0);
   }
 
@@ -82,9 +85,7 @@ contract AutomatedVaultManager is
 
     uint256 _depositLength = _deposits.length;
     for (uint256 _i; _i < _depositLength;) {
-      ERC20(_deposits[_i].token).safeTransferFrom(
-        msg.sender, address(_cachedVaultInfo.depositExecutor), _deposits[_i].amount
-      );
+      ERC20(_deposits[_i].token).safeTransferFrom(msg.sender, _cachedVaultInfo.depositExecutor, _deposits[_i].amount);
       unchecked {
         ++_i;
       }

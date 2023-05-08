@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "@forge-std/Test.sol";
+import "@forge-std/Vm.sol";
+import "@forge-std/StdStorage.sol";
 import { ProxyAdmin } from "@openzeppelin/proxy/transparent/ProxyAdmin.sol";
 
 // interfaces
 import { IERC20 } from "src/interfaces/IERC20.sol";
 
-contract BaseTest is Test {
+abstract contract TestHelpers {
   using stdStorage for StdStorage;
+
+  Vm private constant vm = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
 
   StdStorage internal stdStore;
   ProxyAdmin internal proxyAdmin;
