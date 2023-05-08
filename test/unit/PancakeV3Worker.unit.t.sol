@@ -5,6 +5,8 @@ import "test/base/BaseForkTest.sol";
 
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 
+import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+
 contract PancakeV3WorkerUnitForkTest is BaseForkTest {
   int24 internal constant TICK_LOWER = -58000;
   int24 internal constant TICK_UPPER = -57750;
@@ -18,6 +20,7 @@ contract PancakeV3WorkerUnitForkTest is BaseForkTest {
     vm.startPrank(DEPLOYER);
     worker = deployPancakeV3Worker(
       PancakeV3Worker.ConstructorParams({
+        vaultManager: IAutomatedVaultManager(address(0)), // TODO: mock vault manager
         positionManager: pancakeV3PositionManager,
         pool: pancakeV3WBNBUSDTPool,
         router: pancakeV3Router,

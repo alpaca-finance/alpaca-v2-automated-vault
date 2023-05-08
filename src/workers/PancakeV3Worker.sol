@@ -10,6 +10,7 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin-upgradeable/security/R
 
 // interfaces
 import { IWorker } from "src/interfaces/IWorker.sol";
+import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
 import { IZapV3 } from "src/interfaces/IZapV3.sol";
 import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
 import { ICommonV3PositionManager } from "src/interfaces/ICommonV3PositionManager.sol";
@@ -50,10 +51,9 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   uint256 public nftTokenId;
 
   /// Authorization
-  mapping(address => bool) public managers;
+  IAutomatedVaultManager public vaultManager;
 
   event LogIncreaseLiquidity(uint256 _tokenId, uint256 _amount0, uint256 _amount1, uint128 _liquidity);
-  event LogSetManager(address indexed manager, bool prevIsManager, bool indexed isManager);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -61,6 +61,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   }
 
   struct ConstructorParams {
+    IAutomatedVaultManager vaultManager;
     ICommonV3PositionManager positionManager;
     ICommonV3Pool pool;
     IPancakeV3Router router;
@@ -75,6 +76,8 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   function initialize(ConstructorParams calldata _params) external initializer {
     Ownable2StepUpgradeable.__Ownable2Step_init();
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
+
+    vaultManager = _params.vaultManager;
 
     nftPositionManager = _params.positionManager;
     pool = _params.pool;
@@ -93,14 +96,6 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     performanceFeeBps = _params.performanceFeeBps;
   }
 
-  /// @notice Set manager. Only owner can call this function.
-  /// @param _manager Manager address
-  /// @param _isManager True if manager, false if not
-  function setManager(address _manager, bool _isManager) external onlyOwner {
-    emit LogSetManager(_manager, managers[_manager], _isManager);
-    managers[_manager] = _isManager;
-  }
-
   /// @notice Perform the work. Only manager can call this function.
   /// @dev Main routine. Action depends on task param.
   /// @param _task Task to execute
@@ -112,7 +107,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     bytes calldata _params
   ) external nonReentrant returns (bytes memory) {
     // Check
-    if (!managers[msg.sender]) {
+    if (msg.sender != vaultManager.EXECUTOR_IN_SCOPE()) {
       revert PancakeV3Worker_Unauthorized();
     }
 

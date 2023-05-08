@@ -12,9 +12,7 @@ contract AutomatedVaultUnitTest is BaseTest {
     super.setUp();
 
     vm.startPrank(DEPLOYER);
-    vaultManager = AutomatedVaultManager(
-      deployUpgradeable("AutomatedVaultManager", abi.encodeWithSelector(bytes4(keccak256("initialize()"))))
-    );
+    vaultManager = deployAutomatedVaultManager();
     vm.stopPrank();
   }
 

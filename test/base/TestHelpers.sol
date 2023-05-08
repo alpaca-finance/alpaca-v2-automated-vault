@@ -72,7 +72,8 @@ abstract contract TestHelpers {
       deployUpgradeable(
         "PancakeV3Worker",
         abi.encodeWithSelector(
-          bytes4(keccak256("initialize((address,address,address,address,address,address,int24,int24,uint16))")),
+          bytes4(keccak256("initialize((address,address,address,address,address,address,address,int24,int24,uint16))")),
+          address(params.vaultManager),
           address(params.positionManager),
           address(params.pool),
           address(params.router),

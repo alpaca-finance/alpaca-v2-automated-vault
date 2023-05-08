@@ -28,6 +28,7 @@ contract AutomatedVaultIntegrationForkTest is BaseForkTest {
     bank = deployBank(address(0), address(vaultManager));
     pcsV3Worker = deployPancakeV3Worker(
       PancakeV3Worker.ConstructorParams({
+        vaultManager: vaultManager,
         positionManager: pancakeV3PositionManager,
         pool: pancakeV3WBNBUSDTPool,
         router: pancakeV3Router,
