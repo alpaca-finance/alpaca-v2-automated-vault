@@ -9,6 +9,8 @@ contract AutomatedVaultUnitTest is BaseTest {
   AutomatedVaultManager vaultManager;
 
   function setUp() public override {
+    super.setUp();
+
     vm.startPrank(DEPLOYER);
     vaultManager = AutomatedVaultManager(
       deployUpgradeable("AutomatedVaultManager", abi.encodeWithSelector(bytes4(keccak256("initialize()"))))

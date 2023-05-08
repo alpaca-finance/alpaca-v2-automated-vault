@@ -1,9 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
+// dependencies
 import "@forge-std/Vm.sol";
 import "@forge-std/StdStorage.sol";
 import { ProxyAdmin } from "@openzeppelin/proxy/transparent/ProxyAdmin.sol";
+
+// contracts
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
+import { Bank } from "src/Bank.sol";
+import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 
 // interfaces
 import { IERC20 } from "src/interfaces/IERC20.sol";
@@ -45,5 +51,39 @@ abstract contract TestHelpers {
     }
 
     return proxy;
+  }
+
+  function deployAutomatedVaultManager() internal returns (AutomatedVaultManager) {
+    return AutomatedVaultManager(
+      deployUpgradeable("AutomatedVaultManager", abi.encodeWithSelector(bytes4(keccak256("initialize()"))))
+    );
+  }
+
+  function deployBank(address moneyMarket, address vaultManager) internal returns (Bank) {
+    return Bank(
+      deployUpgradeable(
+        "Bank", abi.encodeWithSelector(bytes4(keccak256("initialize(address,address)")), moneyMarket, vaultManager)
+      )
+    );
+  }
+
+  function deployPancakeV3Worker(PancakeV3Worker.ConstructorParams memory params) internal returns (PancakeV3Worker) {
+    return PancakeV3Worker(
+      deployUpgradeable(
+        "PancakeV3Worker",
+        abi.encodeWithSelector(
+          bytes4(keccak256("initialize((address,address,address,address,address,address,int24,int24,uint16))")),
+          address(params.positionManager),
+          address(params.pool),
+          address(params.router),
+          address(params.masterChef),
+          address(params.zapV3),
+          params.performanceFeeBucket,
+          params.tickLower,
+          params.tickUpper,
+          params.performanceFeeBps
+        )
+      )
+    );
   }
 }
