@@ -226,8 +226,15 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     // - If currTick > tickUpper, then we need to swap token0 -> token1
     // - else, then we need to swap token1 -> token0
     bool _zeroForOne = _currTick > _tickUpper;
-    address _tokenIn = _zeroForOne ? address(token0) : address(token1);
-    address _tokenOut = _zeroForOne ? address(token1) : address(token0);
+    address _tokenIn;
+    address _tokenOut;
+    if (_zeroForOne) {
+      _tokenIn = address(token0);
+      _tokenOut = address(token1);
+    } else {
+      _tokenIn = address(token1);
+      _tokenOut = address(token0);
+    }
 
     // Find out limit price. We will swap until the tick is in range
     // If it is in range and some tokens left, then we will zap.
@@ -276,8 +283,8 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     internal
     returns (uint128 _liquidity)
   {
-    uint256 _amount0 = 0;
-    uint256 _amount1 = 0;
+    uint256 _amount0;
+    uint256 _amount1;
     if (nftTokenId == 0) {
       // Position is not existed. Then we need to mint a new position
       // and stake it on PancakeMasterChefV3
