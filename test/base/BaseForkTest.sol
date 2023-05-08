@@ -9,5 +9,8 @@ abstract contract BaseForkTest is BaseTest, ForkTestConfigs {
     super.setUp();
 
     vm.createSelectFork("bsc_mainnet", 27_515_914);
+
+    deal(address(wbnb), ALICE, 100 ether);
+    deal(address(usdt), ALICE, 100 ether);
   }
 }

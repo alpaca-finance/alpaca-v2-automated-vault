@@ -17,8 +17,6 @@ import { IBank } from "src/interfaces/IBank.sol";
 import { Tasks } from "src/libraries/Constants.sol";
 
 contract SimpleV3DepositExecutor is IExecutor {
-  uint8 public constant leverageLevel = 2;
-
   PancakeV3Worker public immutable pancakeV3Worker;
   IBank public immutable bank;
 
@@ -35,6 +33,9 @@ contract SimpleV3DepositExecutor is IExecutor {
 
     bank.borrowOnBehalfOf(msg.sender, address(_token0), _amountIn0);
     bank.borrowOnBehalfOf(msg.sender, address(_token1), _amountIn1);
+
+    _token0.approve(address(pancakeV3Worker), _amountIn0 * 2);
+    _token1.approve(address(pancakeV3Worker), _amountIn1 * 2);
 
     return pancakeV3Worker.doWork(address(0), Tasks.INCREASE, abi.encode(_amountIn0 * 2, _amountIn1 * 2));
   }
