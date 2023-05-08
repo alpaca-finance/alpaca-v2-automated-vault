@@ -82,7 +82,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     masterChef = _params.masterChef;
     poolFee = _params.pool.fee();
     token0 = ERC20(pool.token0());
-    token1 = ERC20(address(token1));
+    token1 = ERC20(pool.token1());
     cake = ERC20(masterChef.CAKE());
 
     zapV3 = _params.zapV3;
