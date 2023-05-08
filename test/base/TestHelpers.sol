@@ -2,19 +2,21 @@
 pragma solidity 0.8.19;
 
 // dependencies
-import "@forge-std/Vm.sol";
-import "@forge-std/StdStorage.sol";
+import { Vm } from "@forge-std/Vm.sol";
+import { StdStorage, stdStorage } from "@forge-std/StdStorage.sol";
+import { StdCheats } from "@forge-std/StdCheats.sol";
 import { ProxyAdmin } from "@openzeppelin/proxy/transparent/ProxyAdmin.sol";
 
 // contracts
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { Bank } from "src/Bank.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
+import { MockMoneyMarket } from "test/mocks/MockMoneyMarket.sol";
 
 // interfaces
 import { IERC20 } from "src/interfaces/IERC20.sol";
 
-abstract contract TestHelpers {
+abstract contract TestHelpers is StdCheats {
   using stdStorage for StdStorage;
 
   Vm private constant vm = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
@@ -24,10 +26,6 @@ abstract contract TestHelpers {
 
   constructor() {
     proxyAdmin = new ProxyAdmin();
-  }
-
-  function motherload(address token, address user, uint256 amount) internal {
-    stdStore.target(token).sig(IERC20.balanceOf.selector).with_key(user).checked_write(amount);
   }
 
   function deployUpgradeable(string memory contractName, bytes memory initializer) internal returns (address) {
@@ -86,5 +84,15 @@ abstract contract TestHelpers {
         )
       )
     );
+  }
+
+  function deployAndSeedMockMoneyMarket(address[] memory tokensToSeed)
+    internal
+    returns (MockMoneyMarket mockMoneyMarket)
+  {
+    mockMoneyMarket = new MockMoneyMarket();
+    for (uint256 i = 0; i < tokensToSeed.length; ++i) {
+      deal(tokensToSeed[i], address(mockMoneyMarket), 100 ether);
+    }
   }
 }

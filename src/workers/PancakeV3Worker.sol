@@ -180,10 +180,18 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     );
 
     // Find out tokenIn and tokenOut
-    address _tokenIn = _zeroForOne ? address(token0) : address(token1);
-    address _tokenOut = _zeroForOne ? address(token1) : address(token0);
+    address _tokenIn;
+    address _tokenOut;
+    if (_zeroForOne) {
+      _tokenIn = address(token0);
+      _tokenOut = address(token1);
+    } else {
+      _tokenIn = address(token1);
+      _tokenOut = address(token0);
+    }
 
     // Swap
+    ERC20(_tokenIn).safeApprove(address(router), _amountSwap);
     router.exactInputSingle(
       IPancakeV3Router.ExactInputSingleParams({
         tokenIn: _tokenIn,
@@ -240,6 +248,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     // Swap
     uint256 _amountSwap = _zeroForOne ? _amountIn0 : _amountIn1;
     if (_amountSwap > 0) {
+      ERC20(_tokenIn).safeApprove(address(router), _amountSwap);
       router.exactInputSingle(
         IPancakeV3Router.ExactInputSingleParams({
           tokenIn: _tokenIn,
@@ -280,6 +289,8 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   {
     uint256 _amount0;
     uint256 _amount1;
+    ERC20(_token0).safeApprove(address(nftPositionManager), _amountIn0);
+    ERC20(_token1).safeApprove(address(nftPositionManager), _amountIn1);
     if (nftTokenId == 0) {
       // Position is not existed. Then we need to mint a new position
       // and stake it on PancakeMasterChefV3
