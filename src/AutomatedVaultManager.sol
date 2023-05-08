@@ -13,7 +13,6 @@ import { AutomatedVaultERC20 } from "src/AutomatedVaultERC20.sol";
 
 // interfaces
 import { IExecutor } from "src/interfaces/IExecutor.sol";
-import { IWorker } from "src/interfaces/IWorker.sol";
 import { IAutomatedVaultERC20 } from "src/interfaces/IAutomatedVaultERC20.sol";
 import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
 
@@ -28,14 +27,8 @@ contract AutomatedVaultManager is
   error AutomatedVaultManager_VaultNotExist(address _vaultToken);
 
   struct VaultInfo {
-    IExecutor depositExecutor;
-    // packed slot for worker info
-    IWorker worker;
-    int24 posTickLower;
-    int24 posTickUpper;
-    // packed slot for reinvest
-    address performanceFeeBucket;
-    uint16 performanceFeeBps;
+    address worker;
+    address depositExecutor;
   }
 
   // vault's ERC20 address => vault info
@@ -57,9 +50,13 @@ contract AutomatedVaultManager is
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
   }
 
-  function openVault(string calldata _name, string calldata _symbol, VaultInfo calldata _vaultInfo) external onlyOwner {
+  function openVault(string calldata _name, string calldata _symbol, VaultInfo calldata _vaultInfo)
+    external
+    onlyOwner
+    returns (address _vaultToken)
+  {
     // TODO: use minimal proxy to deploy
-    address _vaultToken = address(new AutomatedVaultERC20(_name, _symbol));
+    _vaultToken = address(new AutomatedVaultERC20(_name, _symbol));
 
     // TODO: sanity check vaultInfo
 
@@ -70,35 +67,31 @@ contract AutomatedVaultManager is
 
   function _getVaultInfo(address _vaultToken) internal view returns (VaultInfo memory _vaultInfo) {
     _vaultInfo = vaultInfos[_vaultToken];
-    if (address(_vaultInfo.worker) == address(0)) {
+    if (_vaultInfo.worker == address(0)) {
       revert AutomatedVaultManager_VaultNotExist(_vaultToken);
     }
   }
 
-  function _execute(IExecutor _executor, bytes memory _params) internal {
-    EXECUTOR_IN_SCOPE = address(_executor);
-    _executor.execute(_params);
+  function _execute(address _executor, bytes memory _params) internal {
+    EXECUTOR_IN_SCOPE = _executor;
+    IExecutor(_executor).execute(_params);
     EXECUTOR_IN_SCOPE = address(0);
   }
 
-  // to support pool with arbitrary number of tokens
-  struct DepositTokenParams {
-    address token;
-    uint256 amount;
-  }
-
-  function deposit(address _vaultToken, DepositTokenParams[] calldata _deposits) external {
-    VaultInfo memory _vaultInfo = _getVaultInfo(_vaultToken);
+  function deposit(address _vaultToken, DepositTokenParams[] calldata _deposits, bytes calldata _executorParams)
+    external
+  {
+    VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
 
     uint256 _depositLength = _deposits.length;
     for (uint256 _i; _i < _depositLength;) {
-      ERC20(_deposits[_i].token).safeTransferFrom(msg.sender, address(_vaultInfo.depositExecutor), _deposits[_i].amount);
+      ERC20(_deposits[_i].token).safeTransferFrom(msg.sender, _cachedVaultInfo.depositExecutor, _deposits[_i].amount);
       unchecked {
         ++_i;
       }
     }
 
-    _execute(_vaultInfo.depositExecutor, abi.encode(_deposits));
+    _execute(_cachedVaultInfo.depositExecutor, abi.encode(_executorParams));
 
     // TODO: get equity change and mint
     IAutomatedVaultERC20(_vaultToken).mint(msg.sender, 0);
