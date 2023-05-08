@@ -4,8 +4,9 @@ out = "out"
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./" }]
 optimizer-runs = 200
-no-match-contract = "ForkTest"
 
+[profile.local]
+no-match-contract = "ForkTest"
 
 [fmt]
 line_length = 120
