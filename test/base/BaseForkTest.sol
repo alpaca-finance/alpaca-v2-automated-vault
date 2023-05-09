@@ -7,10 +7,5 @@ import { ForkTestConfigs } from "./ForkTestConfigs.sol";
 abstract contract BaseForkTest is BaseTest, ForkTestConfigs {
   function setUp() public virtual override {
     super.setUp();
-
-    vm.createSelectFork("bsc_mainnet", 27_515_914);
-
-    deal(address(wbnb), ALICE, 100 ether);
-    deal(address(usdt), ALICE, 100 ether);
   }
 }

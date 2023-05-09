@@ -53,7 +53,11 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   /// Authorization
   IAutomatedVaultManager public vaultManager;
 
+  /// Events
   event LogIncreaseLiquidity(uint256 _tokenId, uint256 _amount0, uint256 _amount1, uint128 _liquidity);
+  event LogCollectPerformanceFee(
+    address indexed token, uint256 earned, uint16 performanceFeeBps, uint256 performanceFee
+  );
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -113,7 +117,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
 
     // Effect
     // Before doing anything, reinvest first.
-    // _reinvestInternal();
+    _reinvestInternal();
 
     // Perform action according to the command
     if (_task == Tasks.INCREASE) {
@@ -329,5 +333,85 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     }
 
     emit LogIncreaseLiquidity(nftTokenId, _amount0, _amount1, _liquidity);
+  }
+
+  /// @notice Allow to trigger reinvest without passing through "doWork" routine.
+  /// @dev This is useful when pool is idle and we want to trigger reinvest.
+  function reinvest() external {
+    _reinvestInternal();
+  }
+
+  /// @notice Perform the actual reinvest.
+  function _reinvestInternal() internal {
+    // If tokenId is 0, then nothing to reinvest
+    if (nftTokenId == 0) return;
+
+    // Claim all trading fee
+    (uint256 _fee0, uint256 _fee1) = masterChef.collect(
+      IPancakeV3MasterChef.CollectParams({
+        tokenId: nftTokenId,
+        recipient: address(this),
+        amount0Max: type(uint128).max,
+        amount1Max: type(uint128).max
+      })
+    );
+
+    // Harvest CAKE rewards
+    uint256 _cakeRewards = masterChef.harvest(nftTokenId, address(this));
+
+    // Collect performance fee
+    // SLOAD performanceFeeBucket and performanceFeeBps to save gas
+    address _performanceFeeBucket = performanceFeeBucket;
+    uint16 _performanceFeeBps = performanceFeeBps;
+    // _cachedFee is for emitting the event. So we don't have to calc fee * performanceFeeBps / MAX_BPS twice
+    uint256 _cachedFee = 0;
+    // Handling performance fees
+    if (_fee0 > 0) {
+      // Collect token0 performance fee
+      token0.safeTransfer(_performanceFeeBucket, _cachedFee = _fee0 * _performanceFeeBps / MAX_BPS);
+      emit LogCollectPerformanceFee(address(token0), _fee0, _performanceFeeBps, _cachedFee);
+    }
+    if (_fee1 > 0) {
+      // Collect token1 performance fee
+      token1.safeTransfer(_performanceFeeBucket, _cachedFee = _fee1 * _performanceFeeBps / MAX_BPS);
+      emit LogCollectPerformanceFee(address(token1), _fee1, _performanceFeeBps, _cachedFee);
+    }
+    if (_cakeRewards > 0) {
+      // Handing CAKE rewards
+      // Collect CAKE performance fee
+      cake.safeTransfer(_performanceFeeBucket, _cachedFee = _cakeRewards * _performanceFeeBps / MAX_BPS);
+      emit LogCollectPerformanceFee(address(cake), _cakeRewards, _performanceFeeBps, _cachedFee);
+      // Sell CAKE for token0 or token1, if any
+      // Find out need to sell CAKE to which side by checking currTick
+      (, int24 _currTick,,,,,) = pool.slot0();
+      address _tokenOut = address(token0);
+      if (_currTick - posTickLower > posTickUpper - _currTick) {
+        // If currTick is closer to tickUpper, then we will sell CAKE for token1
+        _tokenOut = address(token1);
+      }
+
+      // Swap CAKE for token0 or token1
+      router.exactInputSingle(
+        IPancakeV3Router.ExactInputSingleParams({
+          tokenIn: address(cake),
+          tokenOut: _tokenOut,
+          fee: poolFee,
+          recipient: address(this),
+          amountIn: cake.balanceOf(address(this)),
+          amountOutMinimum: 0,
+          sqrtPriceLimitX96: 0
+        })
+      );
+    }
+
+    // Add liquidity
+    uint256 _token0Balance = token0.balanceOf(address(this));
+    uint256 _token1Balance = token1.balanceOf(address(this));
+
+    if (_token0Balance > 0 || _token1Balance > 0) {
+      // If there is any token0 or token1 left, then we will add liquidity
+      // to increase position
+      _increasePositionInternal(_token0Balance, _token1Balance);
+    }
   }
 }
