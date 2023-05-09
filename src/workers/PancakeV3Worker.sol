@@ -289,11 +289,11 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   {
     uint256 _amount0;
     uint256 _amount1;
-    ERC20(_token0).safeApprove(address(nftPositionManager), _amountIn0);
-    ERC20(_token1).safeApprove(address(nftPositionManager), _amountIn1);
     if (nftTokenId == 0) {
       // Position is not existed. Then we need to mint a new position
       // and stake it on PancakeMasterChefV3
+      ERC20(_token0).safeApprove(address(nftPositionManager), _amountIn0);
+      ERC20(_token1).safeApprove(address(nftPositionManager), _amountIn1);
       (nftTokenId, _liquidity, _amount0, _amount1) = nftPositionManager.mint(
         ICommonV3PositionManager.MintParams({
           token0: _token0,
@@ -314,6 +314,8 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
       nftPositionManager.safeTransferFrom(address(this), address(masterChef), nftTokenId);
     } else {
       // If already has a position, then we need to increase a position on through MasterChefV3
+      ERC20(_token0).safeApprove(address(masterChef), _amountIn0);
+      ERC20(_token1).safeApprove(address(masterChef), _amountIn1);
       (_liquidity, _amount0, _amount1) = masterChef.increaseLiquidity(
         IPancakeV3MasterChef.IncreaseLiquidityParams({
           tokenId: nftTokenId,
