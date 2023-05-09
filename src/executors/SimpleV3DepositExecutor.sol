@@ -37,6 +37,6 @@ contract SimpleV3DepositExecutor is IExecutor {
     _token0.approve(address(pancakeV3Worker), _amountIn0 * 2);
     _token1.approve(address(pancakeV3Worker), _amountIn1 * 2);
 
-    return pancakeV3Worker.doWork(address(0), Tasks.INCREASE, abi.encode(_amountIn0 * 2, _amountIn1 * 2));
+    return pancakeV3Worker.doWork(Tasks.INCREASE, abi.encode(_amountIn0 * 2, _amountIn1 * 2));
   }
 }

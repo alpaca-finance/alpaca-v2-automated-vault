@@ -30,6 +30,10 @@ contract AutomatedVaultIntegrationForkTest is BaseForkTest {
   function setUp() public override {
     super.setUp();
 
+    vm.createSelectFork("bsc_mainnet", 27_515_914);
+    deal(address(wbnb), ALICE, 100 ether);
+    deal(address(usdt), ALICE, 100 ether);
+
     vm.startPrank(DEPLOYER);
 
     address[] memory tokensToSeed = new address[](2);
