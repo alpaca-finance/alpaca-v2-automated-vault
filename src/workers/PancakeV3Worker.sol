@@ -341,6 +341,8 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     // If tokenId is 0, then nothing to reinvest
     if (nftTokenId == 0) return;
 
+    // TODO: return if already reinvest within same block
+
     // Claim all trading fee
     (uint256 _fee0, uint256 _fee1) = masterChef.collect(
       IPancakeV3MasterChef.CollectParams({
@@ -385,6 +387,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
         _tokenOut = address(token1);
       }
 
+      // TODO: multi-hop swap
       // Swap CAKE for token0 or token1
       router.exactInputSingle(
         IPancakeV3Router.ExactInputSingleParams({
