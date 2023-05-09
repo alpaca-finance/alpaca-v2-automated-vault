@@ -56,7 +56,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   /// Events
   event LogIncreaseLiquidity(uint256 _tokenId, uint256 _amount0, uint256 _amount1, uint128 _liquidity);
   event LogCollectPerformanceFee(
-    address indexed token, uint256 earned, uint16 performanceFeeBps, uint256 performanceFee
+    address indexed _token, uint256 _earned, uint16 _performanceFeeBps, uint256 _performanceFee
   );
 
   /// @custom:oz-upgrades-unsafe-allow constructor
@@ -104,12 +104,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   /// @dev Main routine. Action depends on task param.
   /// @param _task Task to execute
   /// @param _params Params to execute
-  function doWork(
-    address,
-    /* user */
-    Tasks _task,
-    bytes calldata _params
-  ) external nonReentrant returns (bytes memory) {
+  function doWork(Tasks _task, bytes calldata _params) external nonReentrant returns (bytes memory) {
     // Check
     if (msg.sender != vaultManager.EXECUTOR_IN_SCOPE()) {
       revert PancakeV3Worker_Unauthorized();

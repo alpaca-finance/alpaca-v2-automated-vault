@@ -15,7 +15,7 @@ contract PancakeV3Worker_IncreaseLiquidity_UnitForkTest is BasePancakeV3WorkerUn
 
     // Increase position by 10_000 TKN0 and 1 TKN1
     vm.prank(IN_SCOPE_EXECUTOR);
-    worker.doWork(address(this), Tasks.INCREASE, abi.encode(10_000 ether, 1 ether));
+    worker.doWork(Tasks.INCREASE, abi.encode(10_000 ether, 1 ether));
 
     // Asserts:
     // - token0 and token1 must left in worker less than DUST
@@ -33,7 +33,7 @@ contract PancakeV3Worker_IncreaseLiquidity_UnitForkTest is BasePancakeV3WorkerUn
 
     // Increase position by 10_000 TKN0 and 25_000 TKN1 again
     vm.prank(IN_SCOPE_EXECUTOR);
-    worker.doWork(address(this), Tasks.INCREASE, abi.encode(10_000 ether, 25_000 ether));
+    worker.doWork(Tasks.INCREASE, abi.encode(10_000 ether, 25_000 ether));
 
     // Assert:
     // - token0 and token1 must left in worker less than DUST
@@ -64,7 +64,7 @@ contract PancakeV3Worker_IncreaseLiquidity_UnitForkTest is BasePancakeV3WorkerUn
 
     // Increase position by 10_000 USDT and 10 WBNB
     vm.prank(IN_SCOPE_EXECUTOR);
-    worker.doWork(address(this), Tasks.INCREASE, abi.encode(10_000 ether, 10 ether));
+    worker.doWork(Tasks.INCREASE, abi.encode(10_000 ether, 10 ether));
 
     // Assert:
     // - token0 and token1 must NOT left in worker
@@ -87,7 +87,7 @@ contract PancakeV3Worker_IncreaseLiquidity_UnitForkTest is BasePancakeV3WorkerUn
 
     // Increase position by 10_000 USDT and 0 WBNB
     vm.prank(IN_SCOPE_EXECUTOR);
-    worker.doWork(address(this), Tasks.INCREASE, abi.encode(10_000 ether, 0));
+    worker.doWork(Tasks.INCREASE, abi.encode(10_000 ether, 0));
 
     // Assert:
     // - token0 and token1 must less than DUST
@@ -110,7 +110,7 @@ contract PancakeV3Worker_IncreaseLiquidity_UnitForkTest is BasePancakeV3WorkerUn
 
     // Increase position by 10_000 USDT and 1 WBNB
     vm.prank(IN_SCOPE_EXECUTOR);
-    worker.doWork(address(this), Tasks.INCREASE, abi.encode(10_000 ether, 10 ether));
+    worker.doWork(Tasks.INCREASE, abi.encode(10_000 ether, 10 ether));
 
     // Assert:
     // - token0 and token1 must NOT left in worker
@@ -133,7 +133,7 @@ contract PancakeV3Worker_IncreaseLiquidity_UnitForkTest is BasePancakeV3WorkerUn
 
     // Increase position by 0 USDT and 300 WBNB
     vm.prank(IN_SCOPE_EXECUTOR);
-    worker.doWork(address(this), Tasks.INCREASE, abi.encode(0 ether, 300 ether));
+    worker.doWork(Tasks.INCREASE, abi.encode(0 ether, 300 ether));
 
     // Assert:
     // - token0 and token1 must NOT left in worker
@@ -147,7 +147,7 @@ contract PancakeV3Worker_IncreaseLiquidity_UnitForkTest is BasePancakeV3WorkerUn
     // call from some address that is not in scope
     vm.prank(ALICE);
     vm.expectRevert(PancakeV3Worker.PancakeV3Worker_Unauthorized.selector);
-    worker.doWork(address(this), Tasks.INCREASE, abi.encode());
+    worker.doWork(Tasks.INCREASE, abi.encode());
   }
 
   function testRevert_CallDoWorkWithInvalidTask() public {

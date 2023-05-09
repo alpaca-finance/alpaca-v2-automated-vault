@@ -15,7 +15,7 @@ contract PancakeV3Worker_Reinvest_UnitForkTest is BasePancakeV3WorkerUnitForkTes
 
     // Increase position by 10_000 TKN0 and 1 TKN1
     vm.prank(IN_SCOPE_EXECUTOR);
-    worker.doWork(address(this), Tasks.INCREASE, abi.encode(10_000 ether, 1 ether));
+    worker.doWork(Tasks.INCREASE, abi.encode(10_000 ether, 1 ether));
 
     // Assuming some trades happened
     _swapExactInput(address(token1), address(token0), poolFee, 500 ether);
