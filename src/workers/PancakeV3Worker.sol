@@ -270,6 +270,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
       return _increaseInRange(_token0Balance, _token1Balance);
     }
 
+    // TODO: test this if have to mint again if already increaseInRange above
     // If currTick after swap is still out of range, meaning all tokens are swapped.
     // Hence, we can add liquidity on single side.
     _liquidity = _safeMint(address(token0), address(token1), _token0Balance, _token1Balance);
