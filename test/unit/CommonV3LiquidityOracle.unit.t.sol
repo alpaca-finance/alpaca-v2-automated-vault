@@ -91,7 +91,7 @@ contract CommonV3LiquidityOracleUnitForkTest is BaseForkTest {
       emit log_named_decimal_uint("wbnbValue     ", wbnbValueUSD, 18);
       emit log_named_decimal_uint("expectedValue ", expectedPositionValueUSD, 18);
       emit log_named_decimal_uint("oracleValueUSD", oracleValueUSD, 18);
-      emit log_named_decimal_uint("delta         ", stdMath.percentDelta(expectedPositionValueUSD, oracleValueUSD), 16);
+      emit log_named_decimal_uint("delta         ", stdMath.percentDelta(oracleValueUSD, expectedPositionValueUSD), 16);
     }
   }
 
@@ -117,7 +117,7 @@ contract CommonV3LiquidityOracleUnitForkTest is BaseForkTest {
     uint256 oracleValueUSD = liquidityOracle.getPositionValueUSD(address(pancakeV3DOGEWBNBPool), tokenId);
 
     (, int256 dogePrice,,,) = dogeFeed.latestRoundData();
-    uint256 dogeValueUSD = amount0 * uint256(dogePrice) / (10 ** dogeFeed.decimals());
+    uint256 dogeValueUSD = normalizeToE18(amount0, doge.decimals()) * uint256(dogePrice) / (10 ** dogeFeed.decimals());
     (, int256 wbnbPrice,,,) = wbnbFeed.latestRoundData();
     uint256 wbnbValueUSD = amount1 * uint256(wbnbPrice) / (10 ** wbnbFeed.decimals());
     uint256 expectedPositionValueUSD = dogeValueUSD + wbnbValueUSD;
@@ -131,7 +131,7 @@ contract CommonV3LiquidityOracleUnitForkTest is BaseForkTest {
       emit log_named_decimal_uint("wbnbValue     ", wbnbValueUSD, 18);
       emit log_named_decimal_uint("expectedValue ", expectedPositionValueUSD, 18);
       emit log_named_decimal_uint("oracleValueUSD", oracleValueUSD, 18);
-      emit log_named_decimal_uint("delta         ", stdMath.percentDelta(expectedPositionValueUSD, oracleValueUSD), 16);
+      emit log_named_decimal_uint("delta         ", stdMath.percentDelta(oracleValueUSD, expectedPositionValueUSD), 16);
     }
   }
 
