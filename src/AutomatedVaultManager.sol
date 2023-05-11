@@ -13,8 +13,12 @@ import { AutomatedVaultERC20 } from "src/AutomatedVaultERC20.sol";
 
 // interfaces
 import { IExecutor } from "src/interfaces/IExecutor.sol";
+import { IWorkerOracle } from "src/interfaces/IWorkerOracle.sol";
 import { IAutomatedVaultERC20 } from "src/interfaces/IAutomatedVaultERC20.sol";
 import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+
+// libraries
+import { LibShareUtil } from "src/libraries/LibShareUtil.sol";
 
 contract AutomatedVaultManager is
   Initializable,
@@ -23,11 +27,13 @@ contract AutomatedVaultManager is
   IAutomatedVaultManager
 {
   using SafeTransferLib for ERC20;
+  using LibShareUtil for uint256;
 
   error AutomatedVaultManager_VaultNotExist(address _vaultToken);
 
   struct VaultInfo {
     address worker;
+    address workerOracle;
     address depositExecutor;
   }
 
@@ -91,10 +97,16 @@ contract AutomatedVaultManager is
       }
     }
 
+    uint256 _totalEquityBefore = IWorkerOracle(_cachedVaultInfo.workerOracle).getWorkerEquity(_cachedVaultInfo.worker);
+
     _execute(_cachedVaultInfo.depositExecutor, abi.encode(_cachedVaultInfo.worker, _deposits, _executorParams));
 
-    // TODO: get equity change and mint
-    IAutomatedVaultERC20(_vaultToken).mint(msg.sender, 0);
+    uint256 _totalEquityAfter = IWorkerOracle(_cachedVaultInfo.workerOracle).getWorkerEquity(_cachedVaultInfo.worker);
+    uint256 _equityChanged = _totalEquityAfter - _totalEquityBefore;
+
+    IAutomatedVaultERC20(_vaultToken).mint(
+      msg.sender, _equityChanged.valueToShare(IAutomatedVaultERC20(_vaultToken).totalSupply(), _totalEquityAfter)
+    );
 
     emit LogDeposit(_vaultToken, msg.sender, _deposits);
   }
