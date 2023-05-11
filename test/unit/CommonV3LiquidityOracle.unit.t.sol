@@ -82,7 +82,7 @@ contract CommonV3LiquidityOracleUnitForkTest is BaseForkTest {
     uint256 wbnbValueUSD = amount1 * uint256(wbnbPrice) / (10 ** wbnbFeed.decimals());
     uint256 expectedPositionValueUSD = usdtValueUSD + wbnbValueUSD;
 
-    assertApproxEqRel(oracleValueUSD, expectedPositionValueUSD, 1e13); // within 0.001% diff
+    assertApproxEqAbs(oracleValueUSD, expectedPositionValueUSD, 328);
 
     if (DEBUG) {
       emit log_named_decimal_uint("amount0 (USDT)", amount0, 18);
@@ -91,7 +91,8 @@ contract CommonV3LiquidityOracleUnitForkTest is BaseForkTest {
       emit log_named_decimal_uint("wbnbValue     ", wbnbValueUSD, 18);
       emit log_named_decimal_uint("expectedValue ", expectedPositionValueUSD, 18);
       emit log_named_decimal_uint("oracleValueUSD", oracleValueUSD, 18);
-      emit log_named_decimal_uint("delta         ", stdMath.percentDelta(oracleValueUSD, expectedPositionValueUSD), 16);
+      emit log_named_uint("deltaAbs      ", stdMath.delta(oracleValueUSD, expectedPositionValueUSD));
+      emit log_named_decimal_uint("deltaRel      ", stdMath.percentDelta(oracleValueUSD, expectedPositionValueUSD), 16);
     }
   }
 
@@ -122,7 +123,7 @@ contract CommonV3LiquidityOracleUnitForkTest is BaseForkTest {
     uint256 wbnbValueUSD = amount1 * uint256(wbnbPrice) / (10 ** wbnbFeed.decimals());
     uint256 expectedPositionValueUSD = dogeValueUSD + wbnbValueUSD;
 
-    assertApproxEqRel(oracleValueUSD, expectedPositionValueUSD, 54e12); // within 0.0054% diff
+    assertApproxEqAbs(oracleValueUSD, expectedPositionValueUSD, 878738326);
 
     if (DEBUG) {
       emit log_named_decimal_uint("amount0 (DOGE)", amount0, 8);
@@ -131,7 +132,8 @@ contract CommonV3LiquidityOracleUnitForkTest is BaseForkTest {
       emit log_named_decimal_uint("wbnbValue     ", wbnbValueUSD, 18);
       emit log_named_decimal_uint("expectedValue ", expectedPositionValueUSD, 18);
       emit log_named_decimal_uint("oracleValueUSD", oracleValueUSD, 18);
-      emit log_named_decimal_uint("delta         ", stdMath.percentDelta(oracleValueUSD, expectedPositionValueUSD), 16);
+      emit log_named_uint("deltaAbs      ", stdMath.delta(oracleValueUSD, expectedPositionValueUSD));
+      emit log_named_decimal_uint("deltaRel      ", stdMath.percentDelta(oracleValueUSD, expectedPositionValueUSD), 16);
     }
   }
 

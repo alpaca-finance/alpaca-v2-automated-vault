@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 // dependencies
 import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/access/Ownable2StepUpgradeable.sol";
 import { SafeCastUpgradeable } from "@openzeppelin-upgradeable/utils/math/SafeCastUpgradeable.sol";
-import { MathUpgradeable } from "@openzeppelin-upgradeable/utils/math/MathUpgradeable.sol";
 
 // interfaces
 import { IERC20 } from "src/interfaces/IERC20.sol";
@@ -18,10 +17,7 @@ import { LibTickMath } from "src/libraries/LibTickMath.sol";
 import { LibLiquidityAmounts } from "src/libraries/LibLiquidityAmounts.sol";
 import { LibSqrtPriceX96 } from "src/libraries/LibSqrtPriceX96.sol";
 
-import "@forge-std/console.sol";
-
 contract CommonV3LiquidityOracle is Ownable2StepUpgradeable {
-  using SafeCastUpgradeable for uint256;
   using SafeCastUpgradeable for int256;
 
   error CommonV3LiquidityOracle_InvalidParams();
@@ -117,7 +113,7 @@ contract CommonV3LiquidityOracle is Ownable2StepUpgradeable {
     uint160 _tickLowerSqrtPriceX96 = LibTickMath.getSqrtRatioAtTick(_tickLower);
     uint160 _tickUpperSqrtPriceX96 = LibTickMath.getSqrtRatioAtTick(_tickUpper);
 
-    // Check deviation on sqrt price
+    // Check deviation on priceE18
     // Get pool sqrtPriceX96
     (uint160 _poolSqrtPriceX96,,,,,,) = ICommonV3Pool(_pool).slot0();
     // Get prices from oracle
@@ -126,14 +122,13 @@ contract CommonV3LiquidityOracle is Ownable2StepUpgradeable {
 
     // scope to avoid stack too deep
     {
-      // Convert oracle prices to sqrtX96 form
-      uint160 _oracleSqrtPriceX96 = LibSqrtPriceX96.encodeSqrtPriceX96(
-        _token0OraclePrice * 1e18 / _token1OraclePrice, _token0Decimals, _token1Decimals
-      );
+      // Convert pool sqrt price to priceE18
+      uint256 _poolPriceE18 = LibSqrtPriceX96.decodeSqrtPriceX96(_poolSqrtPriceX96, _token0Decimals, _token1Decimals);
+      uint256 _oraclePriceE18 = _token0OraclePrice * 1e18 / _token1OraclePrice;
       // Cache to save gas
       uint16 _cachedMaxPriceDiff = maxPriceDiff;
-      require(_poolSqrtPriceX96 * 10000 <= _oracleSqrtPriceX96 * _cachedMaxPriceDiff, "TH");
-      require(_poolSqrtPriceX96 * _cachedMaxPriceDiff >= _oracleSqrtPriceX96 * 10000, "TL");
+      require(_poolPriceE18 * 10000 <= _oraclePriceE18 * _cachedMaxPriceDiff, "TH");
+      require(_poolPriceE18 * _cachedMaxPriceDiff >= _oraclePriceE18 * 10000, "TL");
     }
 
     // Get amount0, 1 according to pool state
@@ -142,8 +137,8 @@ contract CommonV3LiquidityOracle is Ownable2StepUpgradeable {
     );
 
     // Convert to usd according to oracle prices
-    return
-      _amount0 * _token0OraclePrice / (10 ** _token0Decimals) + _amount1 * _token1OraclePrice / (10 ** _token1Decimals);
+    return LibFullMath.mulDiv(_amount0, _token0OraclePrice, (10 ** _token0Decimals))
+      + LibFullMath.mulDiv(_amount1, _token1OraclePrice, (10 ** _token1Decimals));
 
     //
     // Pricing by convert oracle price to sqrtX96 to get amount
