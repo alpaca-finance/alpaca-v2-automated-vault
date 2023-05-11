@@ -7,6 +7,8 @@ import { TestHelpers } from "./TestHelpers.sol";
 import { TestConfigs } from "./TestConfigs.sol";
 
 abstract contract BaseTest is Test, TestHelpers, TestConfigs {
+  bool DEBUG = vm.envOr("DEBUG_TEST", false);
+
   function setUp() public virtual {
     deal(ALICE, 100 ether);
     deal(BOB, 100 ether);

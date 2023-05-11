@@ -28,6 +28,10 @@ abstract contract TestHelpers is StdCheats {
     proxyAdmin = new ProxyAdmin();
   }
 
+  function normalizeToE18(uint256 amount, uint256 decimals) internal pure returns (uint256) {
+    return amount * (10 ** (18 - decimals));
+  }
+
   function deployUpgradeable(string memory contractName, bytes memory initializer) internal returns (address) {
     // Deploy implementation contract
     bytes memory logicBytecode =

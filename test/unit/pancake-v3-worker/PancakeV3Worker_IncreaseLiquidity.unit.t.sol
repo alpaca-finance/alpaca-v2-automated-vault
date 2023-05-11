@@ -58,7 +58,7 @@ contract PancakeV3Worker_IncreaseLiquidity_UnitForkTest is BasePancakeV3WorkerUn
     // Asserts:
     // - pool's current tick goes beyond TICK_UPPER
     // - pool's position should be out of range
-    (, int24 currTick,,,,,) = pancakeV3WBNBUSDTPool.slot0();
+    (, int24 currTick,,,,,) = pancakeV3USDTWBNBPool.slot0();
     assertGt(currTick, TICK_UPPER, "currTick must be more than TICK_UPPER");
     assertFalse(TICK_LOWER <= currTick && currTick <= TICK_UPPER, "should out of range");
 
@@ -81,7 +81,7 @@ contract PancakeV3Worker_IncreaseLiquidity_UnitForkTest is BasePancakeV3WorkerUn
     // Asserts:
     // - pool's current tick goes beyond TICK_UPPER
     // - pool's position should be out of range
-    (, int24 currTick,,,,,) = pancakeV3WBNBUSDTPool.slot0();
+    (, int24 currTick,,,,,) = pancakeV3USDTWBNBPool.slot0();
     assertGt(currTick, TICK_UPPER, "currTick must be more than TICK_UPPER");
     assertFalse(TICK_LOWER <= currTick && currTick <= TICK_UPPER, "should out of range");
 
@@ -104,7 +104,7 @@ contract PancakeV3Worker_IncreaseLiquidity_UnitForkTest is BasePancakeV3WorkerUn
     // Asserts:
     // - pool's current tick goes below TICK_LOWER
     // - pool's position should be out of range
-    (, int24 currTick,,,,,) = pancakeV3WBNBUSDTPool.slot0();
+    (, int24 currTick,,,,,) = pancakeV3USDTWBNBPool.slot0();
     assertTrue(currTick < TICK_LOWER, "currTick must be less than TICK_LOWER");
     assertFalse(TICK_LOWER <= currTick && currTick <= TICK_UPPER, "should out of range");
 
@@ -127,7 +127,7 @@ contract PancakeV3Worker_IncreaseLiquidity_UnitForkTest is BasePancakeV3WorkerUn
     // Asserts:
     // - pool's current tick goes below TICK_LOWER
     // - pool's position should be out of range
-    (, int24 currTick,,,,,) = pancakeV3WBNBUSDTPool.slot0();
+    (, int24 currTick,,,,,) = pancakeV3USDTWBNBPool.slot0();
     assertTrue(currTick < TICK_LOWER, "currTick must be less than TICK_LOWER");
     assertFalse(TICK_LOWER <= currTick && currTick <= TICK_UPPER, "should out of range");
 

@@ -36,7 +36,7 @@ abstract contract BasePancakeV3WorkerUnitForkTest is BaseForkTest {
       PancakeV3Worker.ConstructorParams({
         vaultManager: vaultManager,
         positionManager: pancakeV3PositionManager,
-        pool: pancakeV3WBNBUSDTPool,
+        pool: pancakeV3USDTWBNBPool,
         router: pancakeV3Router,
         masterChef: pancakeV3MasterChef,
         zapV3: zapV3,
