@@ -18,6 +18,7 @@ contract PancakeV3WorkerOracle is IWorkerOracle {
   function getWorkerEquity(address _pancakeV3Worker) external view override returns (uint256 _equityUSD) {
     address _pool = address(PancakeV3Worker(_pancakeV3Worker).pool());
     uint256 _tokenId = PancakeV3Worker(_pancakeV3Worker).nftTokenId();
+    if (_tokenId == 0) return 0;
     return pancakeV3LiquidityOracle.getPositionValueUSD(_pool, _tokenId);
   }
 }

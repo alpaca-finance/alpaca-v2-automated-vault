@@ -6,10 +6,13 @@ import "test/base/BaseForkTest.sol";
 // contracts
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { Bank } from "src/Bank.sol";
+import { CommonV3LiquidityOracle } from "src/CommonV3LiquidityOracle.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
+import { PancakeV3WorkerOracle } from "src/workers/PancakeV3WorkerOracle.sol";
 import { SimpleV3DepositExecutor } from "src/executors/SimpleV3DepositExecutor.sol";
 
 // interfaces
+import { IERC20 } from "src/interfaces/IERC20.sol";
 import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
 
 // mocks
@@ -23,9 +26,11 @@ contract AutomatedVaultIntegrationForkTest is BaseForkTest {
   MockMoneyMarket mockMoneyMarket;
   AutomatedVaultManager vaultManager;
   Bank bank;
+  CommonV3LiquidityOracle pcsV3LiquidityOracle;
   PancakeV3Worker pcsV3Worker;
+  PancakeV3WorkerOracle pcsV3WorkerOracle;
   SimpleV3DepositExecutor depositExecutor;
-  address vaultToken;
+  IERC20 vaultToken;
 
   function setUp() public override {
     super.setUp();
@@ -40,6 +45,10 @@ contract AutomatedVaultIntegrationForkTest is BaseForkTest {
     tokensToSeed[0] = address(wbnb);
     tokensToSeed[1] = address(usdt);
     mockMoneyMarket = deployAndSeedMockMoneyMarket(tokensToSeed);
+
+    pcsV3LiquidityOracle = deployLiquidityOracle(address(pancakeV3PositionManager), 6000, 10_500);
+    pcsV3LiquidityOracle.setPriceFeedOf(address(wbnb), address(wbnbFeed));
+    pcsV3LiquidityOracle.setPriceFeedOf(address(usdt), address(usdtFeed));
 
     vaultManager = deployAutomatedVaultManager();
     bank = deployBank(address(mockMoneyMarket), address(vaultManager));
@@ -57,17 +66,30 @@ contract AutomatedVaultIntegrationForkTest is BaseForkTest {
         performanceFeeBps: PERFORMANCE_FEE_BPS
       })
     );
+    pcsV3WorkerOracle = new PancakeV3WorkerOracle(address(pcsV3LiquidityOracle));
+
     depositExecutor = new SimpleV3DepositExecutor(address(bank));
-    vaultToken = vaultManager.openVault(
-      "test vault",
-      "TV",
-      AutomatedVaultManager.VaultInfo({ worker: address(pcsV3Worker), depositExecutor: address(depositExecutor) })
+    vaultToken = IERC20(
+      vaultManager.openVault(
+        "test vault",
+        "TV",
+        AutomatedVaultManager.VaultInfo({
+          worker: address(pcsV3Worker),
+          workerOracle: address(pcsV3WorkerOracle),
+          depositExecutor: address(depositExecutor)
+        })
+      )
     );
 
     vm.stopPrank();
+
+    vm.startPrank(ALICE);
+    wbnb.approve(address(vaultManager), 1 ether);
+    usdt.approve(address(vaultManager), 2 ether);
+    vm.stopPrank();
   }
 
-  function testCorrectness_DepositToVaultManager() public {
+  function testCorrectness_VaultManager_DepositToEmptyVault_ShouldGetSharesEqualToEquity() public {
     IAutomatedVaultManager.DepositTokenParams[] memory deposits = new IAutomatedVaultManager.DepositTokenParams[](2);
     deposits[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(wbnb), amount: 1 ether });
     deposits[1] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: 2 ether });
@@ -75,17 +97,26 @@ contract AutomatedVaultIntegrationForkTest is BaseForkTest {
     uint256 _balanceWBNBBefore = wbnb.balanceOf(ALICE);
     uint256 _balanceUSDTBefore = usdt.balanceOf(ALICE);
 
-    vm.startPrank(ALICE);
-    wbnb.approve(address(vaultManager), 1 ether);
-    usdt.approve(address(vaultManager), 2 ether);
-    vaultManager.deposit(vaultToken, deposits, abi.encode());
-    vm.stopPrank();
+    vm.prank(ALICE);
+    (, uint256 amount0, uint256 amount1) =
+      abi.decode(vaultManager.deposit(address(vaultToken), deposits, abi.encode()), (uint128, uint256, uint256));
+
+    (, int256 usdtPrice,,,) = usdtFeed.latestRoundData();
+    uint256 usdtValueUSD = amount0 * uint256(usdtPrice) / (10 ** usdtFeed.decimals());
+    (, int256 wbnbPrice,,,) = wbnbFeed.latestRoundData();
+    uint256 wbnbValueUSD = amount1 * uint256(wbnbPrice) / (10 ** wbnbFeed.decimals());
+    uint256 expectedPositionValueUSD = usdtValueUSD + wbnbValueUSD;
 
     // check deducted user's balance
     assertEq(_balanceWBNBBefore - 1 ether, wbnb.balanceOf(ALICE));
     assertEq(_balanceUSDTBefore - 2 ether, usdt.balanceOf(ALICE));
-
-    // TODO: check vault token minted to user
-    // TODO: check equity
+    // check equity
+    assertApproxEqAbs(
+      pcsV3LiquidityOracle.getPositionValueUSD(address(pcsV3Worker.pool()), pcsV3Worker.nftTokenId()),
+      expectedPositionValueUSD,
+      327
+    );
+    // check vault token minted to user
+    assertApproxEqAbs(vaultToken.balanceOf(ALICE), expectedPositionValueUSD, 327);
   }
 }

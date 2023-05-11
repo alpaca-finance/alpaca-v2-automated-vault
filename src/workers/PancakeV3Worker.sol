@@ -126,7 +126,8 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
         token1.safeTransferFrom(msg.sender, address(this), _amountIn1);
       }
       // Increase position.
-      return abi.encode(_increasePositionInternal(_amountIn0, _amountIn1));
+      (uint128 _liquidity, uint256 _amount0, uint256 _amount1) = _increasePositionInternal(_amountIn0, _amountIn1);
+      return abi.encode(_liquidity, _amount0, _amount1);
     } else if (_task == Tasks.DECREASE) {
       // // Decode params
       // (uint128 _liquidity) = abi.decode(_params, (uint128));
@@ -152,21 +153,27 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   /// @dev Tokens must be collected before calling this function
   /// @param _amountIn0 Amount of token0 to increase
   /// @param _amountIn1 Amount of token1 to increase
-  function _increasePositionInternal(uint256 _amountIn0, uint256 _amountIn1) internal returns (uint128 _liquidity) {
+  function _increasePositionInternal(uint256 _amountIn0, uint256 _amountIn1)
+    internal
+    returns (uint128 _liquidity, uint256 _amount0, uint256 _amount1)
+  {
     (, int24 _currTick,,,,,) = pool.slot0();
     if (posTickLower <= _currTick && _currTick <= posTickUpper) {
       // In range
-      _liquidity = _increaseInRange(_amountIn0, _amountIn1);
+      return _increaseInRange(_amountIn0, _amountIn1);
     } else {
       // Out range
-      _liquidity = _increaseOutRange(_currTick, posTickLower, posTickUpper, _amountIn0, _amountIn1);
+      return _increaseOutRange(_currTick, posTickLower, posTickUpper, _amountIn0, _amountIn1);
     }
   }
 
   /// @notice Perform increase position when ticks are in range.
   /// @param _amountIn0 Amount of token0 to increase
   /// @param _amountIn1 Amount of token1 to increase
-  function _increaseInRange(uint256 _amountIn0, uint256 _amountIn1) internal returns (uint128 _liquidity) {
+  function _increaseInRange(uint256 _amountIn0, uint256 _amountIn1)
+    internal
+    returns (uint128 _liquidity, uint256 _amount0, uint256 _amount1)
+  {
     // Calculate zap in amount and direction.
     (uint256 _amountSwap, uint256 _minAmountOut, bool _zeroForOne) = zapV3.calc(
       IZapV3.CalcParams({
@@ -208,7 +215,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     _amountIn1 = token1.balanceOf(address(this));
 
     // Mint the position and stake or increase liquidity of staked position.
-    _liquidity = _safeMint(address(token0), address(token1), _amountIn0, _amountIn1);
+    (_liquidity, _amount0, _amount1) = _safeMint(address(token0), address(token1), _amountIn0, _amountIn1);
   }
 
   /// @notice Perform increase position when ticks are out of range.
@@ -223,7 +230,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     int24 _tickUpper,
     uint256 _amountIn0,
     uint256 _amountIn1
-  ) internal returns (uint128 _liquidity) {
+  ) internal returns (uint128 _liquidity, uint256 _amount0, uint256 _amount1) {
     // Find out token0 -> token1 or token1 -> token0
     // - If currTick > tickUpper, then we need to swap token0 -> token1
     // - else, then we need to swap token1 -> token0
@@ -241,25 +248,27 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     // Find out limit price. We will swap until the tick is in range
     // If it is in range and some tokens left, then we will zap.
     int24 _tickSpacing = pool.tickSpacing();
-    uint160 _sqrtPriceLimitX96 =
-      LibTickMath.getSqrtRatioAtTick(_zeroForOne ? _tickUpper - _tickSpacing - 1 : _tickLower + _tickSpacing + 1);
-
-    // Swap
-    uint256 _amountSwap = _zeroForOne ? _amountIn0 : _amountIn1;
-    if (_amountSwap > 0) {
-      ERC20(_tokenIn).safeApprove(address(router), _amountSwap);
-      router.exactInputSingle(
-        IPancakeV3Router.ExactInputSingleParams({
-          tokenIn: _tokenIn,
-          tokenOut: _tokenOut,
-          fee: poolFee,
-          recipient: address(this),
-          amountIn: _zeroForOne ? _amountIn0 : _amountIn1,
-          amountOutMinimum: 0,
-          sqrtPriceLimitX96: _sqrtPriceLimitX96
-        })
-      );
+    {
+      uint160 _sqrtPriceLimitX96 =
+        LibTickMath.getSqrtRatioAtTick(_zeroForOne ? _tickUpper - _tickSpacing - 1 : _tickLower + _tickSpacing + 1);
+      // Swap
+      uint256 _amountSwap = _zeroForOne ? _amountIn0 : _amountIn1;
+      if (_amountSwap > 0) {
+        ERC20(_tokenIn).safeApprove(address(router), _amountSwap);
+        router.exactInputSingle(
+          IPancakeV3Router.ExactInputSingleParams({
+            tokenIn: _tokenIn,
+            tokenOut: _tokenOut,
+            fee: poolFee,
+            recipient: address(this),
+            amountIn: _zeroForOne ? _amountIn0 : _amountIn1,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: _sqrtPriceLimitX96
+          })
+        );
+      }
     }
+
     // Cached balance of token0 and token1 here
     uint256 _token0Balance = token0.balanceOf(address(this));
     uint256 _token1Balance = token1.balanceOf(address(this));
@@ -270,10 +279,9 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
       return _increaseInRange(_token0Balance, _token1Balance);
     }
 
-    // TODO: test this if have to mint again if already increaseInRange above
     // If currTick after swap is still out of range, meaning all tokens are swapped.
     // Hence, we can add liquidity on single side.
-    _liquidity = _safeMint(address(token0), address(token1), _token0Balance, _token1Balance);
+    (_liquidity, _amount0, _amount1) = _safeMint(address(token0), address(token1), _token0Balance, _token1Balance);
   }
 
   /// @notice Perform safe enter V3 position.
@@ -285,10 +293,8 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   /// @param _amountIn1 Amount of token1 to enter
   function _safeMint(address _token0, address _token1, uint256 _amountIn0, uint256 _amountIn1)
     internal
-    returns (uint128 _liquidity)
+    returns (uint128 _liquidity, uint256 _amount0, uint256 _amount1)
   {
-    uint256 _amount0;
-    uint256 _amount1;
     if (nftTokenId == 0) {
       // Position is not existed. Then we need to mint a new position
       // and stake it on PancakeMasterChefV3

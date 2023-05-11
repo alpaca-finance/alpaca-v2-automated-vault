@@ -11,17 +11,12 @@ import { CommonV3LiquidityOracle } from "src/CommonV3LiquidityOracle.sol";
 // interfaces
 import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
 import { ICommonV3PositionManager } from "src/interfaces/ICommonV3PositionManager.sol";
-import { IChainlinkAggregator } from "src/interfaces/IChainlinkAggregator.sol";
 
 abstract contract BaseCommonV3LiquidityOracleUnitForkTest is BaseForkTest {
   uint16 MAX_PRICE_AGE = 60 * 60;
   uint16 MAX_PRICE_DIFF = 10_500;
 
   CommonV3LiquidityOracle liquidityOracle;
-
-  IChainlinkAggregator wbnbFeed = IChainlinkAggregator(0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE);
-  IChainlinkAggregator usdtFeed = IChainlinkAggregator(0xB97Ad0E74fa7d920791E90258A6E2085088b4320);
-  IChainlinkAggregator dogeFeed = IChainlinkAggregator(0x3AB0A0d137D4F946fBB19eecc6e92E64660231C8);
 
   function setUp() public override {
     super.setUp();

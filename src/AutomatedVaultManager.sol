@@ -78,14 +78,15 @@ contract AutomatedVaultManager is
     }
   }
 
-  function _execute(address _executor, bytes memory _params) internal {
+  function _execute(address _executor, bytes memory _params) internal returns (bytes memory _result) {
     EXECUTOR_IN_SCOPE = _executor;
-    IExecutor(_executor).execute(_params);
+    _result = IExecutor(_executor).execute(_params);
     EXECUTOR_IN_SCOPE = address(0);
   }
 
   function deposit(address _vaultToken, DepositTokenParams[] calldata _deposits, bytes calldata _executorParams)
     external
+    returns (bytes memory _result)
   {
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
 
@@ -99,7 +100,8 @@ contract AutomatedVaultManager is
 
     uint256 _totalEquityBefore = IWorkerOracle(_cachedVaultInfo.workerOracle).getWorkerEquity(_cachedVaultInfo.worker);
 
-    _execute(_cachedVaultInfo.depositExecutor, abi.encode(_cachedVaultInfo.worker, _deposits, _executorParams));
+    _result =
+      _execute(_cachedVaultInfo.depositExecutor, abi.encode(_cachedVaultInfo.worker, _deposits, _executorParams));
 
     uint256 _totalEquityAfter = IWorkerOracle(_cachedVaultInfo.workerOracle).getWorkerEquity(_cachedVaultInfo.worker);
     uint256 _equityChanged = _totalEquityAfter - _totalEquityBefore;
