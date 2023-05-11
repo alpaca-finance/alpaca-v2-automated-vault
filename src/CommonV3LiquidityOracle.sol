@@ -18,21 +18,26 @@ import { LibLiquidityAmounts } from "src/libraries/LibLiquidityAmounts.sol";
 import { LibSqrtPriceX96 } from "src/libraries/LibSqrtPriceX96.sol";
 
 contract CommonV3LiquidityOracle is Ownable2StepUpgradeable {
+  /// Libraries
   using SafeCastUpgradeable for int256;
 
-  error CommonV3LiquidityOracle_InvalidParams();
+  /// Errors
   error CommonV3LiquidityOracle_PriceTooOld();
+  error CommonV3LiquidityOracle_PriceTooHigh();
+  error CommonV3LiquidityOracle_PriceTooLow();
 
+  /// Events
+  event LogSetMaxPriceAge(uint16 prevMaxPriceAge, uint16 maxPriceAge);
+  event LogSetMaxPriceDiff(uint16 prevMaxPriceDiff, uint16 maxPriceDiff);
+  event LogSetPriceFeedOf(address indexed token, address prevPriceFeed, address priceFeed);
+
+  /// States
   // packed slot
   ICommonV3PositionManager public positionManager;
   uint16 public maxPriceAge;
   uint16 public maxPriceDiff;
 
   mapping(address => IChainlinkAggregator) public priceFeedOf;
-
-  event SetMaxPriceAge(uint16 prevMaxPriceAge, uint16 maxPriceAge);
-  event SetMaxPriceDiff(uint16 prevMaxPriceDiff, uint16 maxPriceDiff);
-  event SetPriceFeedOf(address indexed token, address prevPriceFeed, address priceFeed);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -55,25 +60,23 @@ contract CommonV3LiquidityOracle is Ownable2StepUpgradeable {
   /// @param _newPriceFeed New price feed address.
   function setPriceFeedOf(address _token, address _newPriceFeed) external onlyOwner {
     // Sanity check
-    (, int256 _answer,,,) = IChainlinkAggregator(_newPriceFeed).latestRoundData();
-    if (_answer == 0) {
-      revert CommonV3LiquidityOracle_InvalidParams();
-    }
-    emit SetPriceFeedOf(_token, address(priceFeedOf[_token]), _newPriceFeed);
+    IChainlinkAggregator(_newPriceFeed).latestRoundData();
+
+    emit LogSetPriceFeedOf(_token, address(priceFeedOf[_token]), _newPriceFeed);
     priceFeedOf[_token] = IChainlinkAggregator(_newPriceFeed);
   }
 
   /// @notice Set max price age.
   /// @param _newMaxPriceAge Max price age in seconds.
   function setMaxPriceAge(uint16 _newMaxPriceAge) external onlyOwner {
-    emit SetMaxPriceAge(maxPriceAge, _newMaxPriceAge);
+    emit LogSetMaxPriceAge(maxPriceAge, _newMaxPriceAge);
     maxPriceAge = _newMaxPriceAge;
   }
 
   /// @notice Set max price diff.
   /// @param _newMaxPriceDiff Max price diff in bps.
   function setMaxPriceDiff(uint16 _newMaxPriceDiff) external onlyOwner {
-    emit SetMaxPriceDiff(maxPriceDiff, _newMaxPriceDiff);
+    emit LogSetMaxPriceDiff(maxPriceDiff, _newMaxPriceDiff);
     maxPriceDiff = _newMaxPriceDiff;
   }
 
@@ -85,6 +88,7 @@ contract CommonV3LiquidityOracle is Ownable2StepUpgradeable {
     IChainlinkAggregator _priceFeed = priceFeedOf[_token];
     (, int256 _answer,, uint256 _updatedAt,) = _priceFeed.latestRoundData();
     // Safe to use unchecked since `block.timestamp` will at least equal to `_updatedAt` in the same block
+    // even somehow it underflows it would revert anyway
     unchecked {
       if (block.timestamp - _updatedAt > maxPriceAge) {
         revert CommonV3LiquidityOracle_PriceTooOld();
@@ -127,8 +131,12 @@ contract CommonV3LiquidityOracle is Ownable2StepUpgradeable {
       uint256 _oraclePriceE18 = _token0OraclePrice * 1e18 / _token1OraclePrice;
       // Cache to save gas
       uint16 _cachedMaxPriceDiff = maxPriceDiff;
-      require(_poolPriceE18 * 10000 <= _oraclePriceE18 * _cachedMaxPriceDiff, "TH");
-      require(_poolPriceE18 * _cachedMaxPriceDiff >= _oraclePriceE18 * 10000, "TL");
+      if (_poolPriceE18 * 10000 > _oraclePriceE18 * _cachedMaxPriceDiff) {
+        revert CommonV3LiquidityOracle_PriceTooHigh();
+      }
+      if (_poolPriceE18 * _cachedMaxPriceDiff < _oraclePriceE18 * 10000) {
+        revert CommonV3LiquidityOracle_PriceTooLow();
+      }
     }
 
     // Get amount0, 1 according to pool state

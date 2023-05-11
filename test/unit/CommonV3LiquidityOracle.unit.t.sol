@@ -14,8 +14,6 @@ import { ICommonV3PositionManager } from "src/interfaces/ICommonV3PositionManage
 import { IChainlinkAggregator } from "src/interfaces/IChainlinkAggregator.sol";
 
 contract CommonV3LiquidityOracleUnitForkTest is BaseForkTest {
-  bool DEBUG = true;
-
   uint16 MAX_PRICE_AGE = 60 * 60;
   uint16 MAX_PRICE_DIFF = 10_500;
 
@@ -137,7 +135,31 @@ contract CommonV3LiquidityOracleUnitForkTest is BaseForkTest {
     }
   }
 
-  // TODO: setter test
+  function testCorrectness_OwnerSetMaxPriceAge_ShouldWork() public {
+    vm.prank(DEPLOYER);
+    liquidityOracle.setMaxPriceAge(100);
+
+    assertEq(liquidityOracle.maxPriceAge(), 100);
+  }
+
+  function testCorrectness_OwnerSetMaxPriceDiff_ShouldWork() public {
+    vm.prank(DEPLOYER);
+    liquidityOracle.setMaxPriceDiff(10_500);
+
+    assertEq(liquidityOracle.maxPriceDiff(), 10_500);
+  }
+
+  function testCorrectness_OwnerSetPriceFeed_ShouldWork() public {
+    vm.startPrank(DEPLOYER);
+    liquidityOracle.setPriceFeedOf(address(wbnb), address(wbnbFeed));
+
+    assertEq(address(liquidityOracle.priceFeedOf(address(wbnb))), address(wbnbFeed));
+  }
+
+  function testRevert_OwnerSetNonExistentPriceFeed() public {
+    vm.expectRevert();
+    liquidityOracle.setPriceFeedOf(address(wbnb), address(0));
+  }
 
   function testRevert_NotOwnerCallSetter() public {
     vm.startPrank(ALICE);
