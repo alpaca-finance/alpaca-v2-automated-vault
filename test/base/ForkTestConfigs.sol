@@ -17,6 +17,7 @@ abstract contract ForkTestConfigs is StdCheats {
   // Tokens
   IERC20 public constant wbnb = IERC20(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
   IERC20 public constant usdt = IERC20(0x55d398326f99059fF775485246999027B3197955);
+  IERC20 public constant doge = IERC20(0xbA2aE424d960c26247Dd6c32edC70B295c744C43);
 
   // PancakeV3
   IPancakeV3Router public constant pancakeV3Router = IPancakeV3Router(0x13f4EA83D0bd40E75C8222255bc855a974568Dd4);
@@ -27,7 +28,9 @@ abstract contract ForkTestConfigs is StdCheats {
 
   // V3 pools
   // token0 = USDT, token1 = WBNB
-  ICommonV3Pool public constant pancakeV3WBNBUSDTPool = ICommonV3Pool(0x36696169C63e42cd08ce11f5deeBbCeBae652050);
+  ICommonV3Pool public constant pancakeV3USDTWBNBPool = ICommonV3Pool(0x36696169C63e42cd08ce11f5deeBbCeBae652050);
+  // token0 = DOGE, token1 = WBNB, fee = 2500
+  ICommonV3Pool public constant pancakeV3DOGEWBNBPool = ICommonV3Pool(0xce6160bB594fC055c943F59De92ceE30b8c6B32c);
 
   // Zap
   IZapV3 public constant zapV3 = IZapV3(0xC462E9a70b16009d63fE9dFe701cA5bf70cBCb55);
@@ -35,12 +38,13 @@ abstract contract ForkTestConfigs is StdCheats {
   constructor() {
     vm.label(address(wbnb), "WBNB");
     vm.label(address(usdt), "USDT");
+    vm.label(address(doge), "DOGE");
 
     vm.label(address(pancakeV3Router), "pancakeV3Router");
     vm.label(address(pancakeV3PositionManager), "pancakeV3PositionManager");
     vm.label(address(pancakeV3MasterChef), "pancakeV3MasterChef");
 
-    vm.label(address(pancakeV3WBNBUSDTPool), "pancakeV3WBNBUSDTPool");
+    vm.label(address(pancakeV3USDTWBNBPool), "pancakeV3USDTWBNBPool");
 
     vm.label(address(zapV3), "zapV3");
   }

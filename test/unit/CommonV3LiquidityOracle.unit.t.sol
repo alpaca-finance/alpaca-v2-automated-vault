@@ -23,12 +23,7 @@ contract CommonV3LiquidityOracleUnitForkTest is BaseForkTest {
 
   IChainlinkAggregator wbnbFeed = IChainlinkAggregator(0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE);
   IChainlinkAggregator usdtFeed = IChainlinkAggregator(0xB97Ad0E74fa7d920791E90258A6E2085088b4320);
-
-  int24 internal constant TICK_LOWER = -58000;
-  int24 internal constant TICK_UPPER = -57750;
-  ERC20 token0;
-  ERC20 token1;
-  uint24 poolFee;
+  IChainlinkAggregator dogeFeed = IChainlinkAggregator(0x3AB0A0d137D4F946fBB19eecc6e92E64660231C8);
 
   function setUp() public override {
     super.setUp();
@@ -46,30 +41,29 @@ contract CommonV3LiquidityOracleUnitForkTest is BaseForkTest {
     );
     liquidityOracle.setPriceFeedOf(address(wbnb), address(wbnbFeed));
     liquidityOracle.setPriceFeedOf(address(usdt), address(usdtFeed));
+    liquidityOracle.setPriceFeedOf(address(doge), address(dogeFeed));
     vm.stopPrank();
-
-    token0 = ERC20(pancakeV3WBNBUSDTPool.token0());
-    token1 = ERC20(pancakeV3WBNBUSDTPool.token1());
-    poolFee = pancakeV3WBNBUSDTPool.fee();
 
     deal(address(wbnb), ALICE, 100 ether);
     deal(address(usdt), ALICE, 100 ether);
+    deal(address(doge), ALICE, 100 ether);
 
     vm.startPrank(ALICE);
     wbnb.approve(address(pancakeV3PositionManager), type(uint256).max);
     usdt.approve(address(pancakeV3PositionManager), type(uint256).max);
+    doge.approve(address(pancakeV3PositionManager), type(uint256).max);
     vm.stopPrank();
   }
 
-  function testCorrectness_GetPositionValue() public {
-    vm.prank(ALICE);
+  function testCorrectness_GetPositionValue_BothTokenE18() public {
+    vm.startPrank(ALICE);
     (uint256 tokenId,, uint256 amount0, uint256 amount1) = pancakeV3PositionManager.mint(
       ICommonV3PositionManager.MintParams({
-        token0: address(token0),
-        token1: address(token1),
-        fee: poolFee,
-        tickLower: TICK_LOWER,
-        tickUpper: TICK_UPPER,
+        token0: pancakeV3USDTWBNBPool.token0(),
+        token1: pancakeV3USDTWBNBPool.token1(),
+        fee: pancakeV3USDTWBNBPool.fee(),
+        tickLower: -58000,
+        tickUpper: -57750,
         amount0Desired: 100 ether,
         amount1Desired: 100 ether,
         amount0Min: 0,
@@ -78,23 +72,66 @@ contract CommonV3LiquidityOracleUnitForkTest is BaseForkTest {
         deadline: block.timestamp
       })
     );
+    vm.stopPrank();
 
-    uint256 oracleValueUSD = liquidityOracle.getPositionValueUSD(address(pancakeV3WBNBUSDTPool), tokenId);
+    uint256 oracleValueUSD = liquidityOracle.getPositionValueUSD(address(pancakeV3USDTWBNBPool), tokenId);
 
     (, int256 usdtPrice,,,) = usdtFeed.latestRoundData();
     uint256 usdtValueUSD = amount0 * uint256(usdtPrice) / (10 ** usdtFeed.decimals());
     (, int256 wbnbPrice,,,) = wbnbFeed.latestRoundData();
     uint256 wbnbValueUSD = amount1 * uint256(wbnbPrice) / (10 ** wbnbFeed.decimals());
+    uint256 expectedPositionValueUSD = usdtValueUSD + wbnbValueUSD;
 
-    assertApproxEqRel(oracleValueUSD, usdtValueUSD + wbnbValueUSD, 1e13); // within 0.001% diff
+    assertApproxEqRel(oracleValueUSD, expectedPositionValueUSD, 1e13); // within 0.001% diff
 
     if (DEBUG) {
       emit log_named_decimal_uint("amount0 (USDT)", amount0, 18);
       emit log_named_decimal_uint("amount1 (WBNB)", amount1, 18);
       emit log_named_decimal_uint("usdtValue     ", usdtValueUSD, 18);
       emit log_named_decimal_uint("wbnbValue     ", wbnbValueUSD, 18);
-      emit log_named_decimal_uint("expectedValue ", usdtValueUSD + wbnbValueUSD, 18);
+      emit log_named_decimal_uint("expectedValue ", expectedPositionValueUSD, 18);
       emit log_named_decimal_uint("oracleValueUSD", oracleValueUSD, 18);
+      emit log_named_decimal_uint("delta         ", stdMath.percentDelta(expectedPositionValueUSD, oracleValueUSD), 16);
+    }
+  }
+
+  function testCorrectness_GetPositionValue_NonE18TokenPool() public {
+    vm.startPrank(ALICE);
+    (uint256 tokenId,, uint256 amount0, uint256 amount1) = pancakeV3PositionManager.mint(
+      ICommonV3PositionManager.MintParams({
+        token0: pancakeV3DOGEWBNBPool.token0(),
+        token1: pancakeV3DOGEWBNBPool.token1(),
+        fee: pancakeV3DOGEWBNBPool.fee(),
+        tickLower: 100000,
+        tickUpper: 200000,
+        amount0Desired: 100e8,
+        amount1Desired: 100 ether,
+        amount0Min: 0,
+        amount1Min: 0,
+        recipient: address(this),
+        deadline: block.timestamp
+      })
+    );
+    vm.stopPrank();
+
+    uint256 oracleValueUSD = liquidityOracle.getPositionValueUSD(address(pancakeV3DOGEWBNBPool), tokenId);
+
+    (, int256 dogePrice,,,) = dogeFeed.latestRoundData();
+    uint256 dogeValueUSD = amount0 * uint256(dogePrice) / (10 ** dogeFeed.decimals());
+    (, int256 wbnbPrice,,,) = wbnbFeed.latestRoundData();
+    uint256 wbnbValueUSD = amount1 * uint256(wbnbPrice) / (10 ** wbnbFeed.decimals());
+    uint256 expectedPositionValueUSD = dogeValueUSD + wbnbValueUSD;
+
+    assertApproxEqRel(oracleValueUSD, expectedPositionValueUSD, 54e12); // within 0.0054% diff
+
+    if (DEBUG) {
+      emit log_named_decimal_uint("amount0 (DOGE)", amount0, 8);
+      emit log_named_decimal_uint("amount1 (WBNB)", amount1, 18);
+      emit log_named_decimal_uint("dogeValue     ", dogeValueUSD, 18);
+      emit log_named_decimal_uint("wbnbValue     ", wbnbValueUSD, 18);
+      emit log_named_decimal_uint("expectedValue ", expectedPositionValueUSD, 18);
+      emit log_named_decimal_uint("oracleValueUSD", oracleValueUSD, 18);
+      emit log_named_decimal_uint("delta         ", stdMath.percentDelta(expectedPositionValueUSD, oracleValueUSD), 16);
     }
   }
 

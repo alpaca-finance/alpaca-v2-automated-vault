@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 // dependencies
-import { MathUpgradeable } from "@openzeppelin-upgradeable/utils/math/MathUpgradeable.sol";
+import { FixedPointMathLib } from "@solmate/utils/FixedPointMathLib.sol";
 import { SafeCastUpgradeable } from "@openzeppelin-upgradeable/utils/math/SafeCastUpgradeable.sol";
 
 // libraries
@@ -34,14 +34,14 @@ library LibSqrtPriceX96 {
   /// @param _token1Decimals token 1 decimals.
   /// @return _sqrtPriceX96 estimated sqrtPriceX96.
   /// @dev sqrtPriceX96 = sqrt(priceE18 * (10**token1Decimals) / (10**(token0Decimals + 18))) * (2**96)
-  /// OZ Math library use estimation so there is minor precision loss.
+  /// sqrt calculation use estimation so there is minor precision loss.
   function encodeSqrtPriceX96(uint256 _priceE18, uint8 _token0Decimals, uint8 _token1Decimals)
     internal
     pure
     returns (uint160 _sqrtPriceX96)
   {
-    uint256 _sqrt = MathUpgradeable.sqrt(_priceE18 * (10 ** _token1Decimals) / (10 ** _token0Decimals));
+    uint256 _sqrt = FixedPointMathLib.sqrt(_priceE18 * (10 ** _token1Decimals) / (10 ** _token0Decimals));
     // 1e9 due to taking 1e18 out of sqrt to avoid precision loss
-    return (_sqrt * (2 ** 96) / 1e9).toUint160();
+    return (_sqrt * LibFixedPoint96.Q96 / 1e9).toUint160();
   }
 }

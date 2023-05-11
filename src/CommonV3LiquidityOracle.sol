@@ -18,6 +18,8 @@ import { LibTickMath } from "src/libraries/LibTickMath.sol";
 import { LibLiquidityAmounts } from "src/libraries/LibLiquidityAmounts.sol";
 import { LibSqrtPriceX96 } from "src/libraries/LibSqrtPriceX96.sol";
 
+import "@forge-std/console.sol";
+
 contract CommonV3LiquidityOracle is Ownable2StepUpgradeable {
   using SafeCastUpgradeable for uint256;
   using SafeCastUpgradeable for int256;
@@ -92,60 +94,20 @@ contract CommonV3LiquidityOracle is Ownable2StepUpgradeable {
         revert CommonV3LiquidityOracle_PriceTooOld();
       }
     }
-    // Normalized to 18 decimals
+    // Normalize to 18 decimals
     return _answer.toUint256() * (10 ** (18 - _priceFeed.decimals()));
   }
 
-  // /// @notice Return liquidity value in token1.
-  // /// @param _liquidity Liquidity amount.
-  // /// @param _sqrtPriceX96 SqrtPriceX96.
-  // /// @param _tickLower Tick lower.
-  // /// @param _tickUpper Tick upper.
-  // function _calcLiquidityToken1(uint128 _liquidity, uint160 _sqrtPriceX96, int24 _tickLower, int24 _tickUpper)
-  //   internal
-  //   pure
-  //   returns (uint256 _valueInToken1)
-  // {
-  //   (uint256 _amount0, uint256 _amount1) = LibLiquidityAmounts.getAmountsForLiquidity(
-  //     _sqrtPriceX96, LibTickMath.getSqrtRatioAtTick(_tickLower), LibTickMath.getSqrtRatioAtTick(_tickUpper), _liquidity
-  //   );
-  //   // 1e18 as decoded price is to be used in calculations.
-  //   return LibFullMath.mulDiv(_amount0, _decodeSqrtPriceX96(_sqrtPriceX96), 1e18) + _amount1;
-  // }
-
-  // /// @notice Get USD value of a position.
-  // /// @param _pool Pool address.
-  // /// @param _tokenId Token ID.
-  // function calcLiquidityUsd(address _pool, uint256 _tokenId) external view returns (uint256 _valueInUsd) {
-  //   // Load position data
-  //   (,, address _token0, address _token1,, int24 _tickLower, int24 _tickUpper, uint128 _liquidity,,,,) =
-  //     positionManager.positions(_tokenId);
-
-  //   // Get sqrtPriceX96 from pool
-  //   (uint160 _poolSqrtPriceX96,,,,,,) = ICommonV3Pool(_pool).slot0();
-  //   // Calculate token1 amount that position has according to pool's sqrtPriceX96
-  //   uint256 _poolAmountToken1 = _calcLiquidityToken1(_liquidity, _poolSqrtPriceX96, _tickLower, _tickUpper);
-
-  //   // Get prices from oracle
-  //   (uint256 _token0Price, uint8 _token0PriceDecimals) = _safeGetTokenPrice(_token0);
-  //   (uint256 _token1Price, uint8 _token1PriceDecimals) = _safeGetTokenPrice(_token1);
-  //   // Convert oracle price into sqrtPriceX96
-  //   // 1e8 to convert price to 8 decimals for `_encodeSqrtPriceX96`
-  //   uint160 _oracleSqrtPriceX96 =
-  //     _encodeSqrtPriceX96(_token0Price * (10 ** _token1PriceDecimals) * 1e8 / (_token1Price * _token0PriceDecimals));
-  //   // Calculate token1 amount that position has according to oracle's sqrtPriceX96
-  //   uint256 _oracleAmountToken1 = _calcLiquidityToken1(_liquidity, _oracleSqrtPriceX96, _tickLower, _tickUpper);
-
-  //   // Check price deviation
-  //   require(_poolAmountToken1 * 10000 <= _oracleAmountToken1 * maxPriceDiff, "TH");
-  //   require(_poolAmountToken1 * maxPriceDiff >= _oracleAmountToken1 * 10000, "TL");
-
-  //   // _poolAmountToken1 * _token1OraclePrice
-  //   return LibFullMath.mulDiv(_poolAmountToken1, _token1Price, 1e18);
-  // }
-
+  /// @notice Get value of a nft position. Tokens value are determined by Chainlink price feeds
+  /// and compared against pool's sqrtPriceX96 to protect against price manipulation.
+  /// Revert on price deviation above threshold defined.
+  /// Note that there is minor precision loss during conversion of sqrtPriceX96.
+  /// @param _pool Pool address that `_tokenId` belongs to
+  /// @param _tokenId Nft's tokenId
+  /// @return _valueUSD USD value of liquidity that nft holds. In 18 decimals.
   function getPositionValueUSD(address _pool, uint256 _tokenId) external view returns (uint256 _valueUSD) {
-    // Prepare
+    // Preparation
+
     // Load position data
     (,, address _token0, address _token1,, int24 _tickLower, int24 _tickUpper, uint128 _liquidity,,,,) =
       positionManager.positions(_tokenId);
@@ -156,11 +118,13 @@ contract CommonV3LiquidityOracle is Ownable2StepUpgradeable {
     uint160 _tickLowerSqrtPriceX96 = LibTickMath.getSqrtRatioAtTick(_tickLower);
     uint160 _tickUpperSqrtPriceX96 = LibTickMath.getSqrtRatioAtTick(_tickUpper);
 
+    // Calculation
+
+    // Calculate amounts with pool's sqrtPriceX96
     uint256 _poolAmount1;
     {
       // Get sqrtPriceX96 from pool
       (uint160 _poolSqrtPriceX96,,,,,,) = ICommonV3Pool(_pool).slot0();
-      // Calculate amounts with pool's sqrtPriceX96
       uint256 _poolAmount0;
       (_poolAmount0, _poolAmount1) = LibLiquidityAmounts.getAmountsForLiquidity(
         _poolSqrtPriceX96, _tickLowerSqrtPriceX96, _tickUpperSqrtPriceX96, _liquidity
@@ -170,13 +134,13 @@ contract CommonV3LiquidityOracle is Ownable2StepUpgradeable {
       );
     }
 
+    // Calculate amounts with oracle's estimated sqrtPriceX96
     uint256 _oracleAmount1;
     uint256 _token1OraclePrice;
     {
       // Get prices from oracle
       uint256 _token0OraclePrice = _safeGetTokenPriceE18(_token0);
       _token1OraclePrice = _safeGetTokenPriceE18(_token1);
-      // Calculate amounts with oracle's estimated sqrtPriceX96
       uint256 _oraclePriceE18 = _token0OraclePrice * 1e18 / _token1OraclePrice;
       uint160 _oracleSqrtPriceX96 =
         LibSqrtPriceX96.encodeSqrtPriceX96(_oraclePriceE18, _token0Decimals, _token1Decimals);
@@ -188,9 +152,13 @@ contract CommonV3LiquidityOracle is Ownable2StepUpgradeable {
     }
 
     // Check deviation
-    require(_poolAmount1 * 10000 <= _oracleAmount1 * maxPriceDiff, "TH");
-    require(_poolAmount1 * maxPriceDiff >= _oracleAmount1 * 10000, "TL");
+    // Cache to save gas
+    uint16 _cachedMaxPriceDiff = maxPriceDiff;
+    require(_poolAmount1 * 10000 <= _oracleAmount1 * _cachedMaxPriceDiff, "TH");
+    require(_poolAmount1 * _cachedMaxPriceDiff >= _oracleAmount1 * 10000, "TL");
 
+    // NOTE: switch `_oracleAmount1` to `_poolAmount1` if want to use pool's price
+    // return LibFullMath.mulDiv(_oracleAmount1, _token1OraclePrice, 1e18);
     return LibFullMath.mulDiv(_oracleAmount1, _token1OraclePrice, 1e18);
   }
 }

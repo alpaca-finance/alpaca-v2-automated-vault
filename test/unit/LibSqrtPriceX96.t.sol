@@ -24,7 +24,7 @@ contract LibSqrtPriceX96UnitTest is Test {
   }
 
   function testCorrectness_EncodeSqrtPriceX96() public {
-    // OZ Math library use estimation so there is minor precision loss
+    // sqrt calculation use estimation so there is minor precision loss
     // ethereum ETH-USDT pool
     // Correct result is 3400356069087804511330694
     assertEq(LibSqrtPriceX96.encodeSqrtPriceX96(1842 ether, 18, 6), 3400314278787196840839719);
