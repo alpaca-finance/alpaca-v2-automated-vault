@@ -57,7 +57,7 @@ contract AutomatedVaultIntegrationForkTest is BaseForkTest {
         performanceFeeBps: PERFORMANCE_FEE_BPS
       })
     );
-    depositExecutor = new SimpleV3DepositExecutor(address(pcsV3Worker), address(bank));
+    depositExecutor = new SimpleV3DepositExecutor(address(bank));
     vaultToken = vaultManager.openVault(
       "test vault",
       "TV",

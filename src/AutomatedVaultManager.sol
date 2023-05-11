@@ -91,7 +91,7 @@ contract AutomatedVaultManager is
       }
     }
 
-    _execute(_cachedVaultInfo.depositExecutor, abi.encode(_executorParams));
+    _execute(_cachedVaultInfo.depositExecutor, abi.encode(_cachedVaultInfo.worker, _deposits, _executorParams));
 
     // TODO: get equity change and mint
     IAutomatedVaultERC20(_vaultToken).mint(msg.sender, 0);
