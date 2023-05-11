@@ -23,8 +23,8 @@ contract CommonV3LiquidityOracle is Ownable2StepUpgradeable {
 
   /// Errors
   error CommonV3LiquidityOracle_PriceTooOld();
-  error CommonV3LiquidityOracle_PriceTooHigh();
-  error CommonV3LiquidityOracle_PriceTooLow();
+  error CommonV3LiquidityOracle_OraclePriceTooLow();
+  error CommonV3LiquidityOracle_OraclePriceTooHigh();
 
   /// Events
   event LogSetMaxPriceAge(uint16 prevMaxPriceAge, uint16 maxPriceAge);
@@ -132,10 +132,10 @@ contract CommonV3LiquidityOracle is Ownable2StepUpgradeable {
       // Cache to save gas
       uint16 _cachedMaxPriceDiff = maxPriceDiff;
       if (_poolPriceE18 * 10000 > _oraclePriceE18 * _cachedMaxPriceDiff) {
-        revert CommonV3LiquidityOracle_PriceTooHigh();
+        revert CommonV3LiquidityOracle_OraclePriceTooLow();
       }
       if (_poolPriceE18 * _cachedMaxPriceDiff < _oraclePriceE18 * 10000) {
-        revert CommonV3LiquidityOracle_PriceTooLow();
+        revert CommonV3LiquidityOracle_OraclePriceTooHigh();
       }
     }
 
