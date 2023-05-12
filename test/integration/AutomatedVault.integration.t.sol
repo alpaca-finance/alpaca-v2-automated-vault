@@ -6,9 +6,9 @@ import "test/base/BaseForkTest.sol";
 // contracts
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { Bank } from "src/Bank.sol";
-import { CommonV3LiquidityOracle } from "src/CommonV3LiquidityOracle.sol";
+import { CommonV3LiquidityOracle } from "src/oracles/CommonV3LiquidityOracle.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
-import { PancakeV3WorkerOracle } from "src/workers/PancakeV3WorkerOracle.sol";
+import { PancakeV3VaultOracle } from "src/oracles/PancakeV3VaultOracle.sol";
 import { SimpleV3DepositExecutor } from "src/executors/SimpleV3DepositExecutor.sol";
 
 // interfaces
@@ -28,7 +28,7 @@ contract AutomatedVaultIntegrationForkTest is BaseForkTest {
   Bank bank;
   CommonV3LiquidityOracle pcsV3LiquidityOracle;
   PancakeV3Worker pcsV3Worker;
-  PancakeV3WorkerOracle pcsV3WorkerOracle;
+  PancakeV3VaultOracle pcsV3WorkerOracle;
   SimpleV3DepositExecutor depositExecutor;
   IERC20 vaultToken;
 
@@ -66,7 +66,7 @@ contract AutomatedVaultIntegrationForkTest is BaseForkTest {
         performanceFeeBps: PERFORMANCE_FEE_BPS
       })
     );
-    pcsV3WorkerOracle = new PancakeV3WorkerOracle(address(pcsV3LiquidityOracle));
+    pcsV3WorkerOracle = new PancakeV3VaultOracle(address(pcsV3LiquidityOracle));
 
     depositExecutor = new SimpleV3DepositExecutor(address(bank));
     vaultToken = IERC20(

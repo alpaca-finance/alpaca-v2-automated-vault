@@ -6,7 +6,7 @@ import { ERC20 } from "@solmate/tokens/ERC20.sol";
 import "test/base/BaseForkTest.sol";
 
 // contracts
-import { CommonV3LiquidityOracle } from "src/CommonV3LiquidityOracle.sol";
+import { CommonV3LiquidityOracle } from "src/oracles/CommonV3LiquidityOracle.sol";
 
 // interfaces
 import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";

@@ -10,7 +10,7 @@ import { ProxyAdmin } from "@openzeppelin/proxy/transparent/ProxyAdmin.sol";
 // contracts
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { Bank } from "src/Bank.sol";
-import { CommonV3LiquidityOracle } from "src/CommonV3LiquidityOracle.sol";
+import { CommonV3LiquidityOracle } from "src/oracles/CommonV3LiquidityOracle.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 import { MockMoneyMarket } from "test/mocks/MockMoneyMarket.sol";
 

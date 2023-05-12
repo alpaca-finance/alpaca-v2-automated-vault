@@ -13,7 +13,7 @@ import { AutomatedVaultERC20 } from "src/AutomatedVaultERC20.sol";
 
 // interfaces
 import { IExecutor } from "src/interfaces/IExecutor.sol";
-import { IWorkerOracle } from "src/interfaces/IWorkerOracle.sol";
+import { IVaultOracle } from "src/interfaces/IVaultOracle.sol";
 import { IAutomatedVaultERC20 } from "src/interfaces/IAutomatedVaultERC20.sol";
 import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
 
@@ -99,12 +99,12 @@ contract AutomatedVaultManager is
       }
     }
 
-    uint256 _totalEquityBefore = IWorkerOracle(_cachedVaultInfo.workerOracle).getWorkerEquity(_cachedVaultInfo.worker);
+    uint256 _totalEquityBefore = IVaultOracle(_cachedVaultInfo.workerOracle).getEquity(_cachedVaultInfo.worker);
 
     _result =
       _execute(_cachedVaultInfo.depositExecutor, abi.encode(_cachedVaultInfo.worker, _deposits, _executorParams));
 
-    uint256 _totalEquityAfter = IWorkerOracle(_cachedVaultInfo.workerOracle).getWorkerEquity(_cachedVaultInfo.worker);
+    uint256 _totalEquityAfter = IVaultOracle(_cachedVaultInfo.workerOracle).getEquity(_cachedVaultInfo.worker);
     uint256 _equityChanged = _totalEquityAfter - _totalEquityBefore;
 
     IAutomatedVaultERC20(_vaultToken).mint(
