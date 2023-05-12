@@ -84,6 +84,7 @@ contract AutomatedVaultManager is
     EXECUTOR_IN_SCOPE = address(0);
   }
 
+  // TODO: slippage control
   function deposit(address _vaultToken, DepositTokenParams[] calldata _deposits, bytes calldata _executorParams)
     external
     returns (bytes memory _result)
@@ -107,7 +108,7 @@ contract AutomatedVaultManager is
     uint256 _equityChanged = _totalEquityAfter - _totalEquityBefore;
 
     IAutomatedVaultERC20(_vaultToken).mint(
-      msg.sender, _equityChanged.valueToShare(IAutomatedVaultERC20(_vaultToken).totalSupply(), _totalEquityAfter)
+      msg.sender, _equityChanged.valueToShare(IAutomatedVaultERC20(_vaultToken).totalSupply(), _totalEquityBefore)
     );
 
     emit LogDeposit(_vaultToken, msg.sender, _deposits);

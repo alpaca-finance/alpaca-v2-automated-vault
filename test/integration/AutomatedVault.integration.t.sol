@@ -89,6 +89,7 @@ contract AutomatedVaultIntegrationForkTest is BaseForkTest {
     vm.stopPrank();
   }
 
+  // TODO: revise this case after done with debt pricing
   function testCorrectness_VaultManager_DepositToEmptyVault_ShouldGetSharesEqualToEquity() public {
     IAutomatedVaultManager.DepositTokenParams[] memory deposits = new IAutomatedVaultManager.DepositTokenParams[](2);
     deposits[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(wbnb), amount: 1 ether });

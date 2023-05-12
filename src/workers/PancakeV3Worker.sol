@@ -247,6 +247,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
 
     // Find out limit price. We will swap until the tick is in range
     // If it is in range and some tokens left, then we will zap.
+    // TODO: optimize
     int24 _tickSpacing = pool.tickSpacing();
     {
       uint160 _sqrtPriceLimitX96 =
