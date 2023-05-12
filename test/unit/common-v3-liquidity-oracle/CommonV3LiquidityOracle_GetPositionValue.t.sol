@@ -3,6 +3,8 @@ pragma solidity 0.8.19;
 
 import "./BaseCommonV3LiquidityOracle.unit.sol";
 
+import { IChainlinkAggregator } from "src/interfaces/IChainlinkAggregator.sol";
+
 contract CommonV3LiquidityOracle_GetPositionValueUnitForkTest is BaseCommonV3LiquidityOracleUnitForkTest {
   function testCorrectness_GetPositionValue_BothTokenE18() public {
     (uint256 tokenId, uint256 amount0, uint256 amount1) = _mintUSDTWBNB();

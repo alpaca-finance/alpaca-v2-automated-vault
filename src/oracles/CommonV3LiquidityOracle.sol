@@ -140,13 +140,20 @@ contract CommonV3LiquidityOracle is Ownable2StepUpgradeable {
     }
 
     // Get amount0, 1 according to pool state
+    // TODO: discuss whether to use pool or oracle price to get amounts
+    // TODO: handle liquidity causing overflow
     (uint256 _amount0, uint256 _amount1) = LibLiquidityAmounts.getAmountsForLiquidity(
       _poolSqrtPriceX96, _tickLowerSqrtPriceX96, _tickUpperSqrtPriceX96, _liquidity
     );
 
     // Convert to usd according to oracle prices
-    return LibFullMath.mulDiv(_amount0, _token0OraclePrice, (10 ** _token0Decimals))
-      + LibFullMath.mulDiv(_amount1, _token1OraclePrice, (10 ** _token1Decimals));
+    if (_amount0 != 0) {
+      _valueUSD += LibFullMath.mulDiv(_amount0, _token0OraclePrice, (10 ** _token0Decimals));
+    }
+    if (_amount1 != 0) {
+      _valueUSD += LibFullMath.mulDiv(_amount1, _token1OraclePrice, (10 ** _token1Decimals));
+    }
+    return _valueUSD;
 
     //
     // Pricing by convert oracle price to sqrtX96 to get amount

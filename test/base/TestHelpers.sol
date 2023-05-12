@@ -10,6 +10,7 @@ import { ProxyAdmin } from "@openzeppelin/proxy/transparent/ProxyAdmin.sol";
 // contracts
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { Bank } from "src/Bank.sol";
+import { CommonV3LiquidityOracle } from "src/oracles/CommonV3LiquidityOracle.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 import { MockMoneyMarket } from "test/mocks/MockMoneyMarket.sol";
 
@@ -57,14 +58,24 @@ abstract contract TestHelpers is StdCheats {
 
   function deployAutomatedVaultManager() internal returns (AutomatedVaultManager) {
     return AutomatedVaultManager(
-      deployUpgradeable("AutomatedVaultManager", abi.encodeWithSelector(bytes4(keccak256("initialize()"))))
+      deployUpgradeable("AutomatedVaultManager", abi.encodeWithSelector(AutomatedVaultManager.initialize.selector))
     );
   }
 
   function deployBank(address moneyMarket, address vaultManager) internal returns (Bank) {
-    return Bank(
+    return Bank(deployUpgradeable("Bank", abi.encodeWithSelector(Bank.initialize.selector, moneyMarket, vaultManager)));
+  }
+
+  function deployLiquidityOracle(address nftPositionManager, uint16 maxPriceAge, uint16 maxPriceDiff)
+    internal
+    returns (CommonV3LiquidityOracle)
+  {
+    return CommonV3LiquidityOracle(
       deployUpgradeable(
-        "Bank", abi.encodeWithSelector(bytes4(keccak256("initialize(address,address)")), moneyMarket, vaultManager)
+        "CommonV3LiquidityOracle",
+        abi.encodeWithSelector(
+          CommonV3LiquidityOracle.initialize.selector, nftPositionManager, maxPriceAge, maxPriceDiff
+        )
       )
     );
   }
@@ -74,7 +85,7 @@ abstract contract TestHelpers is StdCheats {
       deployUpgradeable(
         "PancakeV3Worker",
         abi.encodeWithSelector(
-          bytes4(keccak256("initialize((address,address,address,address,address,address,address,int24,int24,uint16))")),
+          PancakeV3Worker.initialize.selector,
           address(params.vaultManager),
           address(params.positionManager),
           address(params.pool),

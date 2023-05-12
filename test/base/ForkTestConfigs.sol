@@ -10,6 +10,7 @@ import { IPancakeV3MasterChef } from "src/interfaces/pancake-v3/IPancakeV3Master
 import { ICommonV3PositionManager } from "src/interfaces/ICommonV3PositionManager.sol";
 import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
 import { IZapV3 } from "src/interfaces/IZapV3.sol";
+import { IChainlinkAggregator } from "src/interfaces/IChainlinkAggregator.sol";
 
 abstract contract ForkTestConfigs is StdCheats {
   Vm private constant vm = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
@@ -34,6 +35,11 @@ abstract contract ForkTestConfigs is StdCheats {
 
   // Zap
   IZapV3 public constant zapV3 = IZapV3(0xC462E9a70b16009d63fE9dFe701cA5bf70cBCb55);
+
+  // Chainlink feeds
+  IChainlinkAggregator wbnbFeed = IChainlinkAggregator(0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE);
+  IChainlinkAggregator usdtFeed = IChainlinkAggregator(0xB97Ad0E74fa7d920791E90258A6E2085088b4320);
+  IChainlinkAggregator dogeFeed = IChainlinkAggregator(0x3AB0A0d137D4F946fBB19eecc6e92E64660231C8);
 
   constructor() {
     vm.label(address(wbnb), "WBNB");
