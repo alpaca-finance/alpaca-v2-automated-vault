@@ -58,6 +58,7 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     returns (uint256 _debtShares, uint256 _debtAmount)
   {
     _debtShares = vaultDebtShares[_vaultToken][_token];
+    // NOTE: must accrue interest on money market before calculate shares to correctly reflect debt
     _debtAmount =
       _debtShares.shareToValue(moneyMarket.getNonCollatAccountDebt(address(this), _token), tokenDebtShares[_token]);
   }
@@ -71,6 +72,7 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     unchecked {
       // Cache to save gas
       uint256 _cachedTokenDebtShares = tokenDebtShares[_token];
+      // NOTE: must accrue interest on money market before calculate shares to correctly reflect debt
       uint256 _debtSharesToAdd =
         _amount.valueToShare(_cachedTokenDebtShares, _moneyMarket.getNonCollatAccountDebt(address(this), _token));
       tokenDebtShares[_token] = _cachedTokenDebtShares + _debtSharesToAdd;
@@ -96,6 +98,7 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     // Effects
     // Cache to save gas
     uint256 _cachedTokenDebtShares = tokenDebtShares[_token];
+    // NOTE: must accrue interest on money market before calculate shares to correctly reflect debt
     uint256 _debtSharesToRemove =
       _amount.valueToShare(_cachedTokenDebtShares, _moneyMarket.getNonCollatAccountDebt(address(this), _token));
     // Will revert underflow if repay more than debt
