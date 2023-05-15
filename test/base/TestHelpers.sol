@@ -13,6 +13,7 @@ import { Bank } from "src/Bank.sol";
 import { CommonV3LiquidityOracle } from "src/oracles/CommonV3LiquidityOracle.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 import { MockMoneyMarket } from "test/mocks/MockMoneyMarket.sol";
+import { MockERC20 } from "test/mocks/MockERC20.sol";
 
 // interfaces
 import { IERC20 } from "src/interfaces/IERC20.sol";
@@ -31,6 +32,10 @@ abstract contract TestHelpers is StdCheats {
 
   function normalizeToE18(uint256 amount, uint256 decimals) internal pure returns (uint256) {
     return amount * (10 ** (18 - decimals));
+  }
+
+  function deployMockERC20(string memory name, string memory symbol, uint8 decimals) internal returns (address) {
+    return address(new MockERC20(name, symbol, decimals));
   }
 
   function deployUpgradeable(string memory contractName, bytes memory initializer) internal returns (address) {

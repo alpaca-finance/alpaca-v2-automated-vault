@@ -13,23 +13,23 @@ import { IMoneyMarket } from "@alpaca-mm/money-market/interfaces/IMoneyMarket.so
 // interfaces
 import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
 
+// libraries
+import { LibShareUtil } from "src/libraries/LibShareUtil.sol";
+
 contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradeable {
   using SafeCastLib for uint256;
   using SafeTransferLib for ERC20;
+  using LibShareUtil for uint256;
 
   error Bank_ExecutorNotInScope();
 
   IMoneyMarket public moneyMarket;
   IAutomatedVaultManager public vaultManager;
 
-  struct VaultDebtInfo {
-    // packed slot
-    uint216 debt; // TODO: maybe debt shares if AV accrue interest
-    uint40 lastAccrualTime;
-  }
-
   // vault address => token => debt shares
-  mapping(address => mapping(address => VaultDebtInfo)) public vaultDebtInfoMap;
+  mapping(address => mapping(address => uint256)) public vaultDebtShares;
+  // token => total debt shares
+  mapping(address => uint256) public tokenDebtShares;
 
   event LogBorrowOnBehalfOf(address indexed _vaultToken, address indexed _executor, address _token, uint256 _amount);
   event LogRepayOnBehalfOf(address indexed _vaultToken, address indexed _executor, address _token, uint256 _amount);
@@ -52,15 +52,33 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     vaultManager = IAutomatedVaultManager(_vaultManager);
   }
 
+  function getVaultDebt(address _vaultToken, address _token)
+    external
+    view
+    returns (uint256 _debtShares, uint256 _debtAmount)
+  {
+    _debtShares = vaultDebtShares[_vaultToken][_token];
+    _debtAmount =
+      _debtShares.shareToValue(moneyMarket.getNonCollatAccountDebt(address(this), _token), tokenDebtShares[_token]);
+  }
+
   function borrowOnBehalfOf(address _vaultToken, address _token, uint256 _amount) external onlyExecutorWithinScope {
-    // effects
-    // safe to use unchecked since overflow amount would revert on borrow or transfer anyway
+    // Cache to save gas
+    IMoneyMarket _moneyMarket = moneyMarket;
+
+    // Effects
+    // Cafe to use unchecked since overflow amount would revert on borrow or transfer anyway
     unchecked {
-      vaultDebtInfoMap[_vaultToken][_token].debt += _amount.safeCastTo216();
+      // Cache to save gas
+      uint256 _cachedTokenDebtShares = tokenDebtShares[_token];
+      uint256 _debtSharesToAdd =
+        _amount.valueToShare(_cachedTokenDebtShares, _moneyMarket.getNonCollatAccountDebt(address(this), _token));
+      tokenDebtShares[_token] = _cachedTokenDebtShares + _debtSharesToAdd;
+      vaultDebtShares[_vaultToken][_token] += _debtSharesToAdd;
     }
 
-    // interactions
-    moneyMarket.nonCollatBorrow(_token, _amount);
+    // Interactions
+    _moneyMarket.nonCollatBorrow(_token, _amount);
 
     ERC20(_token).safeTransfer(msg.sender, _amount);
 
@@ -68,12 +86,23 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
   }
 
   function repayOnBehalfOf(address _vaultToken, address _token, uint256 _amount) external onlyExecutorWithinScope {
+    // Transfer first to early revert if insufficient balance
     ERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
 
-    // will revert underflow if repay more than debt
-    vaultDebtInfoMap[_vaultToken][_token].debt -= _amount.safeCastTo216();
+    // Cache to save gas
+    IMoneyMarket _moneyMarket = moneyMarket;
 
-    moneyMarket.nonCollatRepay(address(this), _token, _amount);
+    // Effects
+    // Cache to save gas
+    uint256 _cachedTokenDebtShares = tokenDebtShares[_token];
+    uint256 _debtSharesToRemove =
+      _amount.valueToShare(_cachedTokenDebtShares, _moneyMarket.getNonCollatAccountDebt(address(this), _token));
+    // Will revert underflow if repay more than debt
+    tokenDebtShares[_token] = _cachedTokenDebtShares - _debtSharesToRemove;
+    vaultDebtShares[_vaultToken][_token] -= _debtSharesToRemove;
+
+    // Interactions
+    _moneyMarket.nonCollatRepay(address(this), _token, _amount);
 
     emit LogRepayOnBehalfOf(_vaultToken, msg.sender, _token, _amount);
   }
