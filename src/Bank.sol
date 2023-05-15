@@ -68,7 +68,7 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     IMoneyMarket _moneyMarket = moneyMarket;
 
     // Effects
-    // Cafe to use unchecked since overflow amount would revert on borrow or transfer anyway
+    // Safe to use unchecked since overflow amount would revert on borrow or transfer anyway
     unchecked {
       // Cache to save gas
       uint256 _cachedTokenDebtShares = tokenDebtShares[_token];
