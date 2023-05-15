@@ -11,6 +11,11 @@ contract MockMoneyMarket {
     IERC20(_token).transfer(msg.sender, _amount);
   }
 
+  function nonCollatRepay(address _repayFor, address _token, uint256 _amount) external {
+    getNonCollatAccountDebt[_repayFor][_token] -= _amount;
+    IERC20(_token).transferFrom(msg.sender, address(this), _amount);
+  }
+
   function pretendAccrueInterest(address _account, address _token, uint256 _interest) external {
     getNonCollatAccountDebt[_account][_token] += _interest;
   }

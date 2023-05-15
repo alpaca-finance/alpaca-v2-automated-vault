@@ -78,15 +78,16 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     }
 
     // Interactions
+    // Non-collat borrow from money market
     _moneyMarket.nonCollatBorrow(_token, _amount);
-
+    // Forward tokens to executor
     ERC20(_token).safeTransfer(msg.sender, _amount);
 
     emit LogBorrowOnBehalfOf(_vaultToken, msg.sender, _token, _amount);
   }
 
   function repayOnBehalfOf(address _vaultToken, address _token, uint256 _amount) external onlyExecutorWithinScope {
-    // Transfer first to early revert if insufficient balance
+    // Transfer in first to early revert if insufficient balance
     ERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
 
     // Cache to save gas
@@ -102,6 +103,8 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     vaultDebtShares[_vaultToken][_token] -= _debtSharesToRemove;
 
     // Interactions
+    ERC20(_token).safeApprove(address(_moneyMarket), _amount);
+    // Non-collat repay money market, repay for self
     _moneyMarket.nonCollatRepay(address(this), _token, _amount);
 
     emit LogRepayOnBehalfOf(_vaultToken, msg.sender, _token, _amount);
