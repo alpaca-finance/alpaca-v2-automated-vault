@@ -12,6 +12,7 @@ import { CommonV3LiquidityOracle } from "src/oracles/CommonV3LiquidityOracle.sol
 import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
 import { ICommonV3PositionManager } from "src/interfaces/ICommonV3PositionManager.sol";
 
+// TODO: migrate to new test structure
 abstract contract BaseCommonV3LiquidityOracleUnitForkTest is BaseForkTest {
   uint16 MAX_PRICE_AGE = 60 * 60;
   uint16 MAX_PRICE_DIFF = 10_500;

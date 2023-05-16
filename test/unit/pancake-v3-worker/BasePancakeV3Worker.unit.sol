@@ -13,6 +13,7 @@ import { IPancakeV3Router } from "src/interfaces/pancake-v3/IPancakeV3Router.sol
 
 import { Tasks } from "src/libraries/Constants.sol";
 
+// TODO: migrate to new test structure
 abstract contract BasePancakeV3WorkerUnitForkTest is BaseForkTest {
   int24 internal constant TICK_LOWER = -58000;
   int24 internal constant TICK_UPPER = -57750;
