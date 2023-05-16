@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
+// TODO: migrate to new test structure
+
 import "test/base/BaseForkTest.sol";
 
 // contracts
