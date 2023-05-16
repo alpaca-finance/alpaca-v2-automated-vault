@@ -107,7 +107,7 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
 
     // Interactions
     ERC20(_token).safeApprove(address(_moneyMarket), _amount);
-    // Non-collat repay money market, repay for self
+    // Non-collat repay money market, repay for itself
     _moneyMarket.nonCollatRepay(address(this), _token, _amount);
 
     emit LogRepayOnBehalfOf(_vaultToken, msg.sender, _token, _amount);
