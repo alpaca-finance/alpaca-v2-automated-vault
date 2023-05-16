@@ -18,26 +18,26 @@ contract AutomatedVaultUnitTest is BaseTest {
 
   function testCorrectness_OpenVault_ShouldWork() public {
     address worker = makeAddr("worker");
-    address workerOracle = makeAddr("workerOracle");
+    address vaultOracle = makeAddr("vaultOracle");
     address depositExecutor = makeAddr("depositExecutor");
 
     vm.prank(DEPLOYER);
     address vaultToken = vaultManager.openVault(
       "test vault",
       "TV",
-      AutomatedVaultManager.VaultInfo({ worker: worker, workerOracle: workerOracle, depositExecutor: depositExecutor })
+      AutomatedVaultManager.VaultInfo({ worker: worker, vaultOracle: vaultOracle, depositExecutor: depositExecutor })
     );
 
     (address vaultWorker, address vaultWorkerOracle, address vaultDepositExecutor) = vaultManager.vaultInfos(vaultToken);
 
     assertEq(vaultWorker, worker);
-    assertEq(vaultWorkerOracle, workerOracle);
+    assertEq(vaultWorkerOracle, vaultOracle);
     assertEq(vaultDepositExecutor, depositExecutor);
   }
 
   function testRevert_NotOwnerOpenVault() public {
     address worker = makeAddr("worker");
-    address workerOracle = makeAddr("workerOracle");
+    address vaultOracle = makeAddr("vaultOracle");
     address depositExecutor = makeAddr("depositExecutor");
 
     vm.prank(ALICE);
@@ -45,7 +45,7 @@ contract AutomatedVaultUnitTest is BaseTest {
     vaultManager.openVault(
       "test vault",
       "TV",
-      AutomatedVaultManager.VaultInfo({ worker: worker, workerOracle: workerOracle, depositExecutor: depositExecutor })
+      AutomatedVaultManager.VaultInfo({ worker: worker, vaultOracle: vaultOracle, depositExecutor: depositExecutor })
     );
   }
 

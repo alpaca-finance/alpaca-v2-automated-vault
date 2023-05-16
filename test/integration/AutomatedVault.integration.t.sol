@@ -66,7 +66,7 @@ contract AutomatedVaultIntegrationForkTest is BaseForkTest {
         performanceFeeBps: PERFORMANCE_FEE_BPS
       })
     );
-    pcsV3WorkerOracle = new PancakeV3VaultOracle(address(pcsV3LiquidityOracle));
+    pcsV3WorkerOracle = new PancakeV3VaultOracle();
 
     depositExecutor = new SimpleV3DepositExecutor(address(bank));
     vaultToken = IERC20(
@@ -75,7 +75,7 @@ contract AutomatedVaultIntegrationForkTest is BaseForkTest {
         "TV",
         AutomatedVaultManager.VaultInfo({
           worker: address(pcsV3Worker),
-          workerOracle: address(pcsV3WorkerOracle),
+          vaultOracle: address(pcsV3WorkerOracle),
           depositExecutor: address(depositExecutor)
         })
       )

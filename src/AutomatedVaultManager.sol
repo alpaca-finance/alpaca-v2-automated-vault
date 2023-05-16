@@ -33,7 +33,7 @@ contract AutomatedVaultManager is
 
   struct VaultInfo {
     address worker;
-    address workerOracle;
+    address vaultOracle;
     address depositExecutor;
   }
 
@@ -99,12 +99,14 @@ contract AutomatedVaultManager is
       }
     }
 
-    uint256 _totalEquityBefore = IVaultOracle(_cachedVaultInfo.workerOracle).getEquity(_cachedVaultInfo.worker);
+    uint256 _totalEquityBefore =
+      IVaultOracle(_cachedVaultInfo.vaultOracle).getEquity(_vaultToken, _cachedVaultInfo.worker);
 
     _result =
       _execute(_cachedVaultInfo.depositExecutor, abi.encode(_cachedVaultInfo.worker, _deposits, _executorParams));
 
-    uint256 _totalEquityAfter = IVaultOracle(_cachedVaultInfo.workerOracle).getEquity(_cachedVaultInfo.worker);
+    uint256 _totalEquityAfter =
+      IVaultOracle(_cachedVaultInfo.vaultOracle).getEquity(_vaultToken, _cachedVaultInfo.worker);
     uint256 _equityChanged = _totalEquityAfter - _totalEquityBefore;
 
     IAutomatedVaultERC20(_vaultToken).mint(
