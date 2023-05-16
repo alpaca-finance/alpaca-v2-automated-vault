@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "test/base/BaseTest.sol";
-
 // dependencies
 import { IViewFacet } from "@alpaca-mm/money-market/interfaces/IViewFacet.sol";
 
@@ -19,7 +17,13 @@ import { LibShareUtil } from "src/libraries/LibShareUtil.sol";
 // mocks
 import { MockMoneyMarket } from "test/mocks/MockMoneyMarket.sol";
 
-contract BankUnitTest is BaseTest {
+// fixtures
+import { ProtocolActorFixture } from "test/fixtures/ProtocolActorFixture.f.sol";
+
+// helpers
+import { DeployHelper } from "test/helpers/DeployHelper.sol";
+
+contract BankTest is ProtocolActorFixture {
   using LibShareUtil for uint256;
 
   Bank bank;
@@ -30,21 +34,22 @@ contract BankUnitTest is BaseTest {
   IERC20 wbnb;
   IERC20 usdt;
 
-  function setUp() public override {
-    super.setUp();
+  constructor() ProtocolActorFixture() {
+    wbnb = IERC20(DeployHelper.deployMockERC20("BNB", 18));
+    usdt = IERC20(DeployHelper.deployMockERC20("USDT", 6));
+  }
 
-    vm.startPrank(DEPLOYER);
+  function setUp() public {
+    mockMoneyMarket = new MockMoneyMarket();
+    deal(address(wbnb), address(mockMoneyMarket), 100_000 ether);
+    deal(address(usdt), address(mockMoneyMarket), 100_000 ether);
 
-    wbnb = IERC20(deployMockERC20("mockBNB", "Mock BNB", 18));
-    usdt = IERC20(deployMockERC20("mockUSDT", "Mock USDT", 6));
-
-    address[] memory tokensToSeed = new address[](2);
-    tokensToSeed[0] = address(wbnb);
-    tokensToSeed[1] = address(usdt);
-    mockMoneyMarket = deployAndSeedMockMoneyMarket(tokensToSeed);
-
-    bank = deployBank(address(mockMoneyMarket), vaultManager);
-    vm.stopPrank();
+    vm.prank(DEPLOYER);
+    bank = Bank(
+      DeployHelper.deployUpgradeable(
+        "Bank", abi.encodeWithSelector(Bank.initialize.selector, address(mockMoneyMarket), vaultManager)
+      )
+    );
 
     vm.mockCall(
       address(vaultManager),
@@ -88,7 +93,7 @@ contract BankUnitTest is BaseTest {
     // Debt shares should increase by value slightly less than newly borrowed due to previous debt interest
     // Debt amount should increase by newly borrowed amount
     (debtShares, debtAmount) = bank.getVaultDebt(vault1, address(wbnb));
-    assertEq(debtShares, 1 ether + 2 ether + 2.970297029702970297 ether);
+    assertEq(debtShares, 1 ether + 2 ether + 2.970297029702970298 ether);
     assertEq(debtAmount, 1 ether + 2 ether + 0.03 ether + 3 ether);
   }
 
@@ -172,9 +177,9 @@ contract BankUnitTest is BaseTest {
     // expectedShares = borrowAmount * tokenDebtShares / mmDebtAmount
 
     // expectedShares = 1 ether * 7 ether / 7.07 ether
-    _doAndAssertBorrowOnBehalfOf(vault1, address(wbnb), 1 ether, 0.990099009900990099 ether);
+    _doAndAssertBorrowOnBehalfOf(vault1, address(wbnb), 1 ether, 0.9900990099009901 ether);
     // expectedShares = 3 ether * 7 ether / 7.21 ether
-    _doAndAssertBorrowOnBehalfOf(vault1, address(usdt), 3 ether, 2.91262135922330097 ether);
+    _doAndAssertBorrowOnBehalfOf(vault1, address(usdt), 3 ether, 2.912621359223300971 ether);
   }
 
   function testCorrectness_RepayOnBehalfOf_OneVault_OneToken_WithInterest_ShouldBeAbleToRepayAllDebt() public {

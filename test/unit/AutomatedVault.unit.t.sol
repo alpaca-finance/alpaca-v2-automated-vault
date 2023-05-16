@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import "test/base/BaseTest.sol";
 
+// TODO: migrate to new test structure
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 
 contract AutomatedVaultUnitTest is BaseTest {
