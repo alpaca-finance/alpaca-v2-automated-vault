@@ -14,6 +14,9 @@ import { IZapV3 } from "src/interfaces/IZapV3.sol";
 import { IChainlinkAggregator } from "src/interfaces/IChainlinkAggregator.sol";
 
 contract BscFixture is Test {
+  // Forks
+  uint256 public constant FORK_BLOCK_NUMBER_1 = 27_515_914;
+
   // Tokens
   IERC20 public constant wbnb = IERC20(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
   IERC20 public constant usdt = IERC20(0x55d398326f99059fF775485246999027B3197955);

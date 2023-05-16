@@ -25,6 +25,18 @@ library DeployHelper {
     proxy = deployContract("TransparentUpgradeableProxy", abi.encode(implementation, PROXY_ADMIN, initializerData));
   }
 
+  function deployUpgradeableFullPath(string memory implementationArtifactPath, bytes memory initializerData)
+    internal
+    returns (address proxy)
+  {
+    bytes memory bytecode = abi.encodePacked(vm.getCode(implementationArtifactPath));
+    address implementation;
+    assembly {
+      implementation := create(0, add(bytecode, 0x20), mload(bytecode))
+    }
+    proxy = deployContract("TransparentUpgradeableProxy", abi.encode(implementation, PROXY_ADMIN, initializerData));
+  }
+
   function deployMockERC20(string memory symbol, uint8 decimals) internal returns (address) {
     return deployContract(
       "MockERC20", abi.encode(string(abi.encodePacked("mock", symbol)), abi.encodePacked("m", symbol), decimals)

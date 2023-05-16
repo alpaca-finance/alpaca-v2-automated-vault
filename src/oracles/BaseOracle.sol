@@ -8,12 +8,12 @@ import { SafeCastUpgradeable } from "@openzeppelin-upgradeable/utils/math/SafeCa
 // interfaces
 import { IChainlinkAggregator } from "src/interfaces/IChainlinkAggregator.sol";
 
-contract BaseOracle is Ownable2StepUpgradeable {
+abstract contract BaseOracle is Ownable2StepUpgradeable {
   /// Libraries
   using SafeCastUpgradeable for int256;
 
   /// Errors
-  error CommonV3LiquidityOracle_PriceTooOld();
+  error BaseOracle_PriceTooOld();
 
   /// Events
   event LogSetMaxPriceAge(uint16 prevMaxPriceAge, uint16 maxPriceAge);
@@ -22,6 +22,15 @@ contract BaseOracle is Ownable2StepUpgradeable {
   /// States
   uint16 public maxPriceAge;
   mapping(address => IChainlinkAggregator) public priceFeedOf;
+
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor() {
+    _disableInitializers();
+  }
+
+  function initialize() external initializer {
+    Ownable2StepUpgradeable.__Ownable2Step_init();
+  }
 
   /// @notice Set price feed of a token.
   /// @param _token Token address.
@@ -52,7 +61,7 @@ contract BaseOracle is Ownable2StepUpgradeable {
     // even somehow it underflows it would revert anyway
     unchecked {
       if (block.timestamp - _updatedAt > maxPriceAge) {
-        revert CommonV3LiquidityOracle_PriceTooOld();
+        revert BaseOracle_PriceTooOld();
       }
     }
     // Normalize to 18 decimals
