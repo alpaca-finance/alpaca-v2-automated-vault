@@ -73,8 +73,10 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
       // Cache to save gas
       uint256 _cachedTokenDebtShares = tokenDebtShares[_token];
       // NOTE: must accrue interest on money market before calculate shares to correctly reflect debt
-      uint256 _debtSharesToAdd =
-        _amount.valueToShare(_cachedTokenDebtShares, _moneyMarket.getNonCollatAccountDebt(address(this), _token));
+      // Round up in protocol favor
+      uint256 _debtSharesToAdd = _amount.valueToShareRoundingUp(
+        _cachedTokenDebtShares, _moneyMarket.getNonCollatAccountDebt(address(this), _token)
+      );
       tokenDebtShares[_token] = _cachedTokenDebtShares + _debtSharesToAdd;
       vaultDebtShares[_vaultToken][_token] += _debtSharesToAdd;
     }
@@ -99,6 +101,7 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     // Cache to save gas
     uint256 _cachedTokenDebtShares = tokenDebtShares[_token];
     // NOTE: must accrue interest on money market before calculate shares to correctly reflect debt
+    // Round down in protocol favor
     uint256 _debtSharesToRemove =
       _amount.valueToShare(_cachedTokenDebtShares, _moneyMarket.getNonCollatAccountDebt(address(this), _token));
     // Will revert underflow if repay more than debt
@@ -107,7 +110,7 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
 
     // Interactions
     ERC20(_token).safeApprove(address(_moneyMarket), _amount);
-    // Non-collat repay money market, repay for self
+    // Non-collat repay money market, repay for itself
     _moneyMarket.nonCollatRepay(address(this), _token, _amount);
 
     emit LogRepayOnBehalfOf(_vaultToken, msg.sender, _token, _amount);

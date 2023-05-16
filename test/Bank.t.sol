@@ -93,7 +93,7 @@ contract BankTest is ProtocolActorFixture {
     // Debt shares should increase by value slightly less than newly borrowed due to previous debt interest
     // Debt amount should increase by newly borrowed amount
     (debtShares, debtAmount) = bank.getVaultDebt(vault1, address(wbnb));
-    assertEq(debtShares, 1 ether + 2 ether + 2.970297029702970297 ether);
+    assertEq(debtShares, 1 ether + 2 ether + 2.970297029702970298 ether);
     assertEq(debtAmount, 1 ether + 2 ether + 0.03 ether + 3 ether);
   }
 
@@ -177,9 +177,9 @@ contract BankTest is ProtocolActorFixture {
     // expectedShares = borrowAmount * tokenDebtShares / mmDebtAmount
 
     // expectedShares = 1 ether * 7 ether / 7.07 ether
-    _doAndAssertBorrowOnBehalfOf(vault1, address(wbnb), 1 ether, 0.990099009900990099 ether);
+    _doAndAssertBorrowOnBehalfOf(vault1, address(wbnb), 1 ether, 0.9900990099009901 ether);
     // expectedShares = 3 ether * 7 ether / 7.21 ether
-    _doAndAssertBorrowOnBehalfOf(vault1, address(usdt), 3 ether, 2.91262135922330097 ether);
+    _doAndAssertBorrowOnBehalfOf(vault1, address(usdt), 3 ether, 2.912621359223300971 ether);
   }
 
   function testCorrectness_RepayOnBehalfOf_OneVault_OneToken_WithInterest_ShouldBeAbleToRepayAllDebt() public {
