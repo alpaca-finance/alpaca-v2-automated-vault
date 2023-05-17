@@ -98,7 +98,6 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
 
     // Get amount0, 1 according to pool state
     // TODO: discuss whether to use pool or oracle price to get amounts
-    // TODO: handle liquidity causing overflow
     (uint256 _amount0, uint256 _amount1) = LibLiquidityAmounts.getAmountsForLiquidity(
       _poolSqrtPriceX96,
       LibTickMath.getSqrtRatioAtTick(_tickLower),
@@ -113,6 +112,7 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
     if (_amount1 != 0) {
       _valueUSD += LibFullMath.mulDiv(_amount1, _token1OraclePrice, (10 ** _token1Decimals));
     }
+
     return _valueUSD;
 
     //
@@ -170,8 +170,8 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
   ) internal view returns (uint256 _debtValueUSD) {
     (, uint256 _token0Debt) = bank.getVaultDebt(_vaultToken, _token0);
     (, uint256 _token1Debt) = bank.getVaultDebt(_vaultToken, _token1);
-    return _token0Debt * _token0OraclePrice * (10 ** (18 - IERC20(_token0).decimals()))
-      + _token1Debt * _token1OraclePrice * (10 ** (18 - IERC20(_token1).decimals()));
+    return _token0Debt * _token0OraclePrice / (10 ** IERC20(_token0).decimals())
+      + _token1Debt * _token1OraclePrice / (10 ** IERC20(_token1).decimals());
   }
 
   function getEquity(address _vaultToken, address _pancakeV3Worker) external view override returns (uint256 _equityUSD) {

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
+// dependencies
+import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/access/Ownable2StepUpgradeable.sol";
+
 // contracts
 import { BaseOracle } from "src/oracles/BaseOracle.sol";
 
@@ -12,6 +15,10 @@ import "test/fixtures/ProtocolActorFixture.f.sol";
 import { DeployHelper } from "test/helpers/DeployHelper.sol";
 
 contract BaseOracleHarness is BaseOracle {
+  function initialize() external initializer {
+    Ownable2StepUpgradeable.__Ownable2Step_init();
+  }
+
   function harness_safeGetTokenPriceE18(address _token) external view returns (uint256) {
     return _safeGetTokenPriceE18(_token);
   }
@@ -26,7 +33,7 @@ contract BaseOracleTest is BscFixture, ProtocolActorFixture {
     vm.startPrank(DEPLOYER);
     oracle = BaseOracleHarness(
       DeployHelper.deployUpgradeableFullPath(
-        "./out/BaseOracle.t.sol/BaseOracleHarness.json", abi.encodeWithSelector(BaseOracle.initialize.selector)
+        "./out/BaseOracle.t.sol/BaseOracleHarness.json", abi.encodeWithSelector(BaseOracleHarness.initialize.selector)
       )
     );
     vm.stopPrank();

@@ -23,15 +23,6 @@ abstract contract BaseOracle is Ownable2StepUpgradeable {
   uint16 public maxPriceAge;
   mapping(address => IChainlinkAggregator) public priceFeedOf;
 
-  /// @custom:oz-upgrades-unsafe-allow constructor
-  constructor() {
-    _disableInitializers();
-  }
-
-  function initialize() external initializer {
-    Ownable2StepUpgradeable.__Ownable2Step_init();
-  }
-
   /// @notice Set price feed of a token.
   /// @param _token Token address.
   /// @param _newPriceFeed New price feed address.
