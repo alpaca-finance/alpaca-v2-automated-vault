@@ -6,6 +6,11 @@ import { PancakeV3VaultOracle } from "src/oracles/PancakeV3VaultOracle.sol";
 
 // interfaces
 import { IERC20 } from "src/interfaces/IERC20.sol";
+import { IChainlinkAggregator } from "src/interfaces/IChainlinkAggregator.sol";
+
+// libraries
+import { LibLiquidityAmounts } from "src/libraries/LibLiquidityAmounts.sol";
+import { LibTickMath } from "src/libraries/LibTickMath.sol";
 
 // fixtures
 import "test/fixtures/BscFixture.f.sol";
@@ -26,6 +31,9 @@ contract PancakeV3VaultOracleHarness is PancakeV3VaultOracle {
 }
 
 contract PancakeV3VaultOracleTest is BscFixture, ProtocolActorFixture {
+  int24 constant MIN_TICK = -887272;
+  int24 constant MAX_TICK = 887272;
+
   PancakeV3VaultOracle oracle;
   PancakeV3VaultOracleHarness harness;
   address mockBank = makeAddr("mockBank");
@@ -77,41 +85,36 @@ contract PancakeV3VaultOracleTest is BscFixture, ProtocolActorFixture {
     );
   }
 
-  function testForkFuzz_Harness_GetPositionValueUSD_InRange(
-    int24 tickLower,
-    int24 tickUpper,
-    uint256 amount0Desired,
-    uint256 amount1Desired
-  ) public {
-    // Bound to valid tick in range
-    (, int24 tickCurrent,,,,,) = pancakeV3USDTWBNBPool.slot0();
-    tickLower = int24(bound(tickLower, -887272, tickCurrent - 1));
-    tickUpper = int24(bound(tickUpper, tickCurrent + 1, 887272));
-    // Round tick to nearest valid tick according to tick spacing
-    int24 tickSpacing = pancakeV3USDTWBNBPool.tickSpacing();
-    tickLower = tickLower + tickSpacing - tickLower % tickSpacing;
-    tickUpper = tickUpper - tickSpacing - tickUpper % tickSpacing;
+  struct TestGetPositionValueParams {
+    ICommonV3Pool pool;
+    IChainlinkAggregator token0Feed;
+    IChainlinkAggregator token1Feed;
+    int24 tickLower;
+    int24 tickUpper;
+    uint256 amount0Desired;
+    uint256 amount1Desired;
+  }
 
-    // Bound to sensible amount
-    amount0Desired = bound(amount0Desired, 1e3, 1e32);
-    amount1Desired = bound(amount1Desired, 1e3, 1e32);
-
+  function _testGetPositionValue(TestGetPositionValueParams memory params) internal {
     (uint256 tokenId, uint256 amount0, uint256 amount1) =
-      _addLiquidity(pancakeV3USDTWBNBPool, tickLower, tickUpper, amount0Desired, amount1Desired);
-
-    (, int256 usdtPrice,,,) = usdtFeed.latestRoundData();
-    (, int256 wbnbPrice,,,) = wbnbFeed.latestRoundData();
+      _addLiquidity(params.pool, params.tickLower, params.tickUpper, params.amount0Desired, params.amount1Desired);
+    console.log(amount0);
+    console.log(amount1);
+    (, int256 token0Price,,,) = params.token0Feed.latestRoundData();
+    (, int256 token1Price,,,) = params.token1Feed.latestRoundData();
 
     uint256 positionValueUSD = harness.harness_getPositionValueUSD(
-      address(pancakeV3USDTWBNBPool),
+      address(params.pool),
       tokenId,
-      uint256(usdtPrice) * (10 ** (18 - usdtFeed.decimals())),
-      uint256(wbnbPrice) * (10 ** (18 - wbnbFeed.decimals()))
+      uint256(token0Price) * (10 ** (18 - params.token0Feed.decimals())),
+      uint256(token1Price) * (10 ** (18 - params.token1Feed.decimals()))
     );
 
-    uint256 usdtValueUSD = amount0 * uint256(usdtPrice) / (10 ** usdtFeed.decimals());
-    uint256 wbnbValueUSD = amount1 * uint256(wbnbPrice) / (10 ** wbnbFeed.decimals());
-    uint256 expectedPositionValueUSD = usdtValueUSD + wbnbValueUSD;
+    uint256 token0ValueUSD = amount0 * (10 ** (18 - IERC20(params.pool.token0()).decimals())) * uint256(token0Price)
+      / (10 ** params.token0Feed.decimals());
+    uint256 token1ValueUSD = amount1 * (10 ** (18 - IERC20(params.pool.token1()).decimals())) * uint256(token1Price)
+      / (10 ** params.token1Feed.decimals());
+    uint256 expectedPositionValueUSD = token0ValueUSD + token1ValueUSD;
 
     // There is always 1 wei loss when convert liquidty to amount
     // `1e18 / lesserAmount` is to define that loss as max delta
@@ -121,6 +124,138 @@ contract PancakeV3VaultOracleTest is BscFixture, ProtocolActorFixture {
     else maxDelta = 1e18 / (amount0 < amount1 ? amount0 : amount1);
     assertApproxEqRel(positionValueUSD, expectedPositionValueUSD, maxDelta);
   }
+
+  function testForkFuzz_Harness_GetPositionValueUSD_InRange_E18Tokens(
+    int24 tickLower,
+    int24 tickUpper,
+    uint256 amount0Desired,
+    uint256 amount1Desired
+  ) public {
+    // Assume fuzz inputs
+    (uint160 sqrtPriceX96Current, int24 tickCurrent,,,,,) = pancakeV3USDTWBNBPool.slot0();
+    // Bound to valid tick in range
+    tickLower = int24(bound(tickLower, MIN_TICK, tickCurrent - 1));
+    tickUpper = int24(bound(tickUpper, tickCurrent + 1, MAX_TICK));
+    // Round tick to nearest valid tick according to tick spacing
+    int24 tickSpacing = pancakeV3USDTWBNBPool.tickSpacing();
+    tickLower = tickLower + tickSpacing - tickLower % tickSpacing;
+    tickUpper = tickUpper - tickSpacing - tickUpper % tickSpacing;
+    // Bound to sensible amount
+    amount0Desired = bound(amount0Desired, 1e3, 1e32);
+    amount1Desired = bound(amount1Desired, 1e3, 1e32);
+    // Assume liquidity != 0
+    vm.assume(
+      LibLiquidityAmounts.getLiquidityForAmounts(
+        sqrtPriceX96Current,
+        LibTickMath.getSqrtRatioAtTick(tickLower),
+        LibTickMath.getSqrtRatioAtTick(tickUpper),
+        amount0Desired,
+        amount1Desired
+      ) != 0
+    );
+
+    _testGetPositionValue(
+      TestGetPositionValueParams({
+        pool: pancakeV3USDTWBNBPool,
+        token0Feed: usdtFeed,
+        token1Feed: wbnbFeed,
+        tickLower: tickLower,
+        tickUpper: tickUpper,
+        amount0Desired: amount0Desired,
+        amount1Desired: amount1Desired
+      })
+    );
+  }
+
+  function testForkFuzz_Harness_GetPositionValueUSD_InRange_NonE18Tokens(
+    int24 tickLower,
+    int24 tickUpper,
+    uint256 amount0Desired,
+    uint256 amount1Desired
+  ) public {
+    // Assume fuzz inputs
+    (uint160 sqrtPriceX96Current, int24 tickCurrent,,,,,) = pancakeV3DOGEWBNBPool.slot0();
+    // Bound to valid tick in range
+    tickLower = int24(bound(tickLower, MIN_TICK, tickCurrent - 1));
+    tickUpper = int24(bound(tickUpper, tickCurrent + 1, MAX_TICK));
+    // Round tick to nearest valid tick according to tick spacing
+    int24 tickSpacing = pancakeV3DOGEWBNBPool.tickSpacing();
+    tickLower = tickLower + tickSpacing - tickLower % tickSpacing;
+    tickUpper = tickUpper - tickSpacing - tickUpper % tickSpacing;
+    // Bound to sensible amount
+    amount0Desired = bound(amount0Desired, 1e2, 1e28);
+    amount1Desired = bound(amount1Desired, 1e3, 1e32);
+    // Assume liquidity != 0
+    vm.assume(
+      LibLiquidityAmounts.getLiquidityForAmounts(
+        sqrtPriceX96Current,
+        LibTickMath.getSqrtRatioAtTick(tickLower),
+        LibTickMath.getSqrtRatioAtTick(tickUpper),
+        amount0Desired,
+        amount1Desired
+      ) != 0
+    );
+
+    _testGetPositionValue(
+      TestGetPositionValueParams({
+        pool: pancakeV3DOGEWBNBPool,
+        token0Feed: dogeFeed,
+        token1Feed: wbnbFeed,
+        tickLower: tickLower,
+        tickUpper: tickUpper,
+        amount0Desired: amount0Desired,
+        amount1Desired: amount1Desired
+      })
+    );
+  }
+
+  // TODO: fuzz out range
+  //   function testForkFuzz_Harness_GetPositionValueUSD_OutOfLowerRange_E18Tokens(
+  //     int24 tickLower,
+  //     int24 tickUpper,
+  //     uint256 amount1Desired
+  //   ) public {
+  //     // Assume fuzz inputs
+  //     (uint160 sqrtPriceX96Current, int24 tickCurrent,,,,,) = pancakeV3USDTWBNBPool.slot0();
+  //     // Bound to tick out of lower range and round to nearest valid tick according to tickSpacing
+  //     int24 tickSpacing = pancakeV3USDTWBNBPool.tickSpacing();
+  //     tickUpper = int24(bound(tickUpper, MIN_TICK + 2 * tickSpacing, tickCurrent));
+  //     tickUpper = tickUpper - tickUpper % tickSpacing;
+  //     tickLower = int24(bound(tickLower, MIN_TICK, tickUpper));
+  //     tickLower = tickLower + tickSpacing - tickLower % tickSpacing;
+  //     // Bound to sensible amount
+  //     amount1Desired = bound(amount1Desired, 1e8, 1e12);
+  //     vm.assume(
+  //       LibLiquidityAmounts.getLiquidityForAmounts(
+  //         sqrtPriceX96Current,
+  //         LibTickMath.getSqrtRatioAtTick(tickLower),
+  //         LibTickMath.getSqrtRatioAtTick(tickUpper),
+  //         0,
+  //         amount1Desired
+  //       ) != 0
+  //     );
+  //     console.log(
+  //       LibLiquidityAmounts.getLiquidityForAmounts(
+  //         sqrtPriceX96Current,
+  //         LibTickMath.getSqrtRatioAtTick(tickLower),
+  //         LibTickMath.getSqrtRatioAtTick(tickUpper),
+  //         0,
+  //         amount1Desired
+  //       )
+  //     );
+
+  //     _testGetPositionValue(
+  //       TestGetPositionValueParams({
+  //         pool: pancakeV3USDTWBNBPool,
+  //         token0Feed: usdtFeed,
+  //         token1Feed: wbnbFeed,
+  //         tickLower: tickLower,
+  //         tickUpper: tickUpper,
+  //         amount0Desired: 0,
+  //         amount1Desired: amount1Desired
+  //       })
+  //     );
+  //   }
 
   //   function testForkFuzz_GetPositionValue_BothTokenE18(
   //     uint96 usdtBorrowAmount,
@@ -230,8 +365,8 @@ contract PancakeV3VaultOracleTest is BscFixture, ProtocolActorFixture {
   //     // Assume valid tick range
   //     // int24 tickSpacing = pancakeV3USDTWBNBPool.tickSpacing();
   //     (, int24 tickCurrent,,,,,) = pancakeV3USDTWBNBPool.slot0();
-  //     // bound(tickLower, -887272, 887272);
-  //     // bound(tickUpper, -887272, 887272);
+  //     // bound(tickLower, MIN_TICK, MAX_TICK);
+  //     // bound(tickUpper, MIN_TICK, MAX_TICK);
   //     bound(tickLower, tickCurrent - 100000, tickCurrent);
   //     bound(tickUpper, tickCurrent, tickCurrent + 100000);
   //     vm.assume(tickLower < tickUpper);
