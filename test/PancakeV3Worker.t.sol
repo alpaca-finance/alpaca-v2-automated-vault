@@ -1,12 +1,116 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "./BasePancakeV3Worker.unit.sol";
+import { ERC20 } from "@solmate/tokens/ERC20.sol";
 
-contract PancakeV3Worker_IncreaseLiquidity_UnitForkTest is BasePancakeV3WorkerUnitForkTest {
-  function setUp() public override {
-    super.setUp();
+import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
+
+import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+import { IPancakeV3Router } from "src/interfaces/pancake-v3/IPancakeV3Router.sol";
+
+import { Tasks } from "src/libraries/Constants.sol";
+
+// fixtures
+import "test/fixtures/BscFixture.f.sol";
+import "test/fixtures/ProtocolActorFixture.f.sol";
+
+// helpers
+import { DeployHelper } from "test/helpers/DeployHelper.sol";
+
+contract BasePancakeV3WorkerTest is BscFixture, ProtocolActorFixture {
+  int24 internal constant TICK_LOWER = -58000;
+  int24 internal constant TICK_UPPER = -57750;
+  uint16 internal constant PERFORMANCE_FEE_BPS = 1_000;
+  uint256 internal constant DUST = 0.000000001 ether;
+
+  PancakeV3Worker worker;
+  ERC20 token0;
+  ERC20 token1;
+  uint24 poolFee;
+  IAutomatedVaultManager vaultManager = IAutomatedVaultManager(address(1));
+  address IN_SCOPE_EXECUTOR = makeAddr("IN_SCOPE_EXECUTOR");
+
+  constructor() BscFixture() ProtocolActorFixture() {
+    vm.createSelectFork("bsc_mainnet", 27_515_914);
+
+    vm.prank(DEPLOYER);
+    worker = PancakeV3Worker(
+      DeployHelper.deployUpgradeable(
+        "PancakeV3Worker",
+        abi.encodeWithSelector(
+          PancakeV3Worker.initialize.selector,
+          PancakeV3Worker.ConstructorParams({
+            vaultManager: vaultManager,
+            positionManager: pancakeV3PositionManager,
+            pool: pancakeV3USDTWBNBPool,
+            router: pancakeV3Router,
+            masterChef: pancakeV3MasterChef,
+            zapV3: zapV3,
+            performanceFeeBucket: PERFORMANCE_FEE_BUCKET,
+            tickLower: TICK_LOWER,
+            tickUpper: TICK_UPPER,
+            performanceFeeBps: PERFORMANCE_FEE_BPS
+          })
+        )
+      )
+    );
+
+    token0 = worker.token0();
+    token1 = worker.token1();
+    poolFee = worker.poolFee();
+
+    vm.mockCall(
+      address(vaultManager),
+      abi.encodeWithSelector(IAutomatedVaultManager.EXECUTOR_IN_SCOPE.selector),
+      abi.encode(IN_SCOPE_EXECUTOR)
+    );
+
+    vm.startPrank(IN_SCOPE_EXECUTOR);
+    token0.approve(address(worker), type(uint256).max);
+    token1.approve(address(worker), type(uint256).max);
+    vm.stopPrank();
+
+    deal(address(token0), IN_SCOPE_EXECUTOR, 100_000 ether);
+    deal(address(token1), IN_SCOPE_EXECUTOR, 100_000 ether);
   }
+
+  struct CommonV3ImportantPositionInfo {
+    address token0;
+    address token1;
+    int24 tickLower;
+    int24 tickUpper;
+    uint128 liquidity;
+    uint128 tokensOwed0;
+    uint128 tokensOwed1;
+  }
+
+  function _getImportantPositionInfo(uint256 tokenId) internal view returns (CommonV3ImportantPositionInfo memory info) {
+    (,, info.token0, info.token1,, info.tickLower, info.tickUpper, info.liquidity,,, info.tokensOwed0, info.tokensOwed1)
+    = pancakeV3PositionManager.positions(tokenId);
+  }
+
+  function _swapExactInput(address tokenIn_, address tokenOut_, uint24 fee_, uint256 swapAmount) internal {
+    deal(tokenIn_, address(this), swapAmount);
+    // Approve router to spend token1
+    ERC20(tokenIn_).approve(address(pancakeV3Router), swapAmount);
+    // Swap
+    pancakeV3Router.exactInputSingle(
+      IPancakeV3Router.ExactInputSingleParams({
+        tokenIn: tokenIn_,
+        tokenOut: tokenOut_,
+        fee: fee_,
+        recipient: address(this),
+        amountIn: swapAmount,
+        amountOutMinimum: 0,
+        sqrtPriceLimitX96: 0
+      })
+    );
+  }
+}
+
+contract PancakeV3Worker_IncreaseLiquidityTest is BasePancakeV3WorkerTest {
+  constructor() BasePancakeV3WorkerTest() { }
 
   function testCorrectness_IncreaseLiquidity_InRange_Subsequently() public {
     // Assert
@@ -145,7 +249,7 @@ contract PancakeV3Worker_IncreaseLiquidity_UnitForkTest is BasePancakeV3WorkerUn
 
   function testRevert_NotExecutorInScopeCallDoWork() public {
     // call from some address that is not in scope
-    vm.prank(ALICE);
+    vm.prank(USER_ALICE);
     vm.expectRevert(PancakeV3Worker.PancakeV3Worker_Unauthorized.selector);
     worker.doWork(Tasks.INCREASE, abi.encode());
   }
@@ -158,5 +262,26 @@ contract PancakeV3Worker_IncreaseLiquidity_UnitForkTest is BasePancakeV3WorkerUn
       abi.encodeWithSelector(PancakeV3Worker.doWork.selector, address(this), uint8(255), abi.encode())
     );
     _success; // to silence solc warning
+  }
+}
+
+// TODO: more test
+contract PancakeV3Worker_ReinvestTest is BasePancakeV3WorkerTest {
+  constructor() BasePancakeV3WorkerTest() { }
+
+  function testCorrectness_WhenInRange_WhenReinvest() external {
+    // Assert
+    // - Worker's tokenId must be 0
+    assertEq(worker.nftTokenId(), 0, "tokenId must be 0");
+
+    // Increase position by 10_000 TKN0 and 1 TKN1
+    vm.prank(IN_SCOPE_EXECUTOR);
+    worker.doWork(Tasks.INCREASE, abi.encode(10_000 ether, 1 ether));
+
+    // Assuming some trades happened
+    _swapExactInput(address(token1), address(token0), poolFee, 500 ether);
+
+    // Now call reinvest
+    worker.reinvest();
   }
 }

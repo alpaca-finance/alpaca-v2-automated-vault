@@ -1,23 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "test/base/BaseTest.sol";
-
-// TODO: migrate to new test structure
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 
-contract AutomatedVaultUnitTest is BaseTest {
+// fixtures
+import "test/fixtures/ProtocolActorFixture.f.sol";
+
+// helpers
+import { DeployHelper } from "test/helpers/DeployHelper.sol";
+
+contract AutomatedVaultUnitTest is ProtocolActorFixture {
   AutomatedVaultManager vaultManager;
 
-  function setUp() public override {
-    super.setUp();
-
+  constructor() ProtocolActorFixture() {
     vm.startPrank(DEPLOYER);
-    vaultManager = deployAutomatedVaultManager();
+    vaultManager = AutomatedVaultManager(
+      DeployHelper.deployUpgradeable("AutomatedVaultManager", abi.encodeWithSignature("initialize()"))
+    );
     vm.stopPrank();
   }
 
-  function testCorrectness_OpenVault_ShouldWork() public {
+  function testCorrectness_OpenVault() public {
     address worker = makeAddr("worker");
     address vaultOracle = makeAddr("vaultOracle");
     address depositExecutor = makeAddr("depositExecutor");
@@ -36,12 +39,12 @@ contract AutomatedVaultUnitTest is BaseTest {
     assertEq(vaultDepositExecutor, depositExecutor);
   }
 
-  function testRevert_NotOwnerOpenVault() public {
+  function testRevert_OpenVault_NonOwnerIsCaller() public {
     address worker = makeAddr("worker");
     address vaultOracle = makeAddr("vaultOracle");
     address depositExecutor = makeAddr("depositExecutor");
 
-    vm.prank(ALICE);
+    vm.prank(USER_ALICE);
     vm.expectRevert("Ownable: caller is not the owner");
     vaultManager.openVault(
       "test vault",
