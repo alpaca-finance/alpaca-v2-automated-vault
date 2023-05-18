@@ -3,10 +3,12 @@ src = "src"
 out = "out"
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./" }]
+optimizer = true
 optimizer-runs = 200
+fuzz = { runs = 50, max_test_rejects = 100_000, seed = 0x5eed }
 
-[profile.local]
-no-match-contract = "ForkTest"
+[profile.ci]
+fuzz = { runs = 256, max_test_rejects = 1_000_000 }
 
 [fmt]
 line_length = 120
