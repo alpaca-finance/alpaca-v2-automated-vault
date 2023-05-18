@@ -19,4 +19,7 @@ contract MockMoneyMarket {
   function pretendAccrueInterest(address _account, address _token, uint256 _interest) external {
     getNonCollatAccountDebt[_account][_token] += _interest;
   }
+
+  // placeholder
+  function accrueInterest(address) external { }
 }
