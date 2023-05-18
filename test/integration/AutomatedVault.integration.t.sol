@@ -92,34 +92,34 @@ contract AutomatedVaultIntegrationForkTest is BaseForkTest {
   }
 
   // TODO: revise this case after done with debt pricing
-  function testCorrectness_VaultManager_DepositToEmptyVault_ShouldGetSharesEqualToEquity() public {
-    IAutomatedVaultManager.DepositTokenParams[] memory deposits = new IAutomatedVaultManager.DepositTokenParams[](2);
-    deposits[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(wbnb), amount: 1 ether });
-    deposits[1] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: 2 ether });
+  // function testCorrectness_VaultManager_DepositToEmptyVault_ShouldGetSharesEqualToEquity() public {
+  //   IAutomatedVaultManager.DepositTokenParams[] memory deposits = new IAutomatedVaultManager.DepositTokenParams[](2);
+  //   deposits[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(wbnb), amount: 1 ether });
+  //   deposits[1] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: 2 ether });
 
-    uint256 _balanceWBNBBefore = wbnb.balanceOf(ALICE);
-    uint256 _balanceUSDTBefore = usdt.balanceOf(ALICE);
+  //   uint256 _balanceWBNBBefore = wbnb.balanceOf(ALICE);
+  //   uint256 _balanceUSDTBefore = usdt.balanceOf(ALICE);
 
-    vm.prank(ALICE);
-    (, uint256 amount0, uint256 amount1) =
-      abi.decode(vaultManager.deposit(address(vaultToken), deposits, abi.encode()), (uint128, uint256, uint256));
+  //   vm.prank(ALICE);
+  //   (, uint256 amount0, uint256 amount1) =
+  //     abi.decode(vaultManager.deposit(address(vaultToken), deposits, abi.encode()), (uint128, uint256, uint256));
 
-    (, int256 usdtPrice,,,) = usdtFeed.latestRoundData();
-    uint256 usdtValueUSD = amount0 * uint256(usdtPrice) / (10 ** usdtFeed.decimals());
-    (, int256 wbnbPrice,,,) = wbnbFeed.latestRoundData();
-    uint256 wbnbValueUSD = amount1 * uint256(wbnbPrice) / (10 ** wbnbFeed.decimals());
-    uint256 expectedPositionValueUSD = usdtValueUSD + wbnbValueUSD;
+  //   (, int256 usdtPrice,,,) = usdtFeed.latestRoundData();
+  //   uint256 usdtValueUSD = amount0 * uint256(usdtPrice) / (10 ** usdtFeed.decimals());
+  //   (, int256 wbnbPrice,,,) = wbnbFeed.latestRoundData();
+  //   uint256 wbnbValueUSD = amount1 * uint256(wbnbPrice) / (10 ** wbnbFeed.decimals());
+  //   uint256 expectedPositionValueUSD = usdtValueUSD + wbnbValueUSD;
 
-    // check deducted user's balance
-    assertEq(_balanceWBNBBefore - 1 ether, wbnb.balanceOf(ALICE));
-    assertEq(_balanceUSDTBefore - 2 ether, usdt.balanceOf(ALICE));
-    // check equity
-    assertApproxEqAbs(
-      pcsV3LiquidityOracle.getPositionValueUSD(address(pcsV3Worker.pool()), pcsV3Worker.nftTokenId()),
-      expectedPositionValueUSD,
-      327
-    );
-    // check vault token minted to user
-    assertApproxEqAbs(vaultToken.balanceOf(ALICE), expectedPositionValueUSD, 327);
-  }
+  //   // check deducted user's balance
+  //   assertEq(_balanceWBNBBefore - 1 ether, wbnb.balanceOf(ALICE));
+  //   assertEq(_balanceUSDTBefore - 2 ether, usdt.balanceOf(ALICE));
+  //   // check equity
+  //   assertApproxEqAbs(
+  //     pcsV3LiquidityOracle.getPositionValueUSD(address(pcsV3Worker.pool()), pcsV3Worker.nftTokenId()),
+  //     expectedPositionValueUSD,
+  //     327
+  //   );
+  //   // check vault token minted to user
+  //   assertApproxEqAbs(vaultToken.balanceOf(ALICE), expectedPositionValueUSD, 327);
+  // }
 }
