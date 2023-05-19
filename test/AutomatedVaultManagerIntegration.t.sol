@@ -1,6 +1,87 @@
-// // TODO: migrate to new test structure
-// // SPDX-License-Identifier: MIT
-// pragma solidity 0.8.19;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.19;
+
+// interfaces
+import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+import { IZapV3 } from "src/interfaces/IZapV3.sol";
+
+// fixtures
+import "test/fixtures/PancakeV3WorkerFixture.f.sol";
+
+contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
+  constructor() PancakeV3WorkerFixture() { }
+
+  function setUp() public override {
+    vm.createSelectFork("bsc_mainnet", BscFixture.FORK_BLOCK_NUMBER_1);
+    super.setUp();
+  }
+
+  function testCorrectness_Deposit() public {
+    uint256 wbnbIn = 1 ether;
+    uint256 usdtIn = 2 ether;
+
+    deal(address(wbnb), address(this), wbnbIn);
+    wbnb.approve(address(vaultManager), type(uint256).max);
+    deal(address(usdt), address(this), usdtIn);
+    usdt.approve(address(vaultManager), type(uint256).max);
+
+    // Calculated expected equity
+    // * 2 each to mimic simple deposit borrowing
+    (uint256 swapAmount,, bool zeroForOne) = zapV3.calc(
+      IZapV3.CalcParams({
+        pool: address(pancakeV3Worker.pool()),
+        amountIn0: usdtIn * 2,
+        amountIn1: wbnbIn * 2,
+        tickLower: TICK_LOWER,
+        tickUpper: TICK_UPPER
+      })
+    );
+    (uint256 amountOut,,,) = pancakeV3Quoter.quoteExactInputSingle(
+      IPancakeV3QuoterV2.QuoteExactInputSingleParams({
+        tokenIn: zeroForOne ? address(usdt) : address(wbnb),
+        tokenOut: zeroForOne ? address(wbnb) : address(usdt),
+        amountIn: swapAmount,
+        fee: pancakeV3Worker.poolFee(),
+        sqrtPriceLimitX96: 0
+      })
+    );
+    uint256 expectedAddLiquidityWBNB = wbnbIn * 2;
+    uint256 expectedAddLiquidityUSDT = usdtIn * 2;
+    if (zeroForOne) {
+      expectedAddLiquidityWBNB += amountOut;
+      expectedAddLiquidityUSDT -= swapAmount;
+    } else {
+      expectedAddLiquidityUSDT += amountOut;
+      expectedAddLiquidityWBNB -= swapAmount;
+    }
+    (, int256 wbnbAnswer,,,) = wbnbFeed.latestRoundData();
+    (, int256 usdtAnswer,,,) = usdtFeed.latestRoundData();
+    uint256 expectedEquity = expectedAddLiquidityWBNB * (10 ** (18 - wbnb.decimals())) * uint256(wbnbAnswer)
+      / (10 ** wbnbFeed.decimals())
+      + expectedAddLiquidityUSDT * (10 ** (18 - usdt.decimals())) * uint256(usdtAnswer) / (10 ** usdtFeed.decimals());
+
+    uint256 wbnbBefore = wbnb.balanceOf(address(this));
+    uint256 usdtBefore = usdt.balanceOf(address(this));
+
+    // Assertions
+    // - pull tokens from caller
+    // - call updateExecutor
+    // - call depositExecutor
+    // - mint shares based on equityChange
+
+    vm.expectCall(address(updateExecutor), abi.encodeWithSelector(IExecutor.execute.selector), 1);
+    vm.expectCall(address(depositExecutor), abi.encodeWithSelector(IExecutor.execute.selector), 1);
+
+    IAutomatedVaultManager.DepositTokenParams[] memory params = new IAutomatedVaultManager.DepositTokenParams[](2);
+    params[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(wbnb), amount: wbnbIn });
+    params[1] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: usdtIn });
+    vaultManager.deposit(address(vaultToken), params, abi.encode());
+
+    assertEq(wbnbBefore - wbnb.balanceOf(address(this)), wbnbIn);
+    assertEq(usdtBefore - usdt.balanceOf(address(this)), usdtIn);
+    assertApproxEqRel(vaultToken.balanceOf(address(this)), expectedEquity, 1); // within 1e-18% delta
+  }
+}
 
 // import "test/base/BaseForkTest.sol";
 

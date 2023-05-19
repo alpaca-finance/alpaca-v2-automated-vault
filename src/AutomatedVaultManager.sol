@@ -12,6 +12,7 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin-upgradeable/security/R
 import { AutomatedVaultERC20 } from "src/AutomatedVaultERC20.sol";
 
 // interfaces
+import { IWorker } from "src/interfaces/IWorker.sol";
 import { IExecutor } from "src/interfaces/IExecutor.sol";
 import { IVaultOracle } from "src/interfaces/IVaultOracle.sol";
 import { IAutomatedVaultERC20 } from "src/interfaces/IAutomatedVaultERC20.sol";
@@ -35,12 +36,13 @@ contract AutomatedVaultManager is
     address worker;
     address vaultOracle;
     address depositExecutor;
+    address updateExecutor;
   }
 
   // vault's ERC20 address => vault info
   mapping(address => VaultInfo) public vaultInfos;
   /// @dev execution scope to tell downstream contracts (Bank, Worker, etc.)
-  ///      that current executor is acting on behalf of vault and can be trusted
+  /// that current executor is acting on behalf of vault and can be trusted
   address public EXECUTOR_IN_SCOPE;
 
   event LogOpenVault(address indexed _vaultToken, VaultInfo _vaultInfo);
@@ -85,6 +87,7 @@ contract AutomatedVaultManager is
   }
 
   // TODO: slippage control
+  // TODO: remove executor params?
   function deposit(address _vaultToken, DepositTokenParams[] calldata _deposits, bytes calldata _executorParams)
     external
     returns (bytes memory _result)
@@ -99,15 +102,17 @@ contract AutomatedVaultManager is
       }
     }
 
+    // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
+    IExecutor(_cachedVaultInfo.updateExecutor).execute(abi.encode(_vaultToken, _cachedVaultInfo.worker));
+
     uint256 _totalEquityBefore =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquity(_vaultToken, _cachedVaultInfo.worker);
 
     _result =
       _execute(_cachedVaultInfo.depositExecutor, abi.encode(_cachedVaultInfo.worker, _deposits, _executorParams));
 
-    uint256 _totalEquityAfter =
-      IVaultOracle(_cachedVaultInfo.vaultOracle).getEquity(_vaultToken, _cachedVaultInfo.worker);
-    uint256 _equityChanged = _totalEquityAfter - _totalEquityBefore;
+    uint256 _equityChanged =
+      IVaultOracle(_cachedVaultInfo.vaultOracle).getEquity(_vaultToken, _cachedVaultInfo.worker) - _totalEquityBefore;
 
     IAutomatedVaultERC20(_vaultToken).mint(
       msg.sender, _equityChanged.valueToShare(IAutomatedVaultERC20(_vaultToken).totalSupply(), _totalEquityBefore)

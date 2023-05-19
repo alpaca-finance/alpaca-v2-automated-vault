@@ -24,32 +24,46 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
     address worker = makeAddr("worker");
     address vaultOracle = makeAddr("vaultOracle");
     address depositExecutor = makeAddr("depositExecutor");
+    address updateExecutor = makeAddr("updateExecutor");
 
     vm.prank(DEPLOYER);
     address vaultToken = vaultManager.openVault(
       "test vault",
       "TV",
-      AutomatedVaultManager.VaultInfo({ worker: worker, vaultOracle: vaultOracle, depositExecutor: depositExecutor })
+      AutomatedVaultManager.VaultInfo({
+        worker: worker,
+        vaultOracle: vaultOracle,
+        depositExecutor: depositExecutor,
+        updateExecutor: updateExecutor
+      })
     );
 
-    (address vaultWorker, address vaultWorkerOracle, address vaultDepositExecutor) = vaultManager.vaultInfos(vaultToken);
+    (address vaultWorker, address vaultWorkerOracle, address vaultDepositExecutor, address vaultUpdateExecutor) =
+      vaultManager.vaultInfos(vaultToken);
 
     assertEq(vaultWorker, worker);
     assertEq(vaultWorkerOracle, vaultOracle);
     assertEq(vaultDepositExecutor, depositExecutor);
+    assertEq(vaultUpdateExecutor, updateExecutor);
   }
 
   function testRevert_OpenVault_NonOwnerIsCaller() public {
     address worker = makeAddr("worker");
     address vaultOracle = makeAddr("vaultOracle");
     address depositExecutor = makeAddr("depositExecutor");
+    address updateExecutor = makeAddr("updateExecutor");
 
     vm.prank(USER_ALICE);
     vm.expectRevert("Ownable: caller is not the owner");
     vaultManager.openVault(
       "test vault",
       "TV",
-      AutomatedVaultManager.VaultInfo({ worker: worker, vaultOracle: vaultOracle, depositExecutor: depositExecutor })
+      AutomatedVaultManager.VaultInfo({
+        worker: worker,
+        vaultOracle: vaultOracle,
+        depositExecutor: depositExecutor,
+        updateExecutor: updateExecutor
+      })
     );
   }
 
