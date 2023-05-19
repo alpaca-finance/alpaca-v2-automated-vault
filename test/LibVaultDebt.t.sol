@@ -90,5 +90,9 @@ contract LibVaultDebtUnitTest is Test {
     assertEq(vaultDebtLists.getNextOf(vaultToken1, token1), LibVaultDebt.EMPTY, "TOKEN1 next gone");
     assertEq(vaultDebtLists.getPreviousOf(vaultToken1, token1), LibVaultDebt.EMPTY, "TOKEN1 prev gone");
     assertEq(vaultDebtLists.getDebtSharesOf(vaultToken1, token1), 0, "token1 debt shares of vault1 gone");
+
+    // Can't decrease empty list
+    vm.expectRevert(abi.encodeWithSelector(LibVaultDebt.LibVaultDebt_EmptyList.selector, vaultToken1, token1));
+    vaultDebtLists.decreaseDebtSharesOf(vaultToken1, token1, 1 ether);
   }
 }
