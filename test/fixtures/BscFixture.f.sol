@@ -8,6 +8,7 @@ import "@forge-std/Test.sol";
 import { IERC20 } from "src/interfaces/IERC20.sol";
 import { IPancakeV3Router } from "src/interfaces/pancake-v3/IPancakeV3Router.sol";
 import { IPancakeV3MasterChef } from "src/interfaces/pancake-v3/IPancakeV3MasterChef.sol";
+import { IPancakeV3QuoterV2 } from "src/interfaces/pancake-v3/IPancakeV3QuoterV2.sol";
 import { ICommonV3PositionManager } from "src/interfaces/ICommonV3PositionManager.sol";
 import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
 import { IZapV3 } from "src/interfaces/IZapV3.sol";
@@ -28,6 +29,7 @@ contract BscFixture is Test {
     ICommonV3PositionManager(0x46A15B0b27311cedF172AB29E4f4766fbE7F4364);
   IPancakeV3MasterChef public constant pancakeV3MasterChef =
     IPancakeV3MasterChef(0x556B9306565093C855AEA9AE92A594704c2Cd59e);
+  IPancakeV3QuoterV2 public constant pancakeV3Quoter = IPancakeV3QuoterV2(0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997);
   // token0 = USDT, token1 = WBNB
   ICommonV3Pool public constant pancakeV3USDTWBNBPool = ICommonV3Pool(0x36696169C63e42cd08ce11f5deeBbCeBae652050);
   // token0 = DOGE, token1 = WBNB, fee = 2500
@@ -51,6 +53,7 @@ contract BscFixture is Test {
     vm.label(address(pancakeV3Router), "pancakeV3Router");
     vm.label(address(pancakeV3PositionManager), "pancakeV3PositionManager");
     vm.label(address(pancakeV3MasterChef), "pancakeV3MasterChef");
+    vm.label(address(pancakeV3Quoter), "pancakeV3Quoter");
     vm.label(address(pancakeV3USDTWBNBPool), "pancakeV3USDTWBNBPool");
     vm.label(address(pancakeV3DOGEWBNBPool), "pancakeV3DOGEWBNBPool");
 

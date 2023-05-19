@@ -9,6 +9,7 @@ library DeployHelper {
 
   address public constant PROXY_ADMIN = address(9876);
 
+  // TODO: refactor to use deployCode cheats
   function deployContract(string memory contractName) internal returns (address addr) {
     return deployContract(contractName, abi.encode());
   }

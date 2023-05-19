@@ -15,19 +15,22 @@ import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.so
 
 // libraries
 import { LibShareUtil } from "src/libraries/LibShareUtil.sol";
+import { LibVaultDebt } from "src/libraries/LibVaultDebt.sol";
 
 contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradeable {
   using SafeCastLib for uint256;
   using SafeTransferLib for ERC20;
   using LibShareUtil for uint256;
+  using LibVaultDebt for mapping(address => LibVaultDebt.VaultDebtList);
 
   error Bank_ExecutorNotInScope();
+
+  // vault token => VaultDebtList
+  mapping(address => LibVaultDebt.VaultDebtList) public vaultDebtLists;
 
   IMoneyMarket public moneyMarket;
   IAutomatedVaultManager public vaultManager;
 
-  // vault address => token => debt shares
-  mapping(address => mapping(address => uint256)) public vaultDebtShares;
   // token => total debt shares
   mapping(address => uint256) public tokenDebtShares;
 
@@ -52,12 +55,24 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     vaultManager = IAutomatedVaultManager(_vaultManager);
   }
 
+  function accrueInterest(address _vaultToken) external {
+    uint256 _length = vaultDebtLists.getLength(_vaultToken);
+    address _currentToken = LibVaultDebt.START;
+    for (uint256 _i; _i < _length;) {
+      _currentToken = vaultDebtLists.getNextOf(_vaultToken, _currentToken);
+      moneyMarket.accrueInterest(_currentToken);
+      unchecked {
+        ++_i;
+      }
+    }
+  }
+
   function getVaultDebt(address _vaultToken, address _token)
     external
     view
     returns (uint256 _debtShares, uint256 _debtAmount)
   {
-    _debtShares = vaultDebtShares[_vaultToken][_token];
+    _debtShares = vaultDebtLists.getDebtSharesOf(_vaultToken, _token);
     // NOTE: must accrue interest on money market before calculate shares to correctly reflect debt
     _debtAmount =
       _debtShares.shareToValue(moneyMarket.getNonCollatAccountDebt(address(this), _token), tokenDebtShares[_token]);
@@ -78,7 +93,7 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
         _cachedTokenDebtShares, _moneyMarket.getNonCollatAccountDebt(address(this), _token)
       );
       tokenDebtShares[_token] = _cachedTokenDebtShares + _debtSharesToAdd;
-      vaultDebtShares[_vaultToken][_token] += _debtSharesToAdd;
+      vaultDebtLists.increaseDebtSharesOf(_vaultToken, _token, _debtSharesToAdd);
     }
 
     // Interactions
@@ -102,11 +117,11 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     uint256 _cachedTokenDebtShares = tokenDebtShares[_token];
     // NOTE: must accrue interest on money market before calculate shares to correctly reflect debt
     // Round down in protocol favor
-    uint256 _debtSharesToRemove =
+    uint256 _debtSharesToDecrease =
       _amount.valueToShare(_cachedTokenDebtShares, _moneyMarket.getNonCollatAccountDebt(address(this), _token));
     // Will revert underflow if repay more than debt
-    tokenDebtShares[_token] = _cachedTokenDebtShares - _debtSharesToRemove;
-    vaultDebtShares[_vaultToken][_token] -= _debtSharesToRemove;
+    tokenDebtShares[_token] = _cachedTokenDebtShares - _debtSharesToDecrease;
+    vaultDebtLists.decreaseDebtSharesOf(_vaultToken, _token, _debtSharesToDecrease);
 
     // Interactions
     ERC20(_token).safeApprove(address(_moneyMarket), _amount);

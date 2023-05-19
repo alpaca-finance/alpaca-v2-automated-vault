@@ -18,7 +18,7 @@ import { LibShareUtil } from "src/libraries/LibShareUtil.sol";
 import { MockMoneyMarket } from "test/mocks/MockMoneyMarket.sol";
 
 // fixtures
-import { ProtocolActorFixture } from "test/fixtures/ProtocolActorFixture.f.sol";
+import "test/fixtures/ProtocolActorFixture.f.sol";
 
 // helpers
 import { DeployHelper } from "test/helpers/DeployHelper.sol";
@@ -321,5 +321,17 @@ contract BankTest is ProtocolActorFixture {
     (debtShares, debtAmount) = bank.getVaultDebt(vault2, address(usdt));
     assertEq(debtShares, 0);
     assertEq(debtAmount, 0);
+  }
+
+  function testCorrectness_AccrueInterest() public {
+    address vault1 = makeAddr("VAULT_1");
+
+    vm.startPrank(IN_SCOPE_EXECUTOR);
+    bank.borrowOnBehalfOf(vault1, address(wbnb), 1 ether);
+    bank.borrowOnBehalfOf(vault1, address(usdt), 1 ether);
+
+    vm.expectCall(address(mockMoneyMarket), abi.encodeCall(mockMoneyMarket.accrueInterest, (address(wbnb))), 1);
+    vm.expectCall(address(mockMoneyMarket), abi.encodeCall(mockMoneyMarket.accrueInterest, (address(usdt))), 1);
+    bank.accrueInterest(vault1);
   }
 }
