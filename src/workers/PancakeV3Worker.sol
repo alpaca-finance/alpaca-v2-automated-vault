@@ -58,6 +58,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   event LogCollectPerformanceFee(
     address indexed _token, uint256 _earned, uint16 _performanceFeeBps, uint256 _performanceFee
   );
+  event LogDecreaseLiquidity(uint256 tokenId, uint256 amount0out, uint256 amount1out, uint128 liquidityOut);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -129,18 +130,18 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
       (uint128 _liquidity, uint256 _amount0, uint256 _amount1) = _increasePositionInternal(_amountIn0, _amountIn1);
       return abi.encode(_liquidity, _amount0, _amount1);
     } else if (_task == Tasks.DECREASE) {
-      // // Decode params
-      // (uint128 _liquidity) = abi.decode(_params, (uint128));
-      // // Decrease position.
-      // (uint256 _amount0, uint256 _amount1) = _decreasePositionInternal(_liquidity);
-      // // Send tokens to caller
-      // if (_amount0 > 0) {
-      //   token0.safeTransfer(msg.sender, _amount0);
-      // }
-      // if (_amount1 > 0) {
-      //   token1.safeTransfer(msg.sender, _amount1);
-      // }
-      // return abi.encode(_amount0, _amount1);
+      // Decode params
+      (uint128 _liquidity) = abi.decode(_params, (uint128));
+      // Decrease position.
+      (uint256 _amount0, uint256 _amount1) = _decreasePositionInternal(_liquidity);
+      // Send tokens to caller
+      if (_amount0 > 0) {
+        token0.safeTransfer(msg.sender, _amount0);
+      }
+      if (_amount1 > 0) {
+        token1.safeTransfer(msg.sender, _amount1);
+      }
+      return abi.encode(_amount0, _amount1);
     } else if (_task == Tasks.CHANGE_TICK) {
       // (int24 _newTickLower, int24 _newTickUpper) = abi.decode(_params, (int24, int24));
       // _changeTickInternal(_newTickLower, _newTickUpper);
@@ -336,6 +337,29 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     }
 
     emit LogIncreaseLiquidity(nftTokenId, _amount0, _amount1, _liquidity);
+  }
+
+  /// @notice Perform decrease position according to a given liquidity.
+  /// @param _liquidity Liquidity to decrease
+  function _decreasePositionInternal(uint128 _liquidity) internal returns (uint256 _amount0, uint256 _amount1) {
+    // Use balance before and not rely on master chef return value for safety reason
+    uint256 balance0Before = token0.balanceOf(address(this));
+    uint256 balance1Before = token1.balanceOf(address(this));
+    masterChef.decreaseLiquidity(
+      IPancakeV3MasterChef.DecreaseLiquidityParams({
+        tokenId: nftTokenId,
+        liquidity: _liquidity,
+        amount0Min: 0,
+        amount1Min: 0,
+        deadline: block.timestamp
+      })
+    );
+    _amount0 = token0.balanceOf(address(this)) - balance0Before;
+    _amount1 = token1.balanceOf(address(this)) - balance1Before;
+    token0.safeTransfer(msg.sender, _amount0);
+    token1.safeTransfer(msg.sender, _amount1);
+
+    emit LogDecreaseLiquidity(nftTokenId, _amount0, _amount1, _liquidity);
   }
 
   /// @notice Allow to trigger reinvest without passing through "doWork" routine.

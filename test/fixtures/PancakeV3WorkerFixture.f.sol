@@ -112,6 +112,7 @@ contract PancakeV3WorkerFixture is Test, BscFixture, ProtocolActorFixture {
           worker: address(pancakeV3Worker),
           vaultOracle: address(pancakeV3VaultOracle),
           depositExecutor: address(depositExecutor),
+          withdrawExecutor: address(0),
           updateExecutor: address(updateExecutor)
         })
       )

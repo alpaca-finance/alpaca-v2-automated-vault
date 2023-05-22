@@ -31,11 +31,13 @@ contract AutomatedVaultManager is
   using LibShareUtil for uint256;
 
   error AutomatedVaultManager_VaultNotExist(address _vaultToken);
+  error AutomatedVaultManager_InvalidParams();
 
   struct VaultInfo {
     address worker;
     address vaultOracle;
     address depositExecutor;
+    address withdrawExecutor;
     address updateExecutor;
   }
 
@@ -46,7 +48,8 @@ contract AutomatedVaultManager is
   address public EXECUTOR_IN_SCOPE;
 
   event LogOpenVault(address indexed _vaultToken, VaultInfo _vaultInfo);
-  event LogDeposit(address indexed _vault, address indexed _depositor, DepositTokenParams[] _deposits);
+  event LogDeposit(address indexed _vaultToken, address indexed _user, DepositTokenParams[] _deposits);
+  event LogWithdraw(address indexed _vaultToken, address indexed _user, uint256 _sharesWithdrawn);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -90,6 +93,7 @@ contract AutomatedVaultManager is
   // TODO: remove executor params?
   function deposit(address _vaultToken, DepositTokenParams[] calldata _deposits, bytes calldata _executorParams)
     external
+    nonReentrant
     returns (bytes memory _result)
   {
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
@@ -119,5 +123,38 @@ contract AutomatedVaultManager is
     );
 
     emit LogDeposit(_vaultToken, msg.sender, _deposits);
+  }
+
+  // TODO: slippage control
+  function withdraw(address _vaultToken, uint256 _sharesToWithdraw)
+    external
+    nonReentrant
+    returns (bytes memory _result)
+  {
+    if (_sharesToWithdraw > IAutomatedVaultERC20(_vaultToken).balanceOf(msg.sender)) {
+      revert AutomatedVaultManager_InvalidParams();
+    }
+
+    VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
+
+    // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
+    IExecutor(_cachedVaultInfo.updateExecutor).execute(abi.encode(_vaultToken, _cachedVaultInfo.worker));
+
+    uint256 _totalEquityBefore =
+      IVaultOracle(_cachedVaultInfo.vaultOracle).getEquity(_vaultToken, _cachedVaultInfo.worker);
+
+    _result = _execute(
+      _cachedVaultInfo.withdrawExecutor, abi.encode(_vaultToken, _cachedVaultInfo.worker, _sharesToWithdraw, msg.sender)
+    );
+
+    uint256 _equityChanged =
+      _totalEquityBefore - IVaultOracle(_cachedVaultInfo.vaultOracle).getEquity(_vaultToken, _cachedVaultInfo.worker);
+
+    uint256 _actualSharesWithdrawn =
+      _equityChanged.valueToShare(IAutomatedVaultERC20(_vaultToken).totalSupply(), _totalEquityBefore);
+
+    IAutomatedVaultERC20(_vaultToken).burn(msg.sender, _actualSharesWithdrawn);
+
+    emit LogWithdraw(_vaultToken, msg.sender, _actualSharesWithdrawn);
   }
 }

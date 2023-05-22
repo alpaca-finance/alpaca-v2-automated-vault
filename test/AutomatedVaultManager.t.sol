@@ -34,11 +34,12 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
         worker: worker,
         vaultOracle: vaultOracle,
         depositExecutor: depositExecutor,
+        withdrawExecutor: address(0),
         updateExecutor: updateExecutor
       })
     );
 
-    (address vaultWorker, address vaultWorkerOracle, address vaultDepositExecutor, address vaultUpdateExecutor) =
+    (address vaultWorker, address vaultWorkerOracle, address vaultDepositExecutor,, address vaultUpdateExecutor) =
       vaultManager.vaultInfos(vaultToken);
 
     assertEq(vaultWorker, worker);
@@ -62,6 +63,7 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
         worker: worker,
         vaultOracle: vaultOracle,
         depositExecutor: depositExecutor,
+        withdrawExecutor: address(0),
         updateExecutor: updateExecutor
       })
     );
