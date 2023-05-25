@@ -132,7 +132,7 @@ contract AutomatedVaultManager is
     emit LogDeposit(_vaultToken, msg.sender, _deposits);
   }
 
-  function manage(address _vaultToken, bytes[] calldata _executorParams) external returns (bytes[] memory _result) {
+  function manage(address _vaultToken, bytes[] calldata _executorParams) nonReentrant external returns (bytes[] memory _result) {
     // 0. Validate
     if (!isManager[_vaultToken][msg.sender]) {
       revert AutomatedVaultManager_Unauthorized();
