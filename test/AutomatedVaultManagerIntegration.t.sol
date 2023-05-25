@@ -14,7 +14,7 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
   function setUp() public override {
     vm.createSelectFork("bsc_mainnet", BscFixture.FORK_BLOCK_NUMBER_1);
     super.setUp();
-    
+
     // whitelist manager
     vm.prank(DEPLOYER);
     vaultManager.setVaultManagers(address(vaultToken), MANAGER, true);

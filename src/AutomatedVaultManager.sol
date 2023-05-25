@@ -38,6 +38,8 @@ contract AutomatedVaultManager is
     address vaultOracle;
     address depositExecutor;
     address updateExecutor;
+    uint16 toleranceBps;
+    uint8 maxLeverage;
   }
 
   // vault's ERC20 address => vault info
@@ -129,9 +131,15 @@ contract AutomatedVaultManager is
     if (!isManager[_vaultToken][msg.sender]) {
       revert AutomatedVaultManager_Unauthorized();
     }
-    // 1. Update the vault
 
+    VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
+    // 1. Update the vault
+    // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
+    IExecutor(_cachedVaultInfo.updateExecutor).execute(abi.encode(_vaultToken, _cachedVaultInfo.worker));
     // 2. execute manage
+    uint256 _totalEquityBefore =
+      IVaultOracle(_cachedVaultInfo.vaultOracle).getEquity(_vaultToken, _cachedVaultInfo.worker);
+    // todo: execute using multicall
 
     // 3. Check equity loss < threshold
 
