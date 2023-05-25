@@ -31,6 +31,7 @@ contract AutomatedVaultManager is
   using LibShareUtil for uint256;
 
   error AutomatedVaultManager_VaultNotExist(address _vaultToken);
+  error AutomatedVaultManager_Unauthorized();
 
   struct VaultInfo {
     address worker;
@@ -41,12 +42,14 @@ contract AutomatedVaultManager is
 
   // vault's ERC20 address => vault info
   mapping(address => VaultInfo) public vaultInfos;
+  mapping(address => mapping(address => bool)) isManager;
   /// @dev execution scope to tell downstream contracts (Bank, Worker, etc.)
   /// that current executor is acting on behalf of vault and can be trusted
   address public EXECUTOR_IN_SCOPE;
 
   event LogOpenVault(address indexed _vaultToken, VaultInfo _vaultInfo);
   event LogDeposit(address indexed _vault, address indexed _depositor, DepositTokenParams[] _deposits);
+  event LogSetVaultManager(address indexed _vault, address _manager, bool _isOk);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -119,5 +122,24 @@ contract AutomatedVaultManager is
     );
 
     emit LogDeposit(_vaultToken, msg.sender, _deposits);
+  }
+
+  function manage(address _vaultToken, bytes[] calldata _executorParams) external returns (bytes[] memory _result) {
+    // 0. Validate
+    if (!isManager[_vaultToken][msg.sender]) {
+      revert AutomatedVaultManager_Unauthorized();
+    }
+    // 1. Update the vault
+
+    // 2. execute manage
+
+    // 3. Check equity loss < threshold
+
+    // 4. Check leverage should < max leverage
+  }
+
+  function setVaultManagers(address _vaultToken, address _manager, bool _isOk) external onlyOwner {
+    isManager[_vaultToken][_manager] = _isOk;
+    emit LogSetVaultManager(_vaultToken, _manager, _isOk);
   }
 }

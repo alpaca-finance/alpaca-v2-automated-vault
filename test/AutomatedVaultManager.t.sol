@@ -48,10 +48,10 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
   }
 
   function testRevert_OpenVault_NonOwnerIsCaller() public {
-    address worker = makeAddr("worker");
-    address vaultOracle = makeAddr("vaultOracle");
-    address depositExecutor = makeAddr("depositExecutor");
-    address updateExecutor = makeAddr("updateExecutor");
+    address _worker = makeAddr("worker");
+    address _vaultOracle = makeAddr("vaultOracle");
+    address _depositExecutor = makeAddr("depositExecutor");
+    address _updateExecutor = makeAddr("updateExecutor");
 
     vm.prank(USER_ALICE);
     vm.expectRevert("Ownable: caller is not the owner");
@@ -59,12 +59,21 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
       "test vault",
       "TV",
       AutomatedVaultManager.VaultInfo({
-        worker: worker,
-        vaultOracle: vaultOracle,
-        depositExecutor: depositExecutor,
-        updateExecutor: updateExecutor
+        worker: _worker,
+        vaultOracle: _vaultOracle,
+        depositExecutor: _depositExecutor,
+        updateExecutor: _updateExecutor
       })
     );
+  }
+
+    function testRevert_SetVaultManager_NonOwnerIsCaller() public {
+    address _vaultToken = makeAddr("vaultToken");
+    address _manager = makeAddr("manager");
+
+    vm.prank(USER_ALICE);
+    vm.expectRevert("Ownable: caller is not the owner");
+    vaultManager.setVaultManagers(_vaultToken, _manager, true);
   }
 
   // TODO: open vault sanity check test
