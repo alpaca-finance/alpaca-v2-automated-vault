@@ -32,6 +32,8 @@ contract AutomatedVaultManager is
 
   error AutomatedVaultManager_VaultNotExist(address _vaultToken);
   error AutomatedVaultManager_Unauthorized();
+  error AutomatedVaultManager_TooMuchEquityLoss();
+  error AutomatedVaultManager_TooMuchLeverage();
 
   struct VaultInfo {
     address worker;
@@ -110,14 +112,18 @@ contract AutomatedVaultManager is
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
     IExecutor(_cachedVaultInfo.updateExecutor).execute(abi.encode(_vaultToken, _cachedVaultInfo.worker));
 
-    uint256 _totalEquityBefore =
-      IVaultOracle(_cachedVaultInfo.vaultOracle).getEquity(_vaultToken, _cachedVaultInfo.worker);
+    (uint256 _totalEquityBefore,) =
+      IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
 
     _result =
       _execute(_cachedVaultInfo.depositExecutor, abi.encode(_cachedVaultInfo.worker, _deposits, _executorParams));
 
-    uint256 _equityChanged =
-      IVaultOracle(_cachedVaultInfo.vaultOracle).getEquity(_vaultToken, _cachedVaultInfo.worker) - _totalEquityBefore;
+    uint256 _equityChanged;
+    {
+      (uint256 _totalEquityAfter,) =
+        IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
+      _equityChanged = _totalEquityAfter - _totalEquityBefore;
+    }
 
     IAutomatedVaultERC20(_vaultToken).mint(
       msg.sender, _equityChanged.valueToShare(IAutomatedVaultERC20(_vaultToken).totalSupply(), _totalEquityBefore)
@@ -137,13 +143,27 @@ contract AutomatedVaultManager is
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
     IExecutor(_cachedVaultInfo.updateExecutor).execute(abi.encode(_vaultToken, _cachedVaultInfo.worker));
     // 2. execute manage
-    uint256 _totalEquityBefore =
-      IVaultOracle(_cachedVaultInfo.vaultOracle).getEquity(_vaultToken, _cachedVaultInfo.worker);
+    (uint256 _totalEquityBefore,) =
+      IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
     // todo: execute using multicall
 
     // 3. Check equity loss < threshold
-
-    // 4. Check leverage should < max leverage
+    (uint256 _totalEquityAfter, uint256 _debtAfter) =
+      IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
+    if (_totalEquityBefore > _totalEquityAfter) {
+      // _totalEquityBefore / _totalEquityAfter > _cachedVaultInfo.toleranceBps / MAX_BPS;
+      if (_totalEquityBefore * 10000 > _totalEquityAfter * _cachedVaultInfo.toleranceBps) {
+        revert AutomatedVaultManager_TooMuchEquityLoss();
+      }
+    }
+    // 4. Check leverage exceed max leverage
+    // (debt + equity) / equity > max leverage
+    // debt + equity = max leverage * equity
+    // debt = (max leverage * equity) - equity
+    // debt = (leverage - 1) * equity
+    if ((_debtAfter) > (_cachedVaultInfo.maxLeverage - 1) * _totalEquityAfter) {
+      revert AutomatedVaultManager_TooMuchLeverage();
+    }
   }
 
   function setVaultManagers(address _vaultToken, address _manager, bool _isOk) external onlyOwner {
