@@ -24,7 +24,7 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
     address worker = makeAddr("worker");
     address vaultOracle = makeAddr("vaultOracle");
     address executor = makeAddr("executor");
-    uint16 toleranceBps = 100;
+    uint16 toleranceBps = 9900;
     uint8 maxLeverage = 10;
 
     vm.prank(DEPLOYER);
@@ -69,7 +69,7 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
         worker: _worker,
         vaultOracle: _vaultOracle,
         executor: _executor,
-        toleranceBps: 10,
+        toleranceBps: 9900,
         maxLeverage: 10
       })
     );

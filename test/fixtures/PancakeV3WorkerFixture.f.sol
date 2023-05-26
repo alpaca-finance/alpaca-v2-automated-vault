@@ -33,7 +33,7 @@ contract PancakeV3WorkerFixture is Test, BscFixture, ProtocolActorFixture {
   uint16 internal constant MAX_PRICE_DIFF = 10_500;
 
   uint8 internal constant MAX_LEVERAGE = 10;
-  uint16 internal constant TOLERANCE_BPS = 100;
+  uint16 internal constant TOLERANCE_BPS = 9900;
 
   AutomatedVaultManager public vaultManager;
   MockMoneyMarket public moneyMarket;
