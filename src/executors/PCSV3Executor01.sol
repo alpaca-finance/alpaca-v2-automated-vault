@@ -46,6 +46,4 @@ contract PCSV3Executor01 is Executor {
     _worker.reinvest();
     return abi.encode();
   }
-
-  function execute(bytes calldata _params) external override returns (bytes memory _result) { }
 }

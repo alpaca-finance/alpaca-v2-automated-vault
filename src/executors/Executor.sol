@@ -11,6 +11,4 @@ abstract contract Executor is Multicall {
   function onDeposit(IWorker _worker) external virtual returns (bytes memory _result) { }
 
   function onUpdate(address _vaultToken, IWorker _worker) external virtual returns (bytes memory _result) { }
-
-  function execute(bytes calldata _params) external virtual returns (bytes memory _result) { }
 }
