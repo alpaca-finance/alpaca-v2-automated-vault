@@ -86,20 +86,25 @@ contract AutomatedVaultManager is
     }
   }
 
+  function pullTokens(address _destination, DepositTokenParams[] calldata _deposits) internal {
+    uint256 _depositLength = _deposits.length;
+    for (uint256 _i; _i < _depositLength;) {
+      ERC20(_deposits[_i].token).safeTransferFrom(msg.sender, _destination, _deposits[_i].amount);
+      unchecked {
+        ++_i;
+      }
+    }
+  }
+
   // TODO: slippage control
   function deposit(address _vaultToken, DepositTokenParams[] calldata _deposits)
     external
     returns (bytes memory _result)
   {
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
+    // todo: check if vault is opened;
 
-    uint256 _depositLength = _deposits.length;
-    for (uint256 _i; _i < _depositLength;) {
-      ERC20(_deposits[_i].token).safeTransferFrom(msg.sender, _cachedVaultInfo.executor, _deposits[_i].amount);
-      unchecked {
-        ++_i;
-      }
-    }
+    pullTokens(_cachedVaultInfo.executor, _deposits);
 
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
