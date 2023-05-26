@@ -31,22 +31,29 @@ contract AutomatedVaultManager is
   using LibShareUtil for uint256;
 
   error AutomatedVaultManager_VaultNotExist(address _vaultToken);
+  error AutomatedVaultManager_Unauthorized();
+  error AutomatedVaultManager_TooMuchEquityLoss();
+  error AutomatedVaultManager_TooMuchLeverage();
 
   struct VaultInfo {
     address worker;
     address vaultOracle;
     address depositExecutor;
     address updateExecutor;
+    uint16 toleranceBps; // acceptable bps of equity deceased after it was manipulated
+    uint8 maxLeverage;
   }
 
   // vault's ERC20 address => vault info
   mapping(address => VaultInfo) public vaultInfos;
+  mapping(address => mapping(address => bool)) isManager;
   /// @dev execution scope to tell downstream contracts (Bank, Worker, etc.)
   /// that current executor is acting on behalf of vault and can be trusted
   address public EXECUTOR_IN_SCOPE;
 
   event LogOpenVault(address indexed _vaultToken, VaultInfo _vaultInfo);
   event LogDeposit(address indexed _vault, address indexed _depositor, DepositTokenParams[] _deposits);
+  event LogSetVaultManager(address indexed _vault, address _manager, bool _isOk);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -105,19 +112,66 @@ contract AutomatedVaultManager is
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
     IExecutor(_cachedVaultInfo.updateExecutor).execute(abi.encode(_vaultToken, _cachedVaultInfo.worker));
 
-    uint256 _totalEquityBefore =
-      IVaultOracle(_cachedVaultInfo.vaultOracle).getEquity(_vaultToken, _cachedVaultInfo.worker);
+    (uint256 _totalEquityBefore,) =
+      IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
 
     _result =
       _execute(_cachedVaultInfo.depositExecutor, abi.encode(_cachedVaultInfo.worker, _deposits, _executorParams));
 
-    uint256 _equityChanged =
-      IVaultOracle(_cachedVaultInfo.vaultOracle).getEquity(_vaultToken, _cachedVaultInfo.worker) - _totalEquityBefore;
+    uint256 _equityChanged;
+    {
+      (uint256 _totalEquityAfter,) =
+        IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
+      _equityChanged = _totalEquityAfter - _totalEquityBefore;
+    }
 
     IAutomatedVaultERC20(_vaultToken).mint(
       msg.sender, _equityChanged.valueToShare(IAutomatedVaultERC20(_vaultToken).totalSupply(), _totalEquityBefore)
     );
 
     emit LogDeposit(_vaultToken, msg.sender, _deposits);
+  }
+
+  function manage(address _vaultToken, bytes[] calldata _executorParams)
+    external
+    nonReentrant
+    returns (bytes[] memory _result)
+  {
+    // 0. Validate
+    if (!isManager[_vaultToken][msg.sender]) {
+      revert AutomatedVaultManager_Unauthorized();
+    }
+
+    VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
+    // 1. Update the vault
+    // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
+    IExecutor(_cachedVaultInfo.updateExecutor).execute(abi.encode(_vaultToken, _cachedVaultInfo.worker));
+    // 2. execute manage
+    (uint256 _totalEquityBefore,) =
+      IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
+    // todo: execute using multicall
+
+    // 3. Check equity loss < threshold
+    (uint256 _totalEquityAfter, uint256 _debtAfter) =
+      IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
+
+    // _totalEquityAfter  < _totalEquityBefore * _cachedVaultInfo.toleranceBps / MAX_BPS;
+    if (_totalEquityAfter * 10000 < _totalEquityBefore * _cachedVaultInfo.toleranceBps) {
+      revert AutomatedVaultManager_TooMuchEquityLoss();
+    }
+
+    // 4. Check leverage exceed max leverage
+    // (debt + equity) / equity > max leverage
+    // debt + equity = max leverage * equity
+    // debt = (max leverage * equity) - equity
+    // debt = (leverage - 1) * equity
+    if ((_debtAfter) > (_cachedVaultInfo.maxLeverage - 1) * _totalEquityAfter) {
+      revert AutomatedVaultManager_TooMuchLeverage();
+    }
+  }
+
+  function setVaultManagers(address _vaultToken, address _manager, bool _isOk) external onlyOwner {
+    isManager[_vaultToken][_manager] = _isOk;
+    emit LogSetVaultManager(_vaultToken, _manager, _isOk);
   }
 }

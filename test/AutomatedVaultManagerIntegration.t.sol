@@ -14,6 +14,10 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
   function setUp() public override {
     vm.createSelectFork("bsc_mainnet", BscFixture.FORK_BLOCK_NUMBER_1);
     super.setUp();
+
+    // whitelist manager
+    vm.prank(DEPLOYER);
+    vaultManager.setVaultManagers(address(vaultToken), MANAGER, true);
   }
 
   function testCorrectness_Deposit() public {
@@ -80,6 +84,18 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
     assertEq(wbnbBefore - wbnb.balanceOf(address(this)), wbnbIn);
     assertEq(usdtBefore - usdt.balanceOf(address(this)), usdtIn);
     assertApproxEqRel(vaultToken.balanceOf(address(this)), expectedEquity, 1); // within 1e-18% delta
+  }
+
+  function testCorrectness_ManagingVaultResultInHealthyState_ShouldWork() external {
+    bytes[] memory _params = new bytes[](1);
+    vm.prank(MANAGER);
+    vaultManager.manage(address(vaultToken), _params);
+  }
+
+  function testRevert_WhenNonManagerCallManage_ShouldRevert() external {
+    bytes[] memory _params = new bytes[](1);
+    vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_Unauthorized.selector);
+    vaultManager.manage(address(vaultToken), _params);
   }
 }
 

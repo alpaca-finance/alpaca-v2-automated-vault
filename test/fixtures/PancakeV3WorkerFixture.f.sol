@@ -33,6 +33,9 @@ contract PancakeV3WorkerFixture is Test, BscFixture, ProtocolActorFixture {
   uint16 internal constant MAX_PRICE_AGE = 60 * 60;
   uint16 internal constant MAX_PRICE_DIFF = 10_500;
 
+  uint8 internal constant MAX_LEVERAGE = 10;
+  uint16 internal constant TOLERANCE_BPS = 100;
+
   AutomatedVaultManager public vaultManager;
   MockMoneyMarket public moneyMarket;
   Bank public bank;
@@ -112,7 +115,9 @@ contract PancakeV3WorkerFixture is Test, BscFixture, ProtocolActorFixture {
           worker: address(pancakeV3Worker),
           vaultOracle: address(pancakeV3VaultOracle),
           depositExecutor: address(depositExecutor),
-          updateExecutor: address(updateExecutor)
+          updateExecutor: address(updateExecutor),
+          toleranceBps: TOLERANCE_BPS,
+          maxLeverage: MAX_LEVERAGE
         })
       )
     );

@@ -2,5 +2,8 @@
 pragma solidity 0.8.19;
 
 interface IVaultOracle {
-  function getEquity(address _vaultToken, address _worker) external view returns (uint256 _equityUSD);
+  function getEquityAndDebt(address _vaultToken, address _worker)
+    external
+    view
+    returns (uint256 _equityUSD, uint256 _debtUSD);
 }
