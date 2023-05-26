@@ -97,14 +97,14 @@ contract AutomatedVaultManager is
   }
 
   // TODO: slippage control
-  function deposit(address _vaultToken, DepositTokenParams[] calldata _deposits)
+  function deposit(address _vaultToken, DepositTokenParams[] calldata _depositParams)
     external
     returns (bytes memory _result)
   {
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
     // todo: check if vault is opened;
 
-    pullTokens(_cachedVaultInfo.executor, _deposits);
+    pullTokens(_cachedVaultInfo.executor, _depositParams);
 
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
@@ -113,7 +113,7 @@ contract AutomatedVaultManager is
     (uint256 _totalEquityBefore,) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
 
-    // todo: send deposits param to executor
+    // todo: send deposit params to executor
     _result = IExecutor(_cachedVaultInfo.executor).onDeposit(IWorker(_cachedVaultInfo.worker));
     EXECUTOR_IN_SCOPE = address(0);
 
@@ -128,7 +128,7 @@ contract AutomatedVaultManager is
       msg.sender, _equityChanged.valueToShare(IAutomatedVaultERC20(_vaultToken).totalSupply(), _totalEquityBefore)
     );
 
-    emit LogDeposit(_vaultToken, msg.sender, _deposits);
+    emit LogDeposit(_vaultToken, msg.sender, _depositParams);
   }
 
   function manage(address _vaultToken, bytes[] calldata _executorParams)
