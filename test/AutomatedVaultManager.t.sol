@@ -23,8 +23,7 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
   function testCorrectness_OpenVault() public {
     address worker = makeAddr("worker");
     address vaultOracle = makeAddr("vaultOracle");
-    address depositExecutor = makeAddr("depositExecutor");
-    address updateExecutor = makeAddr("updateExecutor");
+    address executor = makeAddr("executor");
     uint16 toleranceBps = 100;
     uint8 maxLeverage = 10;
 
@@ -35,8 +34,7 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
       AutomatedVaultManager.VaultInfo({
         worker: worker,
         vaultOracle: vaultOracle,
-        depositExecutor: depositExecutor,
-        updateExecutor: updateExecutor,
+        executor: executor,
         toleranceBps: toleranceBps,
         maxLeverage: maxLeverage
       })
@@ -45,16 +43,14 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
     (
       address vaultWorker,
       address vaultWorkerOracle,
-      address vaultDepositExecutor,
-      address vaultUpdateExecutor,
+      address vaultExecutor,
       uint16 vaultToleranceBps,
       uint8 vaultMaxLeverage
     ) = vaultManager.vaultInfos(vaultToken);
 
     assertEq(vaultWorker, worker);
     assertEq(vaultWorkerOracle, vaultOracle);
-    assertEq(vaultDepositExecutor, depositExecutor);
-    assertEq(vaultUpdateExecutor, updateExecutor);
+    assertEq(vaultExecutor, executor);
     assertEq(vaultToleranceBps, toleranceBps);
     assertEq(vaultMaxLeverage, maxLeverage);
   }
@@ -62,8 +58,7 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
   function testRevert_OpenVault_NonOwnerIsCaller() public {
     address _worker = makeAddr("worker");
     address _vaultOracle = makeAddr("vaultOracle");
-    address _depositExecutor = makeAddr("depositExecutor");
-    address _updateExecutor = makeAddr("updateExecutor");
+    address _executor = makeAddr("executor");
 
     vm.prank(USER_ALICE);
     vm.expectRevert("Ownable: caller is not the owner");
@@ -73,8 +68,7 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
       AutomatedVaultManager.VaultInfo({
         worker: _worker,
         vaultOracle: _vaultOracle,
-        depositExecutor: _depositExecutor,
-        updateExecutor: _updateExecutor,
+        executor: _executor,
         toleranceBps: 10,
         maxLeverage: 10
       })
