@@ -9,9 +9,7 @@ import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { Bank } from "src/Bank.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 import { PancakeV3VaultOracle } from "src/oracles/PancakeV3VaultOracle.sol";
-import { SimpleV3DepositExecutor } from "src/executors/SimpleV3DepositExecutor.sol";
-import { V3UpdateExecutor } from "src/executors/V3UpdateExecutor.sol";
-import { SimpleV3WithdrawExecutor } from "src/executors/SimpleV3WithdrawExecutor.sol";
+import { PCSV3Executor01 } from "src/executors/PCSV3Executor01.sol";
 
 // interfaces
 import { IERC20 } from "src/interfaces/IERC20.sol";
@@ -34,14 +32,15 @@ contract PancakeV3WorkerFixture is Test, BscFixture, ProtocolActorFixture {
   uint16 internal constant MAX_PRICE_AGE = 60 * 60;
   uint16 internal constant MAX_PRICE_DIFF = 10_500;
 
+  uint8 internal constant MAX_LEVERAGE = 10;
+  uint16 internal constant TOLERANCE_BPS = 9900;
+
   AutomatedVaultManager public vaultManager;
   MockMoneyMarket public moneyMarket;
   Bank public bank;
   PancakeV3VaultOracle public pancakeV3VaultOracle;
   PancakeV3Worker public pancakeV3Worker;
-  IExecutor public depositExecutor;
-  IExecutor public updateExecutor;
-  IExecutor public withdrawExecutor;
+  IExecutor public pancakeV3Executor;
   IERC20 public vaultToken;
 
   constructor() BscFixture() ProtocolActorFixture() { }
@@ -103,9 +102,7 @@ contract PancakeV3WorkerFixture is Test, BscFixture, ProtocolActorFixture {
       )
     );
 
-    depositExecutor = new SimpleV3DepositExecutor(address(bank));
-    updateExecutor = new V3UpdateExecutor(address(bank));
-    withdrawExecutor = new SimpleV3WithdrawExecutor(address(bank), address(pancakeV3PositionManager));
+    pancakeV3Executor = IExecutor(address(new PCSV3Executor01(address(bank))));
 
     vaultToken = IERC20(
       vaultManager.openVault(
@@ -114,9 +111,9 @@ contract PancakeV3WorkerFixture is Test, BscFixture, ProtocolActorFixture {
         AutomatedVaultManager.VaultInfo({
           worker: address(pancakeV3Worker),
           vaultOracle: address(pancakeV3VaultOracle),
-          depositExecutor: address(depositExecutor),
-          withdrawExecutor: address(withdrawExecutor),
-          updateExecutor: address(updateExecutor)
+          executor: address(pancakeV3Executor),
+          toleranceBps: TOLERANCE_BPS,
+          maxLeverage: MAX_LEVERAGE
         })
       )
     );

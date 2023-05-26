@@ -14,6 +14,10 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
   function setUp() public override {
     vm.createSelectFork("bsc_mainnet", BscFixture.FORK_BLOCK_NUMBER_1);
     super.setUp();
+
+    // whitelist manager
+    vm.prank(DEPLOYER);
+    vaultManager.setVaultManagers(address(vaultToken), MANAGER, true);
   }
 
   function testCorrectness_DepositWithdraw_EmptyVault() public {
@@ -71,14 +75,14 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
     // - mint shares based on equityChange
     // - get token back equal to optimal swap output
 
-    vm.expectCall(address(updateExecutor), abi.encodeWithSelector(IExecutor.execute.selector), 2);
-    vm.expectCall(address(depositExecutor), abi.encodeWithSelector(IExecutor.execute.selector), 1);
-    vm.expectCall(address(withdrawExecutor), abi.encodeWithSelector(IExecutor.execute.selector), 1);
+    vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onUpdate.selector), 2);
+    vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onDeposit.selector), 1);
+    vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onWithdraw.selector), 1);
 
     IAutomatedVaultManager.DepositTokenParams[] memory params = new IAutomatedVaultManager.DepositTokenParams[](2);
     params[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(wbnb), amount: wbnbIn });
     params[1] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: usdtIn });
-    vaultManager.deposit(address(vaultToken), params, abi.encode());
+    vaultManager.deposit(address(vaultToken), params);
 
     assertEq(wbnbBefore - wbnb.balanceOf(address(this)), wbnbIn);
     assertEq(usdtBefore - usdt.balanceOf(address(this)), usdtIn);
@@ -92,6 +96,17 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
 
     assertApproxEqRel(wbnb.balanceOf(address(this)) - wbnbBefore, expectedAddLiquidityWBNB, 1);
     assertApproxEqRel(usdt.balanceOf(address(this)) - usdtBefore, expectedAddLiquidityUSDT, 1);
+  }
+
+  function testCorrectness_ManagingVaultResultInHealthyState_ShouldWork() external {
+    vm.prank(MANAGER);
+    vaultManager.manage(address(vaultToken), new bytes[](0));
+  }
+
+  function testRevert_WhenNonManagerCallManage_ShouldRevert() external {
+    bytes[] memory _params = new bytes[](1);
+    vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_Unauthorized.selector);
+    vaultManager.manage(address(vaultToken), _params);
   }
 }
 

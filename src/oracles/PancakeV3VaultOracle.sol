@@ -174,7 +174,12 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
       + _token1Debt * _token1OraclePrice / (10 ** IERC20(_token1).decimals());
   }
 
-  function getEquity(address _vaultToken, address _pancakeV3Worker) external view override returns (uint256 _equityUSD) {
+  function getEquityAndDebt(address _vaultToken, address _pancakeV3Worker)
+    external
+    view
+    override
+    returns (uint256 _equityUSD, uint256 _debtUSD)
+  {
     ICommonV3Pool _pool = PancakeV3Worker(_pancakeV3Worker).pool();
     uint256 _tokenId = PancakeV3Worker(_pancakeV3Worker).nftTokenId();
     address _token0 = address(_pool.token0());
@@ -189,6 +194,6 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
       _tokenId == 0 ? 0 : _getPositionValueUSD(address(_pool), _tokenId, _token0OraclePrice, _token1OraclePrice);
     uint256 _debtValUSD = _getDebtValueUSD(_vaultToken, _token0, _token1, _token0OraclePrice, _token1OraclePrice);
 
-    return _posValUSD - _debtValUSD;
+    return (_posValUSD - _debtValUSD, _debtValUSD);
   }
 }
