@@ -41,6 +41,26 @@ contract PCSV3Executor01 is Executor {
     return _pcsWorker.doWork(Tasks.INCREASE, abi.encode(_amountIn0 * 2, _amountIn1 * 2));
   }
 
+  function onWithdraw(address _worker, address _vaultToken, uint256 _sharesToWithdraw, address _recipient)
+    external
+    override
+    returns (bytes memory _result)
+  {
+    PancakeV3Worker _pcsWorker = PancakeV3Worker(_worker);
+
+    uint256 _tokenId = _pcsWorker.nftTokenId();
+    (,,,,,,, uint128 _liquidity,,,,) = _pcsWorker.nftPositionManager().positions(_tokenId);
+
+    _pcsWorker.doWork(Tasks.DECREASE, abi.encode(_liquidity * _sharesToWithdraw / ERC20(_vaultToken).totalSupply()));
+
+    ERC20 _token0 = _pcsWorker.token0();
+    ERC20 _token1 = _pcsWorker.token1();
+    _token0.transfer(_recipient, _token0.balanceOf(address(this)));
+    _token1.transfer(_recipient, _token1.balanceOf(address(this)));
+
+    return "";
+  }
+
   function onUpdate(address _vaultToken, address _worker) external override returns (bytes memory _result) {
     bank.accrueInterest(_vaultToken);
     PancakeV3Worker(_worker).reinvest();

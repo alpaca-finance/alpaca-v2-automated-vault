@@ -201,14 +201,16 @@ contract AutomatedVaultManager is
     (uint256 _totalEquityBefore,) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
 
-    _result = IExecutor(_cachedVaultInfo.executor).onWithdraw(_cachedVaultInfo.worker);
+    _result = IExecutor(_cachedVaultInfo.executor).onWithdraw(
+      _cachedVaultInfo.worker, _vaultToken, _sharesToWithdraw, msg.sender
+    );
     EXECUTOR_IN_SCOPE = address(0);
 
     uint256 _equityChanged;
     {
       (uint256 _totalEquityAfter,) =
         IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
-      _equityChanged = _totalEquityAfter - _totalEquityBefore;
+      _equityChanged = _totalEquityBefore - _totalEquityAfter;
     }
 
     uint256 _actualSharesWithdrawn =

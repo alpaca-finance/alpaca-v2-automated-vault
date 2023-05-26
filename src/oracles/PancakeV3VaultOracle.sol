@@ -178,7 +178,7 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
     external
     view
     override
-    returns (uint256 _equityUSD, uint256 _debtUSD)
+    returns (uint256 _equityUSD, uint256 _debtValUSD)
   {
     ICommonV3Pool _pool = PancakeV3Worker(_pancakeV3Worker).pool();
     uint256 _tokenId = PancakeV3Worker(_pancakeV3Worker).nftTokenId();
@@ -192,7 +192,7 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
     // Get nft position value. Skip if worker didn't hold any nft (tokenId = 0)
     uint256 _posValUSD =
       _tokenId == 0 ? 0 : _getPositionValueUSD(address(_pool), _tokenId, _token0OraclePrice, _token1OraclePrice);
-    uint256 _debtValUSD = _getDebtValueUSD(_vaultToken, _token0, _token1, _token0OraclePrice, _token1OraclePrice);
+    _debtValUSD = _getDebtValueUSD(_vaultToken, _token0, _token1, _token0OraclePrice, _token1OraclePrice);
 
     return (_posValUSD - _debtValUSD, _debtValUSD);
   }
