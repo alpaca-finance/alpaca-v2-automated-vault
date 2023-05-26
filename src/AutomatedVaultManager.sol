@@ -40,7 +40,7 @@ contract AutomatedVaultManager is
     address vaultOracle;
     address depositExecutor;
     address updateExecutor;
-    uint16 toleranceBps;
+    uint16 toleranceBps; // acceptable bps of equity deceased after it was manipulated
     uint8 maxLeverage;
   }
 
@@ -151,8 +151,8 @@ contract AutomatedVaultManager is
     (uint256 _totalEquityAfter, uint256 _debtAfter) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
     if (_totalEquityBefore > _totalEquityAfter) {
-      // _totalEquityBefore / _totalEquityAfter > _cachedVaultInfo.toleranceBps / MAX_BPS;
-      if (_totalEquityBefore * 10000 > _totalEquityAfter * _cachedVaultInfo.toleranceBps) {
+      // _totalEquityAfter  < _totalEquityBefore * _cachedVaultInfo.toleranceBps / MAX_BPS;
+      if (_totalEquityAfter * 10000 < _totalEquityBefore * _cachedVaultInfo.toleranceBps) {
         revert AutomatedVaultManager_TooMuchEquityLoss();
       }
     }
