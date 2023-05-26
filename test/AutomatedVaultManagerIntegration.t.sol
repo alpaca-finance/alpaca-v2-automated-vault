@@ -87,9 +87,8 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
   }
 
   function testCorrectness_ManagingVaultResultInHealthyState_ShouldWork() external {
-    bytes[] memory _params = new bytes[](1);
     vm.prank(MANAGER);
-    vaultManager.manage(address(vaultToken), _params);
+    vaultManager.manage(address(vaultToken), new bytes[](0));
   }
 
   function testRevert_WhenNonManagerCallManage_ShouldRevert() external {

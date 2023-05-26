@@ -147,11 +147,13 @@ contract AutomatedVaultManager is
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
     IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, IWorker(_cachedVaultInfo.worker));
-    EXECUTOR_IN_SCOPE = address(0);
+    
     // 2. execute manage
     (uint256 _totalEquityBefore,) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
-    // todo: execute using multicall
+    
+    IExecutor(_cachedVaultInfo.executor).multicall(_executorParams);
+    EXECUTOR_IN_SCOPE = address(0);
 
     // 3. Check equity loss < threshold
     (uint256 _totalEquityAfter, uint256 _debtAfter) =
