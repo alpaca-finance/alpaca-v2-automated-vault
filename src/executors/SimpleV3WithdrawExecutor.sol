@@ -31,7 +31,8 @@ contract SimpleV3WithdrawExecutor is IExecutor {
       abi.decode(_params, (ERC20, PancakeV3Worker, uint256, address));
 
     uint256 _tokenId = _worker.nftTokenId();
-    (uint128 _liquidity,,,,,,,,,,,) = positionManager.positions(_tokenId);
+    // note: positionManager here might be different from worker
+    (,,,,,,, uint128 _liquidity,,,,) = positionManager.positions(_tokenId);
 
     _worker.doWork(Tasks.DECREASE, abi.encode(_liquidity * _sharesToWithdraw / _vaultToken.totalSupply()));
 

@@ -39,6 +39,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   // packed slot for reinvest
   address public performanceFeeBucket;
   uint16 public performanceFeeBps;
+  uint40 public lastReinvest;
 
   IZapV3 public zapV3;
 
@@ -342,9 +343,6 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   /// @notice Perform decrease position according to a given liquidity.
   /// @param _liquidity Liquidity to decrease
   function _decreasePositionInternal(uint128 _liquidity) internal returns (uint256 _amount0, uint256 _amount1) {
-    // Use balance before and not rely on master chef return value for safety reason
-    uint256 balance0Before = token0.balanceOf(address(this));
-    uint256 balance1Before = token1.balanceOf(address(this));
     masterChef.decreaseLiquidity(
       IPancakeV3MasterChef.DecreaseLiquidityParams({
         tokenId: nftTokenId,
@@ -354,11 +352,14 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
         deadline: block.timestamp
       })
     );
-    _amount0 = token0.balanceOf(address(this)) - balance0Before;
-    _amount1 = token1.balanceOf(address(this)) - balance1Before;
-    token0.safeTransfer(msg.sender, _amount0);
-    token1.safeTransfer(msg.sender, _amount1);
-
+    (_amount0, _amount1) = masterChef.collect(
+      IPancakeV3MasterChef.CollectParams({
+        tokenId: nftTokenId,
+        recipient: address(this),
+        amount0Max: type(uint128).max,
+        amount1Max: type(uint128).max
+      })
+    );
     emit LogDecreaseLiquidity(nftTokenId, _amount0, _amount1, _liquidity);
   }
 
@@ -370,10 +371,12 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
 
   /// @notice Perform the actual reinvest.
   function _reinvestInternal() internal {
+    // Skip reinvest if already done before in same block
+    if (block.timestamp == lastReinvest) return;
+    lastReinvest = uint40(block.timestamp);
+
     // If tokenId is 0, then nothing to reinvest
     if (nftTokenId == 0) return;
-
-    // TODO: return if already reinvest within same block
 
     // Claim all trading fee
     (uint256 _fee0, uint256 _fee1) = masterChef.collect(

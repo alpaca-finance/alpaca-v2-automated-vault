@@ -11,6 +11,7 @@ import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 import { PancakeV3VaultOracle } from "src/oracles/PancakeV3VaultOracle.sol";
 import { SimpleV3DepositExecutor } from "src/executors/SimpleV3DepositExecutor.sol";
 import { V3UpdateExecutor } from "src/executors/V3UpdateExecutor.sol";
+import { SimpleV3WithdrawExecutor } from "src/executors/SimpleV3WithdrawExecutor.sol";
 
 // interfaces
 import { IERC20 } from "src/interfaces/IERC20.sol";
@@ -40,6 +41,7 @@ contract PancakeV3WorkerFixture is Test, BscFixture, ProtocolActorFixture {
   PancakeV3Worker public pancakeV3Worker;
   IExecutor public depositExecutor;
   IExecutor public updateExecutor;
+  IExecutor public withdrawExecutor;
   IERC20 public vaultToken;
 
   constructor() BscFixture() ProtocolActorFixture() { }
@@ -103,6 +105,7 @@ contract PancakeV3WorkerFixture is Test, BscFixture, ProtocolActorFixture {
 
     depositExecutor = new SimpleV3DepositExecutor(address(bank));
     updateExecutor = new V3UpdateExecutor(address(bank));
+    withdrawExecutor = new SimpleV3WithdrawExecutor(address(bank), address(pancakeV3PositionManager));
 
     vaultToken = IERC20(
       vaultManager.openVault(
@@ -112,7 +115,7 @@ contract PancakeV3WorkerFixture is Test, BscFixture, ProtocolActorFixture {
           worker: address(pancakeV3Worker),
           vaultOracle: address(pancakeV3VaultOracle),
           depositExecutor: address(depositExecutor),
-          withdrawExecutor: address(0),
+          withdrawExecutor: address(withdrawExecutor),
           updateExecutor: address(updateExecutor)
         })
       )

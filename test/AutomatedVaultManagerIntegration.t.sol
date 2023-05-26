@@ -16,7 +16,7 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
     super.setUp();
   }
 
-  function testCorrectness_Deposit() public {
+  function testCorrectness_DepositWithdraw_EmptyVault() public {
     uint256 wbnbIn = 1 ether;
     uint256 usdtIn = 2 ether;
 
@@ -56,21 +56,24 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
     }
     (, int256 wbnbAnswer,,,) = wbnbFeed.latestRoundData();
     (, int256 usdtAnswer,,,) = usdtFeed.latestRoundData();
-    uint256 expectedEquity = expectedAddLiquidityWBNB * (10 ** (18 - wbnb.decimals())) * uint256(wbnbAnswer)
+    uint256 expectedEquity = (expectedAddLiquidityWBNB * (10 ** (18 - wbnb.decimals())) * uint256(wbnbAnswer))
       / (10 ** wbnbFeed.decimals())
-      + expectedAddLiquidityUSDT * (10 ** (18 - usdt.decimals())) * uint256(usdtAnswer) / (10 ** usdtFeed.decimals());
+      + (expectedAddLiquidityUSDT * (10 ** (18 - usdt.decimals())) * uint256(usdtAnswer)) / (10 ** usdtFeed.decimals());
 
     uint256 wbnbBefore = wbnb.balanceOf(address(this));
     uint256 usdtBefore = usdt.balanceOf(address(this));
 
     // Assertions
     // - pull tokens from caller
-    // - call updateExecutor
+    // - call updateExecutor twice (deposit, withdraw)
     // - call depositExecutor
+    // - call withdrawExecutor
     // - mint shares based on equityChange
+    // - get token back equal to optimal swap output
 
-    vm.expectCall(address(updateExecutor), abi.encodeWithSelector(IExecutor.execute.selector), 1);
+    vm.expectCall(address(updateExecutor), abi.encodeWithSelector(IExecutor.execute.selector), 2);
     vm.expectCall(address(depositExecutor), abi.encodeWithSelector(IExecutor.execute.selector), 1);
+    vm.expectCall(address(withdrawExecutor), abi.encodeWithSelector(IExecutor.execute.selector), 1);
 
     IAutomatedVaultManager.DepositTokenParams[] memory params = new IAutomatedVaultManager.DepositTokenParams[](2);
     params[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(wbnb), amount: wbnbIn });
@@ -80,6 +83,15 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
     assertEq(wbnbBefore - wbnb.balanceOf(address(this)), wbnbIn);
     assertEq(usdtBefore - usdt.balanceOf(address(this)), usdtIn);
     assertApproxEqRel(vaultToken.balanceOf(address(this)), expectedEquity, 1); // within 1e-18% delta
+
+    wbnbBefore = wbnb.balanceOf(address(this));
+    usdtBefore = usdt.balanceOf(address(this));
+
+    // Withdraw
+    vaultManager.withdraw(address(vaultToken), vaultToken.balanceOf(address(this)));
+
+    assertApproxEqRel(wbnb.balanceOf(address(this)) - wbnbBefore, expectedAddLiquidityWBNB, 1);
+    assertApproxEqRel(usdt.balanceOf(address(this)) - usdtBefore, expectedAddLiquidityUSDT, 1);
   }
 }
 
