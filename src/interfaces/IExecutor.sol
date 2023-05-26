@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: BUSL
 pragma solidity 0.8.19;
 
-interface IExecutor {
-  function execute(bytes calldata _params) external returns (bytes memory _result);
+import { IMulticall } from "src/interfaces/IMulticall.sol";
+
+interface IExecutor is IMulticall {
+  function onDeposit(address _worker) external returns (bytes memory _result);
+
+  function onUpdate(address _vaultToken, address _worker) external returns (bytes memory _result);
 }

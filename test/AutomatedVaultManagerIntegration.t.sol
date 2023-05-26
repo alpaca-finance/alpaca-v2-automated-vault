@@ -73,13 +73,13 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
     // - call depositExecutor
     // - mint shares based on equityChange
 
-    vm.expectCall(address(updateExecutor), abi.encodeWithSelector(IExecutor.execute.selector), 1);
-    vm.expectCall(address(depositExecutor), abi.encodeWithSelector(IExecutor.execute.selector), 1);
+    vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onUpdate.selector), 1);
+    vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onDeposit.selector), 1);
 
     IAutomatedVaultManager.DepositTokenParams[] memory params = new IAutomatedVaultManager.DepositTokenParams[](2);
     params[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(wbnb), amount: wbnbIn });
     params[1] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: usdtIn });
-    vaultManager.deposit(address(vaultToken), params, abi.encode());
+    vaultManager.deposit(address(vaultToken), params);
 
     assertEq(wbnbBefore - wbnb.balanceOf(address(this)), wbnbIn);
     assertEq(usdtBefore - usdt.balanceOf(address(this)), usdtIn);
@@ -87,9 +87,8 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
   }
 
   function testCorrectness_ManagingVaultResultInHealthyState_ShouldWork() external {
-    bytes[] memory _params = new bytes[](1);
     vm.prank(MANAGER);
-    vaultManager.manage(address(vaultToken), _params);
+    vaultManager.manage(address(vaultToken), new bytes[](0));
   }
 
   function testRevert_WhenNonManagerCallManage_ShouldRevert() external {

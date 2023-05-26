@@ -12,7 +12,6 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin-upgradeable/security/R
 import { AutomatedVaultERC20 } from "src/AutomatedVaultERC20.sol";
 
 // interfaces
-import { IWorker } from "src/interfaces/IWorker.sol";
 import { IExecutor } from "src/interfaces/IExecutor.sol";
 import { IVaultOracle } from "src/interfaces/IVaultOracle.sol";
 import { IAutomatedVaultERC20 } from "src/interfaces/IAutomatedVaultERC20.sol";
@@ -38,8 +37,7 @@ contract AutomatedVaultManager is
   struct VaultInfo {
     address worker;
     address vaultOracle;
-    address depositExecutor;
-    address updateExecutor;
+    address executor;
     uint16 toleranceBps; // acceptable bps of equity deceased after it was manipulated
     uint8 maxLeverage;
   }
@@ -87,36 +85,36 @@ contract AutomatedVaultManager is
     }
   }
 
-  function _execute(address _executor, bytes memory _params) internal returns (bytes memory _result) {
-    EXECUTOR_IN_SCOPE = _executor;
-    _result = IExecutor(_executor).execute(_params);
-    EXECUTOR_IN_SCOPE = address(0);
-  }
-
-  // TODO: slippage control
-  // TODO: remove executor params?
-  function deposit(address _vaultToken, DepositTokenParams[] calldata _deposits, bytes calldata _executorParams)
-    external
-    returns (bytes memory _result)
-  {
-    VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
-
+  function _pullTokens(address _destination, DepositTokenParams[] calldata _deposits) internal {
     uint256 _depositLength = _deposits.length;
     for (uint256 _i; _i < _depositLength;) {
-      ERC20(_deposits[_i].token).safeTransferFrom(msg.sender, _cachedVaultInfo.depositExecutor, _deposits[_i].amount);
+      ERC20(_deposits[_i].token).safeTransferFrom(msg.sender, _destination, _deposits[_i].amount);
       unchecked {
         ++_i;
       }
     }
+  }
 
+  // TODO: slippage control
+  function deposit(address _vaultToken, DepositTokenParams[] calldata _depositParams)
+    external
+    returns (bytes memory _result)
+  {
+    VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
+    // todo: check if vault is opened;
+
+    _pullTokens(_cachedVaultInfo.executor, _depositParams);
+
+    EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
-    IExecutor(_cachedVaultInfo.updateExecutor).execute(abi.encode(_vaultToken, _cachedVaultInfo.worker));
+    IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, _cachedVaultInfo.worker);
 
     (uint256 _totalEquityBefore,) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
 
-    _result =
-      _execute(_cachedVaultInfo.depositExecutor, abi.encode(_cachedVaultInfo.worker, _deposits, _executorParams));
+    // todo: send deposit params to executor
+    _result = IExecutor(_cachedVaultInfo.executor).onDeposit(_cachedVaultInfo.worker);
+    EXECUTOR_IN_SCOPE = address(0);
 
     uint256 _equityChanged;
     {
@@ -129,7 +127,7 @@ contract AutomatedVaultManager is
       msg.sender, _equityChanged.valueToShare(IAutomatedVaultERC20(_vaultToken).totalSupply(), _totalEquityBefore)
     );
 
-    emit LogDeposit(_vaultToken, msg.sender, _deposits);
+    emit LogDeposit(_vaultToken, msg.sender, _depositParams);
   }
 
   function manage(address _vaultToken, bytes[] calldata _executorParams)
@@ -145,11 +143,16 @@ contract AutomatedVaultManager is
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
     // 1. Update the vault
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
-    IExecutor(_cachedVaultInfo.updateExecutor).execute(abi.encode(_vaultToken, _cachedVaultInfo.worker));
+    EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
+    // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
+    IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, _cachedVaultInfo.worker);
+    
     // 2. execute manage
     (uint256 _totalEquityBefore,) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
-    // todo: execute using multicall
+    
+    IExecutor(_cachedVaultInfo.executor).multicall(_executorParams);
+    EXECUTOR_IN_SCOPE = address(0);
 
     // 3. Check equity loss < threshold
     (uint256 _totalEquityAfter, uint256 _debtAfter) =
