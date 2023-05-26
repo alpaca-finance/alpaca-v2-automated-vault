@@ -100,7 +100,7 @@ contract AutomatedVaultManager is
         ++_i;
       }
     }
-    // todo: make this modifier
+
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
     IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, IWorker(_cachedVaultInfo.worker));
