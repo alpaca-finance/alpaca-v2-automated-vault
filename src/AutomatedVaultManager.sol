@@ -132,7 +132,11 @@ contract AutomatedVaultManager is
     emit LogDeposit(_vaultToken, msg.sender, _deposits);
   }
 
-  function manage(address _vaultToken, bytes[] calldata _executorParams) nonReentrant external returns (bytes[] memory _result) {
+  function manage(address _vaultToken, bytes[] calldata _executorParams)
+    external
+    nonReentrant
+    returns (bytes[] memory _result)
+  {
     // 0. Validate
     if (!isManager[_vaultToken][msg.sender]) {
       revert AutomatedVaultManager_Unauthorized();
@@ -150,12 +154,12 @@ contract AutomatedVaultManager is
     // 3. Check equity loss < threshold
     (uint256 _totalEquityAfter, uint256 _debtAfter) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
-    if (_totalEquityBefore > _totalEquityAfter) {
-      // _totalEquityAfter  < _totalEquityBefore * _cachedVaultInfo.toleranceBps / MAX_BPS;
-      if (_totalEquityAfter * 10000 < _totalEquityBefore * _cachedVaultInfo.toleranceBps) {
-        revert AutomatedVaultManager_TooMuchEquityLoss();
-      }
+
+    // _totalEquityAfter  < _totalEquityBefore * _cachedVaultInfo.toleranceBps / MAX_BPS;
+    if (_totalEquityAfter * 10000 < _totalEquityBefore * _cachedVaultInfo.toleranceBps) {
+      revert AutomatedVaultManager_TooMuchEquityLoss();
     }
+
     // 4. Check leverage exceed max leverage
     // (debt + equity) / equity > max leverage
     // debt + equity = max leverage * equity
