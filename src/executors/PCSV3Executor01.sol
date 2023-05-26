@@ -24,8 +24,8 @@ contract PCSV3Executor01 is Executor {
     bank = IBank(_bank);
   }
 
-  function onDeposit(IWorker _worker) external override returns (bytes memory _result) {
-    PancakeV3Worker _pcsWorker = PancakeV3Worker(address(_worker));
+  function onDeposit(address _worker) external override returns (bytes memory _result) {
+    PancakeV3Worker _pcsWorker = PancakeV3Worker(_worker);
 
     ERC20 _token0 = _pcsWorker.token0();
     ERC20 _token1 = _pcsWorker.token1();
@@ -38,12 +38,12 @@ contract PCSV3Executor01 is Executor {
     _token0.approve(address(_pcsWorker), _amountIn0 * 2);
     _token1.approve(address(_pcsWorker), _amountIn1 * 2);
 
-    return _worker.doWork(Tasks.INCREASE, abi.encode(_amountIn0 * 2, _amountIn1 * 2));
+    return _pcsWorker.doWork(Tasks.INCREASE, abi.encode(_amountIn0 * 2, _amountIn1 * 2));
   }
 
-  function onUpdate(address _vaultToken, IWorker _worker) external override returns (bytes memory _result) {
+  function onUpdate(address _vaultToken, address _worker) external override returns (bytes memory _result) {
     bank.accrueInterest(_vaultToken);
-    _worker.reinvest();
+    PancakeV3Worker(_worker).reinvest();
     return abi.encode();
   }
 }

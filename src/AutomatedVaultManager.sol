@@ -12,7 +12,6 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin-upgradeable/security/R
 import { AutomatedVaultERC20 } from "src/AutomatedVaultERC20.sol";
 
 // interfaces
-import { IWorker } from "src/interfaces/IWorker.sol";
 import { IExecutor } from "src/interfaces/IExecutor.sol";
 import { IVaultOracle } from "src/interfaces/IVaultOracle.sol";
 import { IAutomatedVaultERC20 } from "src/interfaces/IAutomatedVaultERC20.sol";
@@ -86,7 +85,7 @@ contract AutomatedVaultManager is
     }
   }
 
-  function pullTokens(address _destination, DepositTokenParams[] calldata _deposits) internal {
+  function _pullTokens(address _destination, DepositTokenParams[] calldata _deposits) internal {
     uint256 _depositLength = _deposits.length;
     for (uint256 _i; _i < _depositLength;) {
       ERC20(_deposits[_i].token).safeTransferFrom(msg.sender, _destination, _deposits[_i].amount);
@@ -104,17 +103,17 @@ contract AutomatedVaultManager is
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
     // todo: check if vault is opened;
 
-    pullTokens(_cachedVaultInfo.executor, _depositParams);
+    _pullTokens(_cachedVaultInfo.executor, _depositParams);
 
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
-    IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, IWorker(_cachedVaultInfo.worker));
+    IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, _cachedVaultInfo.worker);
 
     (uint256 _totalEquityBefore,) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
 
     // todo: send deposit params to executor
-    _result = IExecutor(_cachedVaultInfo.executor).onDeposit(IWorker(_cachedVaultInfo.worker));
+    _result = IExecutor(_cachedVaultInfo.executor).onDeposit(_cachedVaultInfo.worker);
     EXECUTOR_IN_SCOPE = address(0);
 
     uint256 _equityChanged;
@@ -146,7 +145,7 @@ contract AutomatedVaultManager is
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
-    IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, IWorker(_cachedVaultInfo.worker));
+    IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, _cachedVaultInfo.worker);
     
     // 2. execute manage
     (uint256 _totalEquityBefore,) =
