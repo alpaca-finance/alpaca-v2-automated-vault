@@ -45,8 +45,12 @@ contract PCSV3Executor01 is Executor {
 
     // return _worker.doWork(Tasks.INCREASE, abi.encode(_amountIn0 * 2, _amountIn1 * 2));
 
-    _token0.safeTransfer(address(_worker), _amountIn0);
-    _token1.safeTransfer(address(_worker), _amountIn1);
+    if (_amountIn0 != 0) {
+      _token0.safeTransfer(address(_worker), _amountIn0);
+    }
+    if (_amountIn1 != 0) {
+      _token1.safeTransfer(address(_worker), _amountIn1);
+    }
 
     return abi.encode(_amountIn0, _amountIn1);
   }
