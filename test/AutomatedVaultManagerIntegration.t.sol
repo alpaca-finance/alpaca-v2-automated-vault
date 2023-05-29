@@ -104,8 +104,9 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
     wbnbBefore = wbnb.balanceOf(address(this));
     usdtBefore = usdt.balanceOf(address(this));
 
-    // Withdraw
-    vaultManager.withdraw(address(vaultToken), vaultToken.balanceOf(address(this)));
+    // Withdraw without slippage check
+    AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts = new AutomatedVaultManager.WithdrawSlippage[](0);
+    vaultManager.withdraw(address(vaultToken), vaultToken.balanceOf(address(this)), minAmountOuts);
 
     assertApproxEqRel(
       wbnb.balanceOf(address(this)) - wbnbBefore, expectedAddLiquidityWBNB - wbnbIn, 1e12, "wbnb withdraw"

@@ -185,6 +185,7 @@ contract AutomatedVaultManager is
     uint256 minAmountOut;
   }
 
+  // TODO: withdrawal fee
   function withdraw(address _vaultToken, uint256 _sharesToWithdraw, WithdrawSlippage[] calldata _minAmountOuts)
     external
     nonReentrant
@@ -223,6 +224,9 @@ contract AutomatedVaultManager is
       if (ERC20(_minAmountOuts[_i].token).balanceOf(address(this)) < _minAmountOuts[_i].minAmountOut) {
         revert AutomatedVaultManager_ExceedSlippage();
       }
+      unchecked {
+        ++_i;
+      }
     }
 
     // Transfer withdrawn funds to user
@@ -230,6 +234,9 @@ contract AutomatedVaultManager is
     _len = _results.length;
     for (uint256 _i; _i < _len;) {
       ERC20(_results[_i].token).safeTransfer(msg.sender, _results[_i].amount);
+      unchecked {
+        ++_i;
+      }
     }
 
     // Check equity changed shouldn't exceed shares withdrawn proportion
