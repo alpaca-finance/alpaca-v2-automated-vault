@@ -52,6 +52,16 @@ contract PancakeV3VaultOracleTest is BscFixture, ProtocolActorFixture {
         )
       )
     );
+    oracle = PancakeV3VaultOracle(
+      DeployHelper.deployUpgradeable(
+        "PancakeV3VaultOracle",
+        abi.encodeWithSelector(
+          PancakeV3VaultOracle.initialize.selector, address(pancakeV3PositionManager), mockBank, 100, 10_500
+        )
+      )
+    );
+    oracle.setPriceFeedOf(address(wbnb), address(wbnbFeed));
+    oracle.setPriceFeedOf(address(doge), address(dogeFeed));
     vm.stopPrank();
   }
 
@@ -98,8 +108,6 @@ contract PancakeV3VaultOracleTest is BscFixture, ProtocolActorFixture {
   function _testGetPositionValue(TestGetPositionValueParams memory params) internal {
     (uint256 tokenId, uint256 amount0, uint256 amount1) =
       _addLiquidity(params.pool, params.tickLower, params.tickUpper, params.amount0Desired, params.amount1Desired);
-    console.log(amount0);
-    console.log(amount1);
     (, int256 token0Price,,,) = params.token0Feed.latestRoundData();
     (, int256 token1Price,,,) = params.token1Feed.latestRoundData();
 
@@ -207,6 +215,61 @@ contract PancakeV3VaultOracleTest is BscFixture, ProtocolActorFixture {
         amount1Desired: amount1Desired
       })
     );
+  }
+
+  // TODO: convert to fuzz test
+  function testCorrectness_GetEquityAndDebt() public {
+    (, int256 wbnbAnswer,,,) = wbnbFeed.latestRoundData();
+    (, int256 dogeAnswer,,,) = dogeFeed.latestRoundData();
+
+    // Mock position
+    uint256 expectedPositionValue;
+    {
+      int24 tickLower = 0;
+      int24 tickUpper = 10_000;
+      uint256 wbnbAddLiquidity = 1 ether;
+      uint256 dogeAddLiquidity = 1e8;
+      (uint256 tokenId, uint256 amount0, uint256 amount1) =
+        _addLiquidity(pancakeV3DOGEWBNBPool, tickLower, tickUpper, dogeAddLiquidity, wbnbAddLiquidity);
+      vm.mockCall(mockWorker, abi.encodeWithSignature("pool()"), abi.encode(address(pancakeV3DOGEWBNBPool)));
+      vm.mockCall(mockWorker, abi.encodeWithSignature("nftTokenId()"), abi.encode(tokenId));
+      // Calculate expected position value
+      // 1e2 = 1e10 (pad doge amount to 18 decimals) - 1e8 (feed decimals)
+      expectedPositionValue = amount0 * uint256(dogeAnswer) * 1e2 + amount1 * uint256(wbnbAnswer) / 1e8;
+    }
+
+    // Mock debt
+    uint256 wbnbDebt = 1 ether;
+    uint256 dogeDebt = 1e8;
+    vm.mockCall(
+      mockBank,
+      abi.encodeWithSignature("getVaultDebt(address,address)", mockVaultToken, address(doge)),
+      abi.encode(0, dogeDebt)
+    );
+    vm.mockCall(
+      mockBank,
+      abi.encodeWithSignature("getVaultDebt(address,address)", mockVaultToken, address(wbnb)),
+      abi.encode(0, wbnbDebt)
+    );
+    // Calculate expected debt value
+    uint256 expectedDebtValue = dogeDebt * uint256(dogeAnswer) * 1e2 + wbnbDebt * uint256(wbnbAnswer) / 1e8;
+
+    // Mock token balance
+    uint256 wbnbBalance = 1 ether;
+    uint256 dogeBalance = 1e8;
+    deal(address(wbnb), mockWorker, wbnbBalance);
+    deal(address(doge), mockWorker, dogeBalance);
+    // Calculate expected token value
+    uint256 expectedTokenValue = dogeBalance * uint256(dogeAnswer) * 1e2 + wbnbBalance * uint256(wbnbAnswer) / 1e8;
+
+    // emit log_named_decimal_uint("expectedPositionValue ", expectedPositionValue, 18);
+    // emit log_named_decimal_uint("expectedDebtValue     ", expectedDebtValue, 18);
+    // emit log_named_decimal_uint("expectedTokenValue    ", expectedTokenValue, 18);
+
+    // Assert
+    (uint256 equity, uint256 debtValue) = oracle.getEquityAndDebt(mockVaultToken, mockWorker);
+    assertApproxEqRel(expectedPositionValue + expectedTokenValue - expectedDebtValue, equity, 1);
+    assertEq(expectedDebtValue, debtValue);
   }
 
   // TODO: fuzz out range

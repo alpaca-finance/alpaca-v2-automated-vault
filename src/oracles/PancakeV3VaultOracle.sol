@@ -181,7 +181,6 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
     returns (uint256 _equityUSD, uint256 _debtUSD)
   {
     ICommonV3Pool _pool = PancakeV3Worker(_pancakeV3Worker).pool();
-    uint256 _tokenId = PancakeV3Worker(_pancakeV3Worker).nftTokenId();
     address _token0 = address(_pool.token0());
     address _token1 = address(_pool.token1());
 
@@ -190,10 +189,17 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
     uint256 _token1OraclePrice = _safeGetTokenPriceE18(_token1);
 
     // Get nft position value. Skip if worker didn't hold any nft (tokenId = 0)
-    uint256 _posValUSD =
-      _tokenId == 0 ? 0 : _getPositionValueUSD(address(_pool), _tokenId, _token0OraclePrice, _token1OraclePrice);
+    uint256 _posValUSD;
+    {
+      uint256 _tokenId = PancakeV3Worker(_pancakeV3Worker).nftTokenId();
+      _posValUSD =
+        _tokenId == 0 ? 0 : _getPositionValueUSD(address(_pool), _tokenId, _token0OraclePrice, _token1OraclePrice);
+    }
     uint256 _debtValUSD = _getDebtValueUSD(_vaultToken, _token0, _token1, _token0OraclePrice, _token1OraclePrice);
+    uint256 _tokenValUSD = IERC20(_token0).balanceOf(_pancakeV3Worker) * _token0OraclePrice
+      / (10 ** IERC20(_token0).decimals())
+      + IERC20(_token1).balanceOf(_pancakeV3Worker) * _token1OraclePrice / (10 ** IERC20(_token1).decimals());
 
-    return (_posValUSD - _debtValUSD, _debtValUSD);
+    return (_posValUSD + _tokenValUSD - _debtValUSD, _debtValUSD);
   }
 }
