@@ -39,6 +39,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   // packed slot for reinvest
   address public performanceFeeBucket;
   uint16 public performanceFeeBps;
+  uint40 public lastReinvest;
 
   IZapV3 public zapV3;
 
@@ -58,6 +59,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   event LogCollectPerformanceFee(
     address indexed _token, uint256 _earned, uint16 _performanceFeeBps, uint256 _performanceFee
   );
+  event LogDecreaseLiquidity(uint256 tokenId, uint256 amount0out, uint256 amount1out, uint128 liquidityOut);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -129,18 +131,18 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
       (uint128 _liquidity, uint256 _amount0, uint256 _amount1) = _increasePositionInternal(_amountIn0, _amountIn1);
       return abi.encode(_liquidity, _amount0, _amount1);
     } else if (_task == Tasks.DECREASE) {
-      // // Decode params
-      // (uint128 _liquidity) = abi.decode(_params, (uint128));
-      // // Decrease position.
-      // (uint256 _amount0, uint256 _amount1) = _decreasePositionInternal(_liquidity);
-      // // Send tokens to caller
-      // if (_amount0 > 0) {
-      //   token0.safeTransfer(msg.sender, _amount0);
-      // }
-      // if (_amount1 > 0) {
-      //   token1.safeTransfer(msg.sender, _amount1);
-      // }
-      // return abi.encode(_amount0, _amount1);
+      // Decode params
+      (uint128 _liquidity) = abi.decode(_params, (uint128));
+      // Decrease position.
+      (uint256 _amount0, uint256 _amount1) = _decreasePositionInternal(_liquidity);
+      // Send tokens to caller
+      if (_amount0 > 0) {
+        token0.safeTransfer(msg.sender, _amount0);
+      }
+      if (_amount1 > 0) {
+        token1.safeTransfer(msg.sender, _amount1);
+      }
+      return abi.encode(_amount0, _amount1);
     } else if (_task == Tasks.CHANGE_TICK) {
       // (int24 _newTickLower, int24 _newTickUpper) = abi.decode(_params, (int24, int24));
       // _changeTickInternal(_newTickLower, _newTickUpper);
@@ -338,6 +340,29 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     emit LogIncreaseLiquidity(nftTokenId, _amount0, _amount1, _liquidity);
   }
 
+  /// @notice Perform decrease position according to a given liquidity.
+  /// @param _liquidity Liquidity to decrease
+  function _decreasePositionInternal(uint128 _liquidity) internal returns (uint256 _amount0, uint256 _amount1) {
+    masterChef.decreaseLiquidity(
+      IPancakeV3MasterChef.DecreaseLiquidityParams({
+        tokenId: nftTokenId,
+        liquidity: _liquidity,
+        amount0Min: 0,
+        amount1Min: 0,
+        deadline: block.timestamp
+      })
+    );
+    (_amount0, _amount1) = masterChef.collect(
+      IPancakeV3MasterChef.CollectParams({
+        tokenId: nftTokenId,
+        recipient: address(this),
+        amount0Max: type(uint128).max,
+        amount1Max: type(uint128).max
+      })
+    );
+    emit LogDecreaseLiquidity(nftTokenId, _amount0, _amount1, _liquidity);
+  }
+
   /// @notice Allow to trigger reinvest without passing through "doWork" routine.
   /// @dev This is useful when pool is idle and we want to trigger reinvest.
   function reinvest() external {
@@ -346,10 +371,12 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
 
   /// @notice Perform the actual reinvest.
   function _reinvestInternal() internal {
+    // Skip reinvest if already done before in same block
+    if (block.timestamp == lastReinvest) return;
+    lastReinvest = uint40(block.timestamp);
+
     // If tokenId is 0, then nothing to reinvest
     if (nftTokenId == 0) return;
-
-    // TODO: return if already reinvest within same block
 
     // Claim all trading fee
     (uint256 _fee0, uint256 _fee1) = masterChef.collect(

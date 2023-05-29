@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL
 pragma solidity 0.8.19;
 
+// TODO: use OZ's EnumerableSet?
 library LibVaultDebt {
   error LibVaultDebt_EmptyList(address _vaultToken, address _token);
 

@@ -178,7 +178,7 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
     external
     view
     override
-    returns (uint256 _equityUSD, uint256 _debtUSD)
+    returns (uint256 _equityUSD, uint256 _debtValUSD)
   {
     ICommonV3Pool _pool = PancakeV3Worker(_pancakeV3Worker).pool();
     address _token0 = address(_pool.token0());
