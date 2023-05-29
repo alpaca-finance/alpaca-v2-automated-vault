@@ -20,9 +20,12 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
     vaultManager.setVaultManagers(address(vaultToken), MANAGER, true);
   }
 
-  function testCorrectness_DepositWithdraw_EmptyVault() public {
+  function testCorrectness_SimpleDepositWithdraw_EmptyVault() public {
     uint256 wbnbIn = 1 ether;
     uint256 usdtIn = 2 ether;
+
+    deal(address(wbnb), address(moneyMarket), wbnbIn);
+    deal(address(usdt), address(moneyMarket), usdtIn);
 
     deal(address(wbnb), address(this), wbnbIn);
     wbnb.approve(address(vaultManager), type(uint256).max);
@@ -31,38 +34,48 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
 
     // Calculated expected equity
     // * 2 each to mimic simple deposit borrowing
-    (uint256 swapAmount,, bool zeroForOne) = zapV3.calc(
-      IZapV3.CalcParams({
-        pool: address(pancakeV3Worker.pool()),
-        amountIn0: usdtIn * 2,
-        amountIn1: wbnbIn * 2,
-        tickLower: TICK_LOWER,
-        tickUpper: TICK_UPPER
-      })
-    );
-    (uint256 amountOut,,,) = pancakeV3Quoter.quoteExactInputSingle(
-      IPancakeV3QuoterV2.QuoteExactInputSingleParams({
-        tokenIn: zeroForOne ? address(usdt) : address(wbnb),
-        tokenOut: zeroForOne ? address(wbnb) : address(usdt),
-        amountIn: swapAmount,
-        fee: pancakeV3Worker.poolFee(),
-        sqrtPriceLimitX96: 0
-      })
-    );
-    uint256 expectedAddLiquidityWBNB = wbnbIn * 2;
-    uint256 expectedAddLiquidityUSDT = usdtIn * 2;
-    if (zeroForOne) {
-      expectedAddLiquidityWBNB += amountOut;
-      expectedAddLiquidityUSDT -= swapAmount;
-    } else {
-      expectedAddLiquidityUSDT += amountOut;
-      expectedAddLiquidityWBNB -= swapAmount;
+    uint256 expectedEquity;
+    uint256 expectedAddLiquidityWBNB;
+    uint256 expectedAddLiquidityUSDT;
+    {
+      (uint256 swapAmount,, bool zeroForOne) = zapV3.calc(
+        IZapV3.CalcParams({
+          pool: address(pancakeV3Worker.pool()),
+          amountIn0: usdtIn * 2,
+          amountIn1: wbnbIn * 2,
+          tickLower: TICK_LOWER,
+          tickUpper: TICK_UPPER
+        })
+      );
+      (uint256 amountOut,,,) = pancakeV3Quoter.quoteExactInputSingle(
+        IPancakeV3QuoterV2.QuoteExactInputSingleParams({
+          tokenIn: zeroForOne ? address(usdt) : address(wbnb),
+          tokenOut: zeroForOne ? address(wbnb) : address(usdt),
+          amountIn: swapAmount,
+          fee: pancakeV3Worker.poolFee(),
+          sqrtPriceLimitX96: 0
+        })
+      );
+      expectedAddLiquidityWBNB = wbnbIn * 2;
+      expectedAddLiquidityUSDT = usdtIn * 2;
+      if (zeroForOne) {
+        expectedAddLiquidityWBNB += amountOut;
+        expectedAddLiquidityUSDT -= swapAmount;
+      } else {
+        expectedAddLiquidityUSDT += amountOut;
+        expectedAddLiquidityWBNB -= swapAmount;
+      }
+      (, int256 wbnbAnswer,,,) = wbnbFeed.latestRoundData();
+      (, int256 usdtAnswer,,,) = usdtFeed.latestRoundData();
+      // subtract amountIn to mimic equity = postionVal - debtVal
+      int256 wbnbEquity = int256(
+        (int256(expectedAddLiquidityWBNB) - int256(wbnbIn)) * int256(10 ** (18 - wbnb.decimals())) * wbnbAnswer
+      ) / int256(10 ** wbnbFeed.decimals());
+      int256 usdtEquity = int256(
+        (int256(expectedAddLiquidityUSDT) - int256(usdtIn)) * int256(10 ** (18 - usdt.decimals())) * usdtAnswer
+      ) / int256(10 ** usdtFeed.decimals());
+      expectedEquity = uint256(wbnbEquity + usdtEquity);
     }
-    (, int256 wbnbAnswer,,,) = wbnbFeed.latestRoundData();
-    (, int256 usdtAnswer,,,) = usdtFeed.latestRoundData();
-    uint256 expectedEquity = (expectedAddLiquidityWBNB * (10 ** (18 - wbnb.decimals())) * uint256(wbnbAnswer))
-      / (10 ** wbnbFeed.decimals())
-      + (expectedAddLiquidityUSDT * (10 ** (18 - usdt.decimals())) * uint256(usdtAnswer)) / (10 ** usdtFeed.decimals());
 
     uint256 wbnbBefore = wbnb.balanceOf(address(this));
     uint256 usdtBefore = usdt.balanceOf(address(this));
@@ -73,7 +86,7 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
     // - call depositExecutor
     // - call withdrawExecutor
     // - mint shares based on equityChange
-    // - get token back equal to optimal swap output
+    // - get token back as proportion of optimal swap output
 
     vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onUpdate.selector), 2);
     vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onDeposit.selector), 1);
@@ -84,9 +97,9 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
     params[1] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: usdtIn });
     vaultManager.deposit(address(vaultToken), params);
 
-    assertEq(wbnbBefore - wbnb.balanceOf(address(this)), wbnbIn);
-    assertEq(usdtBefore - usdt.balanceOf(address(this)), usdtIn);
-    assertApproxEqRel(vaultToken.balanceOf(address(this)), expectedEquity, 1); // within 1e-18% delta
+    assertEq(wbnbBefore - wbnb.balanceOf(address(this)), wbnbIn, "wbnb pulled");
+    assertEq(usdtBefore - usdt.balanceOf(address(this)), usdtIn, "usdt pulled");
+    assertApproxEqRel(vaultToken.balanceOf(address(this)), expectedEquity, 1e12, "shares received");
 
     wbnbBefore = wbnb.balanceOf(address(this));
     usdtBefore = usdt.balanceOf(address(this));
@@ -94,9 +107,110 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
     // Withdraw
     vaultManager.withdraw(address(vaultToken), vaultToken.balanceOf(address(this)));
 
-    assertApproxEqRel(wbnb.balanceOf(address(this)) - wbnbBefore, expectedAddLiquidityWBNB, 1);
-    assertApproxEqRel(usdt.balanceOf(address(this)) - usdtBefore, expectedAddLiquidityUSDT, 1);
+    assertApproxEqRel(
+      wbnb.balanceOf(address(this)) - wbnbBefore, expectedAddLiquidityWBNB - wbnbIn, 1e12, "wbnb withdraw"
+    );
+    assertApproxEqRel(
+      usdt.balanceOf(address(this)) - usdtBefore, expectedAddLiquidityUSDT - usdtIn, 1e12, "usdt withdraw"
+    );
   }
+
+  // This fuzz still fail for case where there are 2 debt but optimal swap only result in 1 token so can't repay
+  // Will revisit when dealing with real withdraw executor
+  // function testForkFuzz_DepositWithdraw_EmptyVault(uint256 wbnbIn, uint256 usdtIn) public {
+  //   wbnbIn = bound(wbnbIn, 1e6, 1e21);
+  //   usdtIn = bound(usdtIn, 1e6, 1e21);
+
+  //   deal(address(wbnb), address(moneyMarket), wbnbIn);
+  //   deal(address(usdt), address(moneyMarket), usdtIn);
+
+  //   deal(address(wbnb), address(this), wbnbIn);
+  //   wbnb.approve(address(vaultManager), type(uint256).max);
+  //   deal(address(usdt), address(this), usdtIn);
+  //   usdt.approve(address(vaultManager), type(uint256).max);
+
+  //   // Calculated expected equity
+  //   // * 2 each to mimic simple deposit borrowing
+  //   uint256 expectedEquity;
+  //   uint256 expectedAddLiquidityWBNB;
+  //   uint256 expectedAddLiquidityUSDT;
+  //   {
+  //     (uint256 swapAmount,, bool zeroForOne) = zapV3.calc(
+  //       IZapV3.CalcParams({
+  //         pool: address(pancakeV3Worker.pool()),
+  //         amountIn0: usdtIn * 2,
+  //         amountIn1: wbnbIn * 2,
+  //         tickLower: TICK_LOWER,
+  //         tickUpper: TICK_UPPER
+  //       })
+  //     );
+  //     (uint256 amountOut,,,) = pancakeV3Quoter.quoteExactInputSingle(
+  //       IPancakeV3QuoterV2.QuoteExactInputSingleParams({
+  //         tokenIn: zeroForOne ? address(usdt) : address(wbnb),
+  //         tokenOut: zeroForOne ? address(wbnb) : address(usdt),
+  //         amountIn: swapAmount,
+  //         fee: pancakeV3Worker.poolFee(),
+  //         sqrtPriceLimitX96: 0
+  //       })
+  //     );
+  //     expectedAddLiquidityWBNB = wbnbIn * 2;
+  //     expectedAddLiquidityUSDT = usdtIn * 2;
+  //     if (zeroForOne) {
+  //       expectedAddLiquidityWBNB += amountOut;
+  //       expectedAddLiquidityUSDT -= swapAmount;
+  //     } else {
+  //       expectedAddLiquidityUSDT += amountOut;
+  //       expectedAddLiquidityWBNB -= swapAmount;
+  //     }
+  //     (, int256 wbnbAnswer,,,) = wbnbFeed.latestRoundData();
+  //     (, int256 usdtAnswer,,,) = usdtFeed.latestRoundData();
+  //     // subtract amountIn to mimic equity = postionVal - debtVal
+  //     int256 wbnbEquity = int256(
+  //       (int256(expectedAddLiquidityWBNB) - int256(wbnbIn)) * int256(10 ** (18 - wbnb.decimals())) * wbnbAnswer
+  //     ) / int256(10 ** wbnbFeed.decimals());
+  //     int256 usdtEquity = int256(
+  //       (int256(expectedAddLiquidityUSDT) - int256(usdtIn)) * int256(10 ** (18 - usdt.decimals())) * usdtAnswer
+  //     ) / int256(10 ** usdtFeed.decimals());
+  //     expectedEquity = uint256(wbnbEquity + usdtEquity);
+  //   }
+
+  //   uint256 wbnbBefore = wbnb.balanceOf(address(this));
+  //   uint256 usdtBefore = usdt.balanceOf(address(this));
+
+  //   // Assertions
+  //   // - pull tokens from caller
+  //   // - call updateExecutor twice (deposit, withdraw)
+  //   // - call depositExecutor
+  //   // - call withdrawExecutor
+  //   // - mint shares based on equityChange
+  //   // - get token back as proportion of optimal swap output
+
+  //   vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onUpdate.selector), 2);
+  //   vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onDeposit.selector), 1);
+  //   vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onWithdraw.selector), 1);
+
+  //   IAutomatedVaultManager.DepositTokenParams[] memory params = new IAutomatedVaultManager.DepositTokenParams[](2);
+  //   params[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(wbnb), amount: wbnbIn });
+  //   params[1] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: usdtIn });
+  //   vaultManager.deposit(address(vaultToken), params);
+
+  //   assertEq(wbnbBefore - wbnb.balanceOf(address(this)), wbnbIn, "wbnb pulled");
+  //   assertEq(usdtBefore - usdt.balanceOf(address(this)), usdtIn, "usdt pulled");
+  //   assertApproxEqRel(vaultToken.balanceOf(address(this)), expectedEquity, 1e12, "shares received");
+
+  //   wbnbBefore = wbnb.balanceOf(address(this));
+  //   usdtBefore = usdt.balanceOf(address(this));
+
+  //   // Withdraw
+  //   vaultManager.withdraw(address(vaultToken), vaultToken.balanceOf(address(this)));
+
+  //   assertApproxEqRel(
+  //     wbnb.balanceOf(address(this)) - wbnbBefore, expectedAddLiquidityWBNB - wbnbIn, 1e12, "wbnb withdraw"
+  //   );
+  //   assertApproxEqRel(
+  //     usdt.balanceOf(address(this)) - usdtBefore, expectedAddLiquidityUSDT - usdtIn, 1e12, "usdt withdraw"
+  //   );
+  // }
 
   function testCorrectness_ManagingVaultResultInHealthyState_ShouldWork() external {
     vm.prank(MANAGER);

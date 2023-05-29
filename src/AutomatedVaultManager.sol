@@ -115,7 +115,7 @@ contract AutomatedVaultManager is
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
 
     // todo: send deposit params to executor
-    _result = IExecutor(_cachedVaultInfo.executor).onDeposit(_cachedVaultInfo.worker);
+    _result = IExecutor(_cachedVaultInfo.executor).onDeposit(_cachedVaultInfo.worker, _vaultToken);
     EXECUTOR_IN_SCOPE = address(0);
 
     uint256 _equityChanged;
@@ -153,7 +153,7 @@ contract AutomatedVaultManager is
     (uint256 _totalEquityBefore,) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
 
-    IExecutor(_cachedVaultInfo.executor).multicall(_executorParams);
+    _result = IExecutor(_cachedVaultInfo.executor).multicall(_executorParams);
     EXECUTOR_IN_SCOPE = address(0);
 
     // 3. Check equity loss < threshold
