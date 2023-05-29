@@ -2,8 +2,13 @@
 pragma solidity 0.8.19;
 
 interface IAutomatedVaultManager {
-  // to support pool with arbitrary number of tokens
   struct DepositTokenParams {
+    address token;
+    uint256 amount;
+  }
+
+  // TODO: maybe merge with DepositTokenParams?
+  struct WithdrawResult {
     address token;
     uint256 amount;
   }

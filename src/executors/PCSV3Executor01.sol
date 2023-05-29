@@ -13,6 +13,7 @@ import { Executor } from "src/executors/Executor.sol";
 import { IExecutor } from "src/interfaces/IExecutor.sol";
 import { IWorker } from "src/interfaces/IWorker.sol";
 import { IBank } from "src/interfaces/IBank.sol";
+import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
 
 // libraries
 import { Tasks } from "src/libraries/Constants.sol";
@@ -39,10 +40,10 @@ contract PCSV3Executor01 is Executor {
     return _worker.doWork(Tasks.INCREASE, abi.encode(_amountIn0 * 2, _amountIn1 * 2));
   }
 
-  function onWithdraw(PancakeV3Worker _worker, address _vaultToken, uint256 _sharesToWithdraw, address _recipient)
+  function onWithdraw(PancakeV3Worker _worker, address _vaultToken, uint256 _sharesToWithdraw)
     external
     override
-    returns (bytes memory _result)
+    returns (IAutomatedVaultManager.WithdrawResult[] memory _results)
   {
     uint128 _liquidity;
     {
@@ -77,10 +78,16 @@ contract PCSV3Executor01 is Executor {
       bank.repayOnBehalfOf(_vaultToken, address(_token1), _token1Repay);
     }
 
-    _token0.transfer(_recipient, _token0Before - _token0Repay);
-    _token1.transfer(_recipient, _token1Before - _token1Repay);
+    _token0.transfer(msg.sender, _token0Before - _token0Repay);
+    _token1.transfer(msg.sender, _token1Before - _token1Repay);
 
-    return "";
+    _results = new IAutomatedVaultManager.WithdrawResult[](2);
+    _results[0] =
+      IAutomatedVaultManager.WithdrawResult({ token: address(_token0), amount: _token0Before - _token0Repay });
+    _results[1] =
+      IAutomatedVaultManager.WithdrawResult({ token: address(_token1), amount: _token1Before - _token1Repay });
+
+    return _results;
   }
 
   function onUpdate(address _vaultToken, PancakeV3Worker _worker) external override returns (bytes memory _result) {

@@ -34,6 +34,7 @@ contract AutomatedVaultManager is
   error AutomatedVaultManager_Unauthorized();
   error AutomatedVaultManager_TooMuchEquityLoss();
   error AutomatedVaultManager_TooMuchLeverage();
+  error AutomatedVaultManager_ExceedSlippage();
 
   struct VaultInfo {
     address worker;
@@ -179,11 +180,14 @@ contract AutomatedVaultManager is
     emit LogSetVaultManager(_vaultToken, _manager, _isOk);
   }
 
-  // TODO: slippage control
-  function withdraw(address _vaultToken, uint256 _sharesToWithdraw)
+  struct WithdrawSlippage {
+    address token;
+    uint256 minAmountOut;
+  }
+
+  function withdraw(address _vaultToken, uint256 _sharesToWithdraw, WithdrawSlippage[] calldata _minAmountOuts)
     external
     nonReentrant
-    returns (bytes memory _result)
   {
     // Revert if withdraw shares more than balance
     if (_sharesToWithdraw > IAutomatedVaultERC20(_vaultToken).balanceOf(msg.sender)) {
@@ -204,29 +208,45 @@ contract AutomatedVaultManager is
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
 
     // Execute withdraw
-    // Executor should send withdrawn funds to user
-    _result = IExecutor(_cachedVaultInfo.executor).onWithdraw(
-      _cachedVaultInfo.worker, _vaultToken, _sharesToWithdraw, msg.sender
-    );
+    // Executor should send withdrawn funds back here to check slippage
+    IAutomatedVaultManager.WithdrawResult[] memory _results =
+      IExecutor(_cachedVaultInfo.executor).onWithdraw(_cachedVaultInfo.worker, _vaultToken, _sharesToWithdraw);
 
     //////////////////////////
     // Close executor scope //
     //////////////////////////
     EXECUTOR_IN_SCOPE = address(0);
 
+    // Check slippage
+    uint256 _len = _minAmountOuts.length;
+    for (uint256 _i; _i < _len;) {
+      if (ERC20(_minAmountOuts[_i].token).balanceOf(address(this)) < _minAmountOuts[_i].minAmountOut) {
+        revert AutomatedVaultManager_ExceedSlippage();
+      }
+    }
+
+    // Transfer withdrawn funds to user
+    // Tokens should be transferred from executor to here during `onWithdraw`
+    _len = _results.length;
+    for (uint256 _i; _i < _len;) {
+      ERC20(_results[_i].token).safeTransfer(msg.sender, _results[_i].amount);
+    }
+
+    // Check equity changed shouldn't exceed shares withdrawn proportion
     uint256 _equityChanged;
     {
       (uint256 _totalEquityAfter,) =
         IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
       _equityChanged = _totalEquityBefore - _totalEquityAfter;
     }
+    uint256 _maxEquityChange = _sharesToWithdraw * _totalEquityBefore / IAutomatedVaultERC20(_vaultToken).totalSupply();
+    if (_equityChanged > _maxEquityChange) {
+      revert AutomatedVaultManager_TooMuchEquityLoss();
+    }
 
-    // Burn shares according to equity changed
-    // Round up in protocol's favor
-    uint256 _actualSharesWithdrawn =
-      _equityChanged.valueToShareRoundingUp(IAutomatedVaultERC20(_vaultToken).totalSupply(), _totalEquityBefore);
-    IAutomatedVaultERC20(_vaultToken).burn(msg.sender, _actualSharesWithdrawn);
+    // Burn shares per requested amount
+    IAutomatedVaultERC20(_vaultToken).burn(msg.sender, _sharesToWithdraw);
 
-    emit LogWithdraw(_vaultToken, msg.sender, _actualSharesWithdrawn);
+    emit LogWithdraw(_vaultToken, msg.sender, _sharesToWithdraw);
   }
 }
