@@ -99,6 +99,7 @@ contract AutomatedVaultManager is
   }
 
   // TODO: slippage control
+  // TODO: tiny shares
   function deposit(address _vaultToken, DepositTokenParams[] calldata _depositParams)
     external
     returns (bytes memory _result)
