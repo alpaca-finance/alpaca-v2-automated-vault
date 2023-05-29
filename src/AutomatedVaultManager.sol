@@ -144,7 +144,6 @@ contract AutomatedVaultManager is
 
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
     // 1. Update the vault
-    // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
     IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, _cachedVaultInfo.worker);
@@ -186,24 +185,33 @@ contract AutomatedVaultManager is
     nonReentrant
     returns (bytes memory _result)
   {
+    // Revert if withdraw shares more than balance
     if (_sharesToWithdraw > IAutomatedVaultERC20(_vaultToken).balanceOf(msg.sender)) {
       revert AutomatedVaultManager_InvalidParams();
     }
 
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
 
-    // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
+    /////////////////////////
+    // Open executor scope //
+    /////////////////////////
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
+
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
     IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, _cachedVaultInfo.worker);
 
-    // 2. execute manage
     (uint256 _totalEquityBefore,) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
 
+    // Execute withdraw
+    // Executor should send withdrawn funds to user
     _result = IExecutor(_cachedVaultInfo.executor).onWithdraw(
       _cachedVaultInfo.worker, _vaultToken, _sharesToWithdraw, msg.sender
     );
+
+    //////////////////////////
+    // Close executor scope //
+    //////////////////////////
     EXECUTOR_IN_SCOPE = address(0);
 
     uint256 _equityChanged;
@@ -213,9 +221,10 @@ contract AutomatedVaultManager is
       _equityChanged = _totalEquityBefore - _totalEquityAfter;
     }
 
+    // Burn shares according to equity changed
+    // Round up in protocol's favor
     uint256 _actualSharesWithdrawn =
-      _equityChanged.valueToShare(IAutomatedVaultERC20(_vaultToken).totalSupply(), _totalEquityBefore);
-
+      _equityChanged.valueToShareRoundingUp(IAutomatedVaultERC20(_vaultToken).totalSupply(), _totalEquityBefore);
     IAutomatedVaultERC20(_vaultToken).burn(msg.sender, _actualSharesWithdrawn);
 
     emit LogWithdraw(_vaultToken, msg.sender, _actualSharesWithdrawn);
