@@ -26,6 +26,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
 
   error PancakeV3Worker_Unauthorized();
   error PancakeV3Worker_InvalidTask();
+  error PancakeV3Worker_PositionExist();
 
   // pool info
   ERC20 public token0;
@@ -54,12 +55,21 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   /// Authorization
   IAutomatedVaultManager public vaultManager;
 
+  /// Modifier
+  modifier onlyExecutorInScope() {
+    if (msg.sender != vaultManager.EXECUTOR_IN_SCOPE()) {
+      revert PancakeV3Worker_Unauthorized();
+    }
+    _;
+  }
+
   /// Events
   event LogIncreaseLiquidity(uint256 _tokenId, uint256 _amount0, uint256 _amount1, uint128 _liquidity);
   event LogCollectPerformanceFee(
     address indexed _token, uint256 _earned, uint16 _performanceFeeBps, uint256 _performanceFee
   );
   event LogDecreaseLiquidity(uint256 tokenId, uint256 amount0out, uint256 amount1out, uint128 liquidityOut);
+  event LogSetTicks(int24 _prevTickLower, int24 _prevTickUpper, int24 _tickLower, int24 _tickUpper);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -102,6 +112,23 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     performanceFeeBps = _params.performanceFeeBps;
   }
 
+  function setTicks(int24 _tickLower, int24 _tickUpper) external onlyExecutorInScope {
+    // Check
+    if (nftTokenId != 0) {
+      revert PancakeV3Worker_PositionExist();
+    }
+
+    // Validate tick
+    require(_tickLower < _tickUpper, "TLU");
+    require(_tickLower >= LibTickMath.MIN_TICK, "TLM");
+    require(_tickUpper <= LibTickMath.MAX_TICK, "TUM");
+
+    emit LogSetTicks(posTickLower, posTickUpper, _tickLower, _tickUpper);
+    posTickLower = _tickLower;
+    posTickUpper = _tickUpper;
+  }
+
+  // TODO: deprecate doWork in favor of individual function
   /// @notice Perform the work. Only manager can call this function.
   /// @dev Main routine. Action depends on task param.
   /// @param _task Task to execute
@@ -149,6 +176,21 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
       // return "";
     }
     revert PancakeV3Worker_InvalidTask();
+  }
+
+  function increasePosition(uint256 _amountIn0, uint256 _amountIn1)
+    external
+    nonReentrant
+    onlyExecutorInScope
+    returns (uint128 _liquidity, uint256 _amount0, uint256 _amount1)
+  {
+    if (_amountIn0 != 0) {
+      token0.safeTransferFrom(msg.sender, address(this), _amountIn0);
+    }
+    if (_amountIn1 != 0) {
+      token1.safeTransferFrom(msg.sender, address(this), _amountIn1);
+    }
+    return _increasePositionInternal(_amountIn0, _amountIn1);
   }
 
   /// @notice Perform increase position
