@@ -109,10 +109,6 @@ contract AutomatedVaultManager is
   {
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
 
-    if (_cachedVaultInfo.worker == address(0)) {
-      revert AutomatedVaultManager_VaultNotExist(_vaultToken);
-    }
-
     _pullTokens(_cachedVaultInfo.executor, _depositParams);
 
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
