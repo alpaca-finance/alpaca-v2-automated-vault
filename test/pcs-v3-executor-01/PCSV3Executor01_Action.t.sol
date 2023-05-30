@@ -11,6 +11,7 @@ import { MockERC20 } from "test/mocks/MockERC20.sol";
 contract PCSV3Executor01ActionTest is Test {
   PCSV3Executor01 executor;
   address mockWorker = makeAddr("mockWorker");
+  address mockVaultToken = makeAddr("mockVaultToken");
   address mockVaultManager = makeAddr("mockVaultManager");
   MockERC20 mockToken0;
   MockERC20 mockToken1;
@@ -28,7 +29,7 @@ contract PCSV3Executor01IncreasePositionTest is PCSV3Executor01ActionTest {
     vm.mockCall(mockWorker, abi.encodeWithSignature("token1()"), abi.encode(address(mockToken1)));
     vm.mockCall(mockWorker, abi.encodeWithSignature("increasePosition(uint256,uint256)"), abi.encode());
     vm.prank(mockVaultManager);
-    executor.setCurrentWorker(mockWorker);
+    executor.setExecutionScope(mockWorker, mockVaultToken);
 
     vm.expectCall(mockWorker, abi.encodeWithSignature("increasePosition(uint256,uint256)"), 1);
 
@@ -49,7 +50,7 @@ contract PCSV3Executor01OpenPositionTest is PCSV3Executor01ActionTest {
     vm.mockCall(mockWorker, abi.encodeWithSignature("token1()"), abi.encode(address(mockToken1)));
     vm.mockCall(mockWorker, abi.encodeWithSignature("openPosition(int24,int24,uint256,uint256)"), abi.encode());
     vm.prank(mockVaultManager);
-    executor.setCurrentWorker(mockWorker);
+    executor.setExecutionScope(mockWorker, mockVaultToken);
 
     vm.expectCall(mockWorker, abi.encodeWithSignature("openPosition(int24,int24,uint256,uint256)"), 1);
 

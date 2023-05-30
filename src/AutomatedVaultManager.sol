@@ -163,9 +163,9 @@ contract AutomatedVaultManager is
     (uint256 _totalEquityBefore,) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
 
-    IExecutor(_cachedVaultInfo.executor).setCurrentWorker(_cachedVaultInfo.worker);
+    IExecutor(_cachedVaultInfo.executor).setExecutionScope(_cachedVaultInfo.worker, _vaultToken);
     _result = IExecutor(_cachedVaultInfo.executor).multicall(_executorParams);
-    IExecutor(_cachedVaultInfo.executor).setCurrentWorker(address(0));
+    IExecutor(_cachedVaultInfo.executor).setExecutionScope(address(0), address(0));
     EXECUTOR_IN_SCOPE = address(0);
 
     // 3. Check equity loss < threshold
