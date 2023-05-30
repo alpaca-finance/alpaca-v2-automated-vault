@@ -24,6 +24,7 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
     address worker = makeAddr("worker");
     address vaultOracle = makeAddr("vaultOracle");
     address executor = makeAddr("executor");
+    uint256 minimumDeposit = 100 ether;
     uint16 toleranceBps = 9900;
     uint8 maxLeverage = 10;
 
@@ -35,6 +36,7 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
         worker: worker,
         vaultOracle: vaultOracle,
         executor: executor,
+        minimumDeposit: minimumDeposit,
         toleranceBps: toleranceBps,
         maxLeverage: maxLeverage
       })
@@ -44,6 +46,7 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
       address vaultWorker,
       address vaultWorkerOracle,
       address vaultExecutor,
+      uint256 vaultMinimumDeposit,
       uint16 vaultToleranceBps,
       uint8 vaultMaxLeverage
     ) = vaultManager.vaultInfos(vaultToken);
@@ -53,6 +56,7 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
     assertEq(vaultExecutor, executor);
     assertEq(vaultToleranceBps, toleranceBps);
     assertEq(vaultMaxLeverage, maxLeverage);
+    assertEq(vaultMinimumDeposit, minimumDeposit);
   }
 
   function testRevert_OpenVault_NonOwnerIsCaller() public {
@@ -69,6 +73,7 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
         worker: _worker,
         vaultOracle: _vaultOracle,
         executor: _executor,
+        minimumDeposit: 100 ether,
         toleranceBps: 9900,
         maxLeverage: 10
       })
@@ -82,6 +87,12 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
     vm.prank(USER_ALICE);
     vm.expectRevert("Ownable: caller is not the owner");
     vaultManager.setVaultManagers(_vaultToken, _manager, true);
+  }
+
+  function testRevert_WhenDepositToUnopenedVault_ShouldRevert() public {
+    AutomatedVaultManager.DepositTokenParams[] memory _depositParams = new AutomatedVaultManager.DepositTokenParams[](0);
+    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_VaultNotExist(address)", address(0)));
+    vaultManager.deposit(address(0), _depositParams, 0);
   }
 
   // TODO: open vault sanity check test
