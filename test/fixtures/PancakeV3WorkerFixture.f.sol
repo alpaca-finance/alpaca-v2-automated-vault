@@ -113,6 +113,7 @@ contract PancakeV3WorkerFixture is Test, BscFixture, ProtocolActorFixture {
           worker: address(pancakeV3Worker),
           vaultOracle: address(pancakeV3VaultOracle),
           executor: address(pancakeV3Executor),
+          minimumDeposit: 100 ether,
           toleranceBps: TOLERANCE_BPS,
           maxLeverage: MAX_LEVERAGE
         })

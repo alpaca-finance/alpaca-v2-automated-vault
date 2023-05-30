@@ -36,6 +36,7 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
     uint256 usdtBefore = usdt.balanceOf(address(this));
 
     // Assertions
+    // - slippage control
     // - pull tokens from caller
     // - call updateExecutor twice (deposit, withdraw)
     // - call depositExecutor
@@ -43,13 +44,18 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
     // - mint shares based on equityChange
     // - get token back as proportion of optimal swap output
 
-    vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onUpdate.selector), 1);
-    vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onDeposit.selector), 1);
-
     IAutomatedVaultManager.DepositTokenParams[] memory params = new IAutomatedVaultManager.DepositTokenParams[](2);
     params[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(wbnb), amount: wbnbIn });
     params[1] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: usdtIn });
-    vaultManager.deposit(address(vaultToken), params);
+
+    // Should fail because of slippage
+    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_TooLittleReceived()"));
+    vaultManager.deposit(address(vaultToken), params, 10000 ether);
+
+    vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onUpdate.selector), 1);
+    vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onDeposit.selector), 1);
+    // should pass
+    vaultManager.deposit(address(vaultToken), params, 0);
 
     assertEq(wbnbBefore - wbnb.balanceOf(address(this)), wbnbIn, "wbnb pulled");
     assertEq(usdtBefore - usdt.balanceOf(address(this)), usdtIn, "usdt pulled");
@@ -59,6 +65,23 @@ contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
     (, int256 usdtAnswer,,,) = usdtFeed.latestRoundData();
     uint256 expectedEquity = wbnbIn * uint256(wbnbAnswer) / 1e8 + usdtIn * uint256(usdtAnswer) / 1e8;
     assertApproxEqRel(vaultToken.balanceOf(address(this)), expectedEquity, 1e12, "shares received");
+  }
+
+  function testRevert_WhenDepositBelowMinimumDepositSize() public {
+    uint256 usdtIn = 2 ether;
+
+    deal(address(usdt), address(moneyMarket), usdtIn);
+
+    deal(address(usdt), address(this), usdtIn);
+    usdt.approve(address(vaultManager), type(uint256).max);
+
+    // Assertions
+    // - Should fail if size below limit
+
+    IAutomatedVaultManager.DepositTokenParams[] memory params = new IAutomatedVaultManager.DepositTokenParams[](1);
+    params[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: usdtIn });
+    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_BelowMinimumDeposit()"));
+    vaultManager.deposit(address(vaultToken), params, 0);
   }
 
   // function testCorrectness_SimpleDepositWithdraw_EmptyVault() public {

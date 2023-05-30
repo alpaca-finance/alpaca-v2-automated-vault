@@ -195,7 +195,7 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
       _posValUSD =
         _tokenId == 0 ? 0 : _getPositionValueUSD(address(_pool), _tokenId, _token0OraclePrice, _token1OraclePrice);
     }
-    uint256 _debtValUSD = _getDebtValueUSD(_vaultToken, _token0, _token1, _token0OraclePrice, _token1OraclePrice);
+    _debtValUSD = _getDebtValueUSD(_vaultToken, _token0, _token1, _token0OraclePrice, _token1OraclePrice);
     uint256 _tokenValUSD = IERC20(_token0).balanceOf(_pancakeV3Worker) * _token0OraclePrice
       / (10 ** IERC20(_token0).decimals())
       + IERC20(_token1).balanceOf(_pancakeV3Worker) * _token1OraclePrice / (10 ** IERC20(_token1).decimals());
