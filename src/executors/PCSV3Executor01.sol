@@ -150,4 +150,16 @@ contract PCSV3Executor01 is Executor {
     _worker.token1().safeApprove(address(_worker), _amountIn1);
     _worker.openPosition(_tickLower, _tickUpper, _amountIn0, _amountIn1);
   }
+
+  function decreasePosition(uint128 _liquidity) external onlySelf {
+    PancakeV3Worker(_getCurrentWorker()).decreasePosition(_liquidity);
+  }
+
+  function closePosition() external onlySelf {
+    PancakeV3Worker(_getCurrentWorker()).closePosition();
+  }
+
+  function withdrawUndeployedFunds(address _token, uint256 _amount) external onlySelf {
+    PancakeV3Worker(_getCurrentWorker()).withdrawUndeployedFunds(_token, _amount);
+  }
 }
