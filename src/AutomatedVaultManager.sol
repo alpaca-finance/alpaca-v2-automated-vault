@@ -35,11 +35,14 @@ contract AutomatedVaultManager is
   error AutomatedVaultManager_TooMuchEquityLoss();
   error AutomatedVaultManager_TooMuchLeverage();
   error AutomatedVaultManager_ExceedSlippage();
+  error AutomatedVaultManager_BelowMinimumDeposit();
+  error AutomatedVaultManager_TooLittleReceived();
 
   struct VaultInfo {
     address worker;
     address vaultOracle;
     address executor;
+    uint256 minimumDeposit;
     uint16 toleranceBps; // acceptable bps of equity deceased after it was manipulated
     uint8 maxLeverage;
   }
@@ -52,7 +55,7 @@ contract AutomatedVaultManager is
   address public EXECUTOR_IN_SCOPE;
 
   event LogOpenVault(address indexed _vaultToken, VaultInfo _vaultInfo);
-  event LogDeposit(address indexed _vaultToken, address indexed _user, DepositTokenParams[] _deposits);
+  event LogDeposit(address indexed _vaultToken, address indexed _user, DepositTokenParams[] _deposits, uint256 _shareReceived);
   event LogWithdraw(address indexed _vaultToken, address indexed _user, uint256 _sharesWithdrawn);
   event LogSetVaultManager(address indexed _vaultToken, address _manager, bool _isOk);
 
@@ -98,14 +101,15 @@ contract AutomatedVaultManager is
     }
   }
 
-  // TODO: slippage control
-  // TODO: tiny shares
-  function deposit(address _vaultToken, DepositTokenParams[] calldata _depositParams)
+  function deposit(address _vaultToken, DepositTokenParams[] calldata _depositParams, uint256 _minReceive)
     external
     returns (bytes memory _result)
   {
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
-    // todo: check if vault is opened;
+
+    if (_cachedVaultInfo.worker == address(0)) {
+      revert AutomatedVaultManager_VaultNotExist(_vaultToken);
+    }
 
     _pullTokens(_cachedVaultInfo.executor, _depositParams);
 
@@ -127,11 +131,18 @@ contract AutomatedVaultManager is
       _equityChanged = _totalEquityAfter - _totalEquityBefore;
     }
 
-    IAutomatedVaultERC20(_vaultToken).mint(
-      msg.sender, _equityChanged.valueToShare(IAutomatedVaultERC20(_vaultToken).totalSupply(), _totalEquityBefore)
-    );
+    if (_equityChanged < _cachedVaultInfo.minimumDeposit) {
+      revert AutomatedVaultManager_BelowMinimumDeposit();
+    }
 
-    emit LogDeposit(_vaultToken, msg.sender, _depositParams);
+    uint256 _shareRecived =
+      _equityChanged.valueToShare(IAutomatedVaultERC20(_vaultToken).totalSupply(), _totalEquityBefore);
+    if (_shareRecived < _minReceive) {
+      revert AutomatedVaultManager_TooLittleReceived();
+    }
+    IAutomatedVaultERC20(_vaultToken).mint(msg.sender, _shareRecived);
+
+    emit LogDeposit(_vaultToken, msg.sender, _depositParams, _shareRecived);
   }
 
   function manage(address _vaultToken, bytes[] calldata _executorParams)
