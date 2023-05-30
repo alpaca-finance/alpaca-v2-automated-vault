@@ -125,20 +125,16 @@ contract PCSV3Executor01 is Executor {
     return abi.encode();
   }
 
-  /// @notice Increase existed position liquidity. Can provide arbitrary amount and worker will zap it in.
-  /// Can't increase position when worker doesn't have position.
+  /// @notice Increase existing position liquidity. Can provide arbitrary amount and worker will zap it in.
+  /// Worker will revert if it doesn't have position.
   function increasePosition(PancakeV3Worker _worker, uint256 _amountIn0, uint256 _amountIn1) external onlySelf {
-    // Can't increase when position not yet existed. Instead should call `openPosition`.
-    if (_worker.nftTokenId() == 0) {
-      revert PCSV3Executor01_PositionNotExist();
-    }
     _worker.token0().safeApprove(address(_worker), _amountIn0);
     _worker.token1().safeApprove(address(_worker), _amountIn1);
     _worker.increasePosition(_amountIn0, _amountIn1);
   }
 
-  /// @notice Open position for worker (add liquidity and deposit nft to masterchef).
-  /// Can't open position when position already exist.
+  /// @notice Open new position for worker (zap add liquidity and deposit nft to masterchef).
+  /// Worker will revert if position already exist.
   function openPosition(
     PancakeV3Worker _worker,
     int24 _tickLower,
@@ -146,15 +142,8 @@ contract PCSV3Executor01 is Executor {
     uint256 _amountIn0,
     uint256 _amountIn1
   ) external onlySelf {
-    // Can't open position when position already exist
-    if (_worker.nftTokenId() != 0) {
-      revert PCSV3Executor01_PositionAlreadyExist();
-    }
-    // Worker only allow ticks to be set when there is no position
-    _worker.setTicks(_tickLower, _tickUpper);
-    // Increase position when no position will create new position
     _worker.token0().safeApprove(address(_worker), _amountIn0);
     _worker.token1().safeApprove(address(_worker), _amountIn1);
-    _worker.increasePosition(_amountIn0, _amountIn1);
+    _worker.openPosition(_tickLower, _tickUpper, _amountIn0, _amountIn1);
   }
 }
