@@ -27,18 +27,20 @@ contract PCSV3Executor01 is Executor {
 
   IBank public immutable bank;
 
+  // TODO: change to onlyVaultManager since delegatecall doesn't change msg.sender
   modifier onlySelf() {
     if (msg.sender != address(this)) revert PCSV3Executor01_NotSelf();
     _;
   }
 
-  constructor(address _bank) {
+  constructor(address _vaultManager, address _bank) Executor(_vaultManager) {
     bank = IBank(_bank);
   }
 
   function onDeposit(PancakeV3Worker _worker, address /* _vaultToken */ )
     external
     override
+    onlyVaultManager
     returns (bytes memory _result)
   {
     ERC20 _token0 = _worker.token0();
@@ -68,6 +70,7 @@ contract PCSV3Executor01 is Executor {
   function onWithdraw(PancakeV3Worker _worker, address _vaultToken, uint256 _sharesToWithdraw)
     external
     override
+    onlyVaultManager
     returns (IAutomatedVaultManager.WithdrawResult[] memory _results)
   {
     uint128 _liquidity;
@@ -119,7 +122,12 @@ contract PCSV3Executor01 is Executor {
     return _results;
   }
 
-  function onUpdate(address _vaultToken, PancakeV3Worker _worker) external override returns (bytes memory _result) {
+  function onUpdate(address _vaultToken, PancakeV3Worker _worker)
+    external
+    override
+    onlyVaultManager
+    returns (bytes memory _result)
+  {
     bank.accrueInterest(_vaultToken);
     _worker.reinvest();
     return abi.encode();
@@ -127,7 +135,8 @@ contract PCSV3Executor01 is Executor {
 
   /// @notice Increase existing position liquidity. Can provide arbitrary amount and worker will zap it in.
   /// Worker will revert if it doesn't have position.
-  function increasePosition(PancakeV3Worker _worker, uint256 _amountIn0, uint256 _amountIn1) external onlySelf {
+  function increasePosition(uint256 _amountIn0, uint256 _amountIn1) external onlySelf {
+    PancakeV3Worker _worker = PancakeV3Worker(_getCurrentWorker());
     _worker.token0().safeApprove(address(_worker), _amountIn0);
     _worker.token1().safeApprove(address(_worker), _amountIn1);
     _worker.increasePosition(_amountIn0, _amountIn1);
@@ -135,13 +144,8 @@ contract PCSV3Executor01 is Executor {
 
   /// @notice Open new position for worker (zap add liquidity and deposit nft to masterchef).
   /// Worker will revert if position already exist.
-  function openPosition(
-    PancakeV3Worker _worker,
-    int24 _tickLower,
-    int24 _tickUpper,
-    uint256 _amountIn0,
-    uint256 _amountIn1
-  ) external onlySelf {
+  function openPosition(int24 _tickLower, int24 _tickUpper, uint256 _amountIn0, uint256 _amountIn1) external onlySelf {
+    PancakeV3Worker _worker = PancakeV3Worker(_getCurrentWorker());
     _worker.token0().safeApprove(address(_worker), _amountIn0);
     _worker.token1().safeApprove(address(_worker), _amountIn1);
     _worker.openPosition(_tickLower, _tickUpper, _amountIn0, _amountIn1);

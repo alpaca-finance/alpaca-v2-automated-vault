@@ -5,6 +5,8 @@ import { IMulticall } from "src/interfaces/IMulticall.sol";
 import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
 
 interface IExecutor is IMulticall {
+  function setCurrentWorker(address _worker) external;
+
   function onDeposit(address _worker, address _vaultToken) external returns (bytes memory _result);
 
   function onWithdraw(address _worker, address _vaultToken, uint256 _sharesToWithdraw)

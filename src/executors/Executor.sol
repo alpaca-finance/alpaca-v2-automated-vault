@@ -10,6 +10,32 @@ import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
 
 abstract contract Executor is Multicall {
+  error Executor_NotVaultManager();
+  error Executor_NoCurrentWorker();
+
+  address public immutable vaultManager;
+  address private CURRENT_WORKER;
+
+  modifier onlyVaultManager() {
+    if (msg.sender != vaultManager) revert Executor_NotVaultManager();
+    _;
+  }
+
+  constructor(address _vaultManager) {
+    vaultManager = _vaultManager;
+  }
+
+  function setCurrentWorker(address _worker) external onlyVaultManager {
+    CURRENT_WORKER = _worker;
+  }
+
+  function _getCurrentWorker() internal view returns (address _currentWorker) {
+    _currentWorker = CURRENT_WORKER;
+    if (_currentWorker == address(0)) {
+      revert Executor_NoCurrentWorker();
+    }
+  }
+
   function onDeposit(PancakeV3Worker _worker, address _vaultToken) external virtual returns (bytes memory _result) { }
 
   function onWithdraw(PancakeV3Worker _worker, address _vaultToken, uint256 _sharesToWithdraw)

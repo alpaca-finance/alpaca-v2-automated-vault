@@ -103,7 +103,7 @@ contract PancakeV3WorkerFixture is Test, BscFixture, ProtocolActorFixture {
       )
     );
 
-    pancakeV3Executor = IExecutor(address(new PCSV3Executor01(address(bank))));
+    pancakeV3Executor = IExecutor(address(new PCSV3Executor01(address(vaultManager), address(bank))));
 
     vaultToken = IERC20(
       vaultManager.openVault(
