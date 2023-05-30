@@ -55,7 +55,9 @@ contract AutomatedVaultManager is
   address public EXECUTOR_IN_SCOPE;
 
   event LogOpenVault(address indexed _vaultToken, VaultInfo _vaultInfo);
-  event LogDeposit(address indexed _vaultToken, address indexed _user, DepositTokenParams[] _deposits, uint256 _shareReceived);
+  event LogDeposit(
+    address indexed _vaultToken, address indexed _user, DepositTokenParams[] _deposits, uint256 _shareReceived
+  );
   event LogWithdraw(address indexed _vaultToken, address indexed _user, uint256 _sharesWithdrawn);
   event LogSetVaultManager(address indexed _vaultToken, address _manager, bool _isOk);
 
