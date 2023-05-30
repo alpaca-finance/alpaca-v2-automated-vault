@@ -26,6 +26,8 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
 
   error PancakeV3Worker_Unauthorized();
   error PancakeV3Worker_InvalidTask();
+  error PancakeV3Worker_PositionExist();
+  error PancakeV3Worker_PositionNotExist();
 
   // pool info
   ERC20 public token0;
@@ -54,12 +56,26 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   /// Authorization
   IAutomatedVaultManager public vaultManager;
 
+  /// Modifier
+  modifier onlyExecutorInScope() {
+    if (msg.sender != vaultManager.EXECUTOR_IN_SCOPE()) {
+      revert PancakeV3Worker_Unauthorized();
+    }
+    _;
+  }
+
   /// Events
   event LogIncreaseLiquidity(uint256 _tokenId, uint256 _amount0, uint256 _amount1, uint128 _liquidity);
   event LogCollectPerformanceFee(
     address indexed _token, uint256 _earned, uint16 _performanceFeeBps, uint256 _performanceFee
   );
   event LogDecreaseLiquidity(uint256 tokenId, uint256 amount0out, uint256 amount1out, uint128 liquidityOut);
+  event LogOpenPosition(
+    uint256 indexed _tokenId, address _caller, int24 _tickLower, int24 _tickUpper, uint256 _amount0, uint256 _amount1
+  );
+  event LogIncreasePosition(
+    uint256 indexed _tokenId, address _caller, int24 _tickLower, int24 _tickUpper, uint256 _amount0, uint256 _amount1
+  );
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -102,6 +118,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     performanceFeeBps = _params.performanceFeeBps;
   }
 
+  // TODO: deprecate doWork in favor of individual function
   /// @notice Perform the work. Only manager can call this function.
   /// @dev Main routine. Action depends on task param.
   /// @param _task Task to execute
@@ -151,6 +168,245 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     revert PancakeV3Worker_InvalidTask();
   }
 
+  function openPosition(int24 _tickLower, int24 _tickUpper, uint256 _amountIn0, uint256 _amountIn1)
+    external
+    nonReentrant
+    onlyExecutorInScope
+  {
+    // Can't open position if already exist. Use `increasePosition` instead.
+    if (nftTokenId != 0) {
+      revert PancakeV3Worker_PositionExist();
+    }
+
+    // SLOAD
+    ERC20 _token0 = token0;
+    ERC20 _token1 = token1;
+
+    // Pull tokens
+    if (_amountIn0 != 0) {
+      _token0.safeTransferFrom(msg.sender, address(this), _amountIn0);
+    }
+    if (_amountIn1 != 0) {
+      _token1.safeTransferFrom(msg.sender, address(this), _amountIn1);
+    }
+
+    // Prepare optimal tokens for adding liquidity
+    (uint256 _amount0Desired, uint256 _amount1Desired) = _prepareOptimalTokensForIncrease(
+      address(_token0), address(_token1), _tickLower, _tickUpper, _amountIn0, _amountIn1
+    );
+
+    // Mint new position and stake it with masterchef
+    // SLOAD
+    ICommonV3PositionManager _nftPositionManager = nftPositionManager;
+
+    ERC20(_token0).safeApprove(address(_nftPositionManager), _amount0Desired);
+    ERC20(_token1).safeApprove(address(_nftPositionManager), _amount1Desired);
+    (uint256 _nftTokenId,, uint256 _amount0, uint256 _amount1) = _nftPositionManager.mint(
+      ICommonV3PositionManager.MintParams({
+        token0: address(_token0),
+        token1: address(_token1),
+        fee: poolFee,
+        tickLower: _tickLower,
+        tickUpper: _tickUpper,
+        amount0Desired: _amount0Desired,
+        amount1Desired: _amount1Desired,
+        amount0Min: 0,
+        amount1Min: 0,
+        recipient: address(this),
+        deadline: block.timestamp
+      })
+    );
+    // Stake to PancakeMasterChefV3
+    _nftPositionManager.safeTransferFrom(address(this), address(masterChef), _nftTokenId);
+    // Update token id
+    nftTokenId = _nftTokenId;
+
+    // Update worker ticks config
+    posTickLower = _tickLower;
+    posTickUpper = _tickUpper;
+
+    emit LogOpenPosition(_nftTokenId, msg.sender, _tickLower, _tickUpper, _amount0, _amount1);
+  }
+
+  function increasePosition(uint256 _amountIn0, uint256 _amountIn1) external nonReentrant onlyExecutorInScope {
+    // Can't increase position if position not exist. Use `openPosition` instead.
+    if (nftTokenId == 0) {
+      revert PancakeV3Worker_PositionNotExist();
+    }
+
+    // SLOAD
+    ERC20 _token0 = token0;
+    ERC20 _token1 = token1;
+    int24 _tickLower = posTickLower;
+    int24 _tickUpper = posTickUpper;
+
+    // Pull tokens
+    if (_amountIn0 != 0) {
+      _token0.safeTransferFrom(msg.sender, address(this), _amountIn0);
+    }
+    if (_amountIn1 != 0) {
+      _token1.safeTransferFrom(msg.sender, address(this), _amountIn1);
+    }
+
+    // Prepare optimal tokens for adding liquidity
+    (uint256 _amount0Desired, uint256 _amount1Desired) = _prepareOptimalTokensForIncrease(
+      address(_token0), address(_token1), _tickLower, _tickUpper, _amountIn0, _amountIn1
+    );
+
+    // Increase existing position liquidity
+    // SLOAD
+    IPancakeV3MasterChef _masterChef = masterChef;
+    uint256 _nftTokenId = nftTokenId;
+
+    _token0.safeApprove(address(_masterChef), _amount0Desired);
+    _token1.safeApprove(address(_masterChef), _amount1Desired);
+    (, uint256 _amount0, uint256 _amount1) = _masterChef.increaseLiquidity(
+      IPancakeV3MasterChef.IncreaseLiquidityParams({
+        tokenId: _nftTokenId,
+        amount0Desired: _amount0Desired,
+        amount1Desired: _amount1Desired,
+        amount0Min: 0,
+        amount1Min: 0,
+        deadline: block.timestamp
+      })
+    );
+
+    emit LogIncreasePosition(_nftTokenId, msg.sender, _tickLower, _tickUpper, _amount0, _amount1);
+  }
+
+  function _prepareOptimalTokensForIncrease(
+    address _token0,
+    address _token1,
+    int24 _tickLower,
+    int24 _tickUpper,
+    uint256 _amountIn0,
+    uint256 _amountIn1
+  ) internal returns (uint256 _amount0Desired, uint256 _amount1Desired) {
+    (, int24 _currTick,,,,,) = pool.slot0();
+    if (_tickLower <= _currTick && _currTick <= _tickUpper) {
+      (_amount0Desired, _amount1Desired) = _prepareOptimalTokensForIncreaseInRange(
+        address(_token0), address(_token1), _tickLower, _tickUpper, _amountIn0, _amountIn1
+      );
+    } else {
+      (_amount0Desired, _amount1Desired) = _prepareOptimalTokensForIncreaseOutOfRange(
+        address(_token0), address(_token1), _currTick, _tickLower, _tickUpper, _amountIn0, _amountIn1
+      );
+    }
+  }
+
+  function _prepareOptimalTokensForIncreaseInRange(
+    address _token0,
+    address _token1,
+    int24 _tickLower,
+    int24 _tickUpper,
+    uint256 _amountIn0,
+    uint256 _amountIn1
+  ) internal returns (uint256 _optimalAmount0, uint256 _optimalAmount1) {
+    // Calculate zap in amount and direction.
+    (uint256 _amountSwap, uint256 _minAmountOut, bool _zeroForOne) = zapV3.calc(
+      IZapV3.CalcParams({
+        pool: address(pool),
+        amountIn0: _amountIn0,
+        amountIn1: _amountIn1,
+        tickLower: _tickLower,
+        tickUpper: _tickUpper
+      })
+    );
+
+    // Find out tokenIn and tokenOut
+    address _tokenIn;
+    address _tokenOut;
+    if (_zeroForOne) {
+      _tokenIn = address(_token0);
+      _tokenOut = address(_token1);
+    } else {
+      _tokenIn = address(_token1);
+      _tokenOut = address(_token0);
+    }
+
+    // Swap
+    ERC20(_tokenIn).safeApprove(address(router), _amountSwap);
+    router.exactInputSingle(
+      IPancakeV3Router.ExactInputSingleParams({
+        tokenIn: _tokenIn,
+        tokenOut: _tokenOut,
+        fee: poolFee,
+        recipient: address(this),
+        amountIn: _amountSwap,
+        amountOutMinimum: _minAmountOut,
+        sqrtPriceLimitX96: 0
+      })
+    );
+
+    _optimalAmount0 = ERC20(_token0).balanceOf(address(this));
+    _optimalAmount1 = ERC20(_token1).balanceOf(address(this));
+  }
+
+  function _prepareOptimalTokensForIncreaseOutOfRange(
+    address _token0,
+    address _token1,
+    int24 _currTick,
+    int24 _tickLower,
+    int24 _tickUpper,
+    uint256 _amountIn0,
+    uint256 _amountIn1
+  ) internal returns (uint256 _optimalAmount0, uint256 _optimalAmount1) {
+    // SLOAD
+    int24 _tickSpacing = pool.tickSpacing();
+    IPancakeV3Router _router = router;
+
+    // If out of upper range (currTick > tickUpper), we swap token0 for token1
+    // and vice versa, to push price closer to range.
+    // We only want to swap until price move back in range so
+    // we will swap until price hit the first tick within range.
+    if (_currTick > _tickUpper) {
+      if (_amountIn0 > 0) {
+        // zero for one swap
+        ERC20(_token0).safeApprove(address(_router), _amountIn0);
+        _router.exactInputSingle(
+          IPancakeV3Router.ExactInputSingleParams({
+            tokenIn: _token0,
+            tokenOut: _token1,
+            fee: poolFee,
+            recipient: address(this),
+            amountIn: _amountIn0,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: LibTickMath.getSqrtRatioAtTick(_tickUpper - _tickSpacing - 1)
+          })
+        );
+      }
+    } else {
+      if (_amountIn1 > 0) {
+        // one for zero swap
+        ERC20(_token1).safeApprove(address(_router), _amountIn1);
+        _router.exactInputSingle(
+          IPancakeV3Router.ExactInputSingleParams({
+            tokenIn: _token1,
+            tokenOut: _token0,
+            fee: poolFee,
+            recipient: address(this),
+            amountIn: _amountIn1,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: LibTickMath.getSqrtRatioAtTick(_tickLower + _tickSpacing + 1)
+          })
+        );
+      }
+    }
+
+    // Update optimal amount
+    _optimalAmount0 = ERC20(_token0).balanceOf(address(this));
+    _optimalAmount1 = ERC20(_token1).balanceOf(address(this));
+
+    // Also prepare in range if tick is back in range after swap
+    (, _currTick,,,,,) = pool.slot0();
+    if (_tickLower <= _currTick && _currTick <= _tickUpper) {
+      return _prepareOptimalTokensForIncreaseInRange(
+        _token0, _token1, _tickLower, _tickUpper, _optimalAmount0, _optimalAmount1
+      );
+    }
+  }
+
+  // TODO: deprecate this
   /// @notice Perform increase position
   /// @dev Tokens must be collected before calling this function
   /// @param _amountIn0 Amount of token0 to increase
@@ -169,6 +425,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     }
   }
 
+  // TODO: deprecate this
   /// @notice Perform increase position when ticks are in range.
   /// @param _amountIn0 Amount of token0 to increase
   /// @param _amountIn1 Amount of token1 to increase
@@ -220,6 +477,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     (_liquidity, _amount0, _amount1) = _safeMint(address(token0), address(token1), _amountIn0, _amountIn1);
   }
 
+  // TODO: deprecate this
   /// @notice Perform increase position when ticks are out of range.
   /// @param _currTick Current tick
   /// @param _tickLower Tick lower

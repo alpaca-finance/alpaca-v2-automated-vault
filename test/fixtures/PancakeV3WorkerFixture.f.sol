@@ -25,6 +25,7 @@ import "test/fixtures/ProtocolActorFixture.f.sol";
 // helpers
 import { DeployHelper } from "test/helpers/DeployHelper.sol";
 
+// TODO: consider rename this to CompleteFixture
 contract PancakeV3WorkerFixture is Test, BscFixture, ProtocolActorFixture {
   int24 internal constant TICK_LOWER = -58000;
   int24 internal constant TICK_UPPER = -57750;

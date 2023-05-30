@@ -21,7 +21,16 @@ import { Tasks } from "src/libraries/Constants.sol";
 contract PCSV3Executor01 is Executor {
   using SafeTransferLib for ERC20;
 
+  error PCSV3Executor01_NotSelf();
+  error PCSV3Executor01_PositionAlreadyExist();
+  error PCSV3Executor01_PositionNotExist();
+
   IBank public immutable bank;
+
+  modifier onlySelf() {
+    if (msg.sender != address(this)) revert PCSV3Executor01_NotSelf();
+    _;
+  }
 
   constructor(address _bank) {
     bank = IBank(_bank);
@@ -55,6 +64,7 @@ contract PCSV3Executor01 is Executor {
     return abi.encode(_amountIn0, _amountIn1);
   }
 
+  // NOTE: beware of access control checking
   function onWithdraw(PancakeV3Worker _worker, address _vaultToken, uint256 _sharesToWithdraw)
     external
     override
@@ -111,7 +121,29 @@ contract PCSV3Executor01 is Executor {
 
   function onUpdate(address _vaultToken, PancakeV3Worker _worker) external override returns (bytes memory _result) {
     bank.accrueInterest(_vaultToken);
-    PancakeV3Worker(_worker).reinvest();
+    _worker.reinvest();
     return abi.encode();
+  }
+
+  /// @notice Increase existing position liquidity. Can provide arbitrary amount and worker will zap it in.
+  /// Worker will revert if it doesn't have position.
+  function increasePosition(PancakeV3Worker _worker, uint256 _amountIn0, uint256 _amountIn1) external onlySelf {
+    _worker.token0().safeApprove(address(_worker), _amountIn0);
+    _worker.token1().safeApprove(address(_worker), _amountIn1);
+    _worker.increasePosition(_amountIn0, _amountIn1);
+  }
+
+  /// @notice Open new position for worker (zap add liquidity and deposit nft to masterchef).
+  /// Worker will revert if position already exist.
+  function openPosition(
+    PancakeV3Worker _worker,
+    int24 _tickLower,
+    int24 _tickUpper,
+    uint256 _amountIn0,
+    uint256 _amountIn1
+  ) external onlySelf {
+    _worker.token0().safeApprove(address(_worker), _amountIn0);
+    _worker.token1().safeApprove(address(_worker), _amountIn1);
+    _worker.openPosition(_tickLower, _tickUpper, _amountIn0, _amountIn1);
   }
 }
