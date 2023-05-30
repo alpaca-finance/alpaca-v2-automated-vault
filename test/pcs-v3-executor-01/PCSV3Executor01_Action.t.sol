@@ -11,13 +11,15 @@ import { MockERC20 } from "test/mocks/MockERC20.sol";
 contract PCSV3Executor01ActionTest is Test {
   PCSV3Executor01 executor;
   address mockWorker = makeAddr("mockWorker");
-  address mockVaultToken = makeAddr("mockVaultToken");
   address mockVaultManager = makeAddr("mockVaultManager");
+  address mockBank = makeAddr("mockBank");
+  address mockVaultToken = makeAddr("mockVaultToken");
   MockERC20 mockToken0;
   MockERC20 mockToken1;
 
   function setUp() public {
-    executor = new PCSV3Executor01(mockVaultManager, address(0));
+    executor = new PCSV3Executor01(mockVaultManager,mockBank);
+
     mockToken0 = new MockERC20("Mock Token0", "MTKN0", 18);
     mockToken1 = new MockERC20("Mock Token1", "MTKN1", 6);
   }
@@ -62,5 +64,25 @@ contract PCSV3Executor01OpenPositionTest is PCSV3Executor01ActionTest {
     vm.prank(address(1234));
     vm.expectRevert(PCSV3Executor01.PCSV3Executor01_NotSelf.selector);
     executor.openPosition(1, 2, 1 ether, 1e6);
+  }
+}
+
+contract PCSV3Executor01BorrowTest is PCSV3Executor01ActionTest {
+  function testCorrectness_Borrow_SelfCall() public {
+    vm.mockCall(
+      mockBank,
+      abi.encodeWithSignature("borrowOnBehalf(address,address,uint256)"),
+      abi.encode(mockVaultToken, address(mockToken0), 1e18)
+    );
+
+    vm.expectCall(mockBank, abi.encodeWithSignature("borrowOnBehalf(address,address,uint256)"), 1);
+    vm.prank(address(executor));
+    executor.borrow(mockVaultToken, address(mockToken0), 1e18);
+  }
+
+  function testRevert_OpenPosition_NotSelfCall() public {
+    vm.prank(address(1234));
+    vm.expectRevert(PCSV3Executor01.PCSV3Executor01_NotSelf.selector);
+    executor.openPosition(PancakeV3Worker(mockWorker), 1, 2, 1 ether, 1e6);
   }
 }
