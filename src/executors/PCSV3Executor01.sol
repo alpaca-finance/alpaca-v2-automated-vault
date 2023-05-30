@@ -19,25 +19,40 @@ import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.so
 import { Tasks } from "src/libraries/Constants.sol";
 
 contract PCSV3Executor01 is Executor {
+  using SafeTransferLib for ERC20;
+
   IBank public immutable bank;
 
   constructor(address _bank) {
     bank = IBank(_bank);
   }
 
-  function onDeposit(PancakeV3Worker _worker, address _vaultToken) external override returns (bytes memory _result) {
+  function onDeposit(PancakeV3Worker _worker, address /* _vaultToken */ )
+    external
+    override
+    returns (bytes memory _result)
+  {
     ERC20 _token0 = _worker.token0();
     ERC20 _token1 = _worker.token1();
     uint256 _amountIn0 = _token0.balanceOf(address(this));
     uint256 _amountIn1 = _token1.balanceOf(address(this));
 
-    bank.borrowOnBehalfOf(_vaultToken, address(_token0), _amountIn0);
-    bank.borrowOnBehalfOf(_vaultToken, address(_token1), _amountIn1);
+    // bank.borrowOnBehalfOf(_vaultToken, address(_token0), _amountIn0);
+    // bank.borrowOnBehalfOf(_vaultToken, address(_token1), _amountIn1);
 
-    _token0.approve(address(_worker), _amountIn0 * 2);
-    _token1.approve(address(_worker), _amountIn1 * 2);
+    // _token0.approve(address(_worker), _amountIn0 * 2);
+    // _token1.approve(address(_worker), _amountIn1 * 2);
 
-    return _worker.doWork(Tasks.INCREASE, abi.encode(_amountIn0 * 2, _amountIn1 * 2));
+    // return _worker.doWork(Tasks.INCREASE, abi.encode(_amountIn0 * 2, _amountIn1 * 2));
+
+    if (_amountIn0 != 0) {
+      _token0.safeTransfer(address(_worker), _amountIn0);
+    }
+    if (_amountIn1 != 0) {
+      _token1.safeTransfer(address(_worker), _amountIn1);
+    }
+
+    return abi.encode(_amountIn0, _amountIn1);
   }
 
   function onWithdraw(PancakeV3Worker _worker, address _vaultToken, uint256 _sharesToWithdraw)
@@ -48,14 +63,18 @@ contract PCSV3Executor01 is Executor {
     uint128 _liquidity;
     {
       uint256 _tokenId = _worker.nftTokenId();
-      (,,,,,,, _liquidity,,,,) = _worker.nftPositionManager().positions(_tokenId);
+      if (_tokenId != 0) {
+        (,,,,,,, _liquidity,,,,) = _worker.nftPositionManager().positions(_tokenId);
+      }
     }
     uint256 _totalShares = ERC20(_vaultToken).totalSupply();
 
     ERC20 _token0 = _worker.token0();
     ERC20 _token1 = _worker.token1();
 
-    _worker.doWork(Tasks.DECREASE, abi.encode(_liquidity * _sharesToWithdraw / _totalShares));
+    if (_liquidity != 0) {
+      _worker.doWork(Tasks.DECREASE, abi.encode(_liquidity * _sharesToWithdraw / _totalShares));
+    }
 
     uint256 _token0Before = _token0.balanceOf(address(this));
     uint256 _token1Before = _token1.balanceOf(address(this));
@@ -78,8 +97,8 @@ contract PCSV3Executor01 is Executor {
       bank.repayOnBehalfOf(_vaultToken, address(_token1), _token1Repay);
     }
 
-    _token0.transfer(msg.sender, _token0Before - _token0Repay);
-    _token1.transfer(msg.sender, _token1Before - _token1Repay);
+    _token0.safeTransfer(msg.sender, _token0Before - _token0Repay);
+    _token1.safeTransfer(msg.sender, _token1Before - _token1Repay);
 
     _results = new IAutomatedVaultManager.WithdrawResult[](2);
     _results[0] =
