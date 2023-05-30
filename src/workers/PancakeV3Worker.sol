@@ -211,8 +211,8 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
       // SLOAD
       ICommonV3PositionManager _nftPositionManager = nftPositionManager;
 
-      ERC20(_token0).safeApprove(address(_nftPositionManager), _amountIn0);
-      ERC20(_token1).safeApprove(address(_nftPositionManager), _amountIn1);
+      ERC20(_token0).safeApprove(address(_nftPositionManager), _amount0Desired);
+      ERC20(_token1).safeApprove(address(_nftPositionManager), _amount1Desired);
       (uint256 _nftTokenId,, uint256 _amount0, uint256 _amount1) = _nftPositionManager.mint(
         ICommonV3PositionManager.MintParams({
           token0: address(_token0),
@@ -412,6 +412,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     }
   }
 
+  // TODO: deprecate this
   /// @notice Perform increase position
   /// @dev Tokens must be collected before calling this function
   /// @param _amountIn0 Amount of token0 to increase
@@ -430,6 +431,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     }
   }
 
+  // TODO: deprecate this
   /// @notice Perform increase position when ticks are in range.
   /// @param _amountIn0 Amount of token0 to increase
   /// @param _amountIn1 Amount of token1 to increase
@@ -481,6 +483,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     (_liquidity, _amount0, _amount1) = _safeMint(address(token0), address(token1), _amountIn0, _amountIn1);
   }
 
+  // TODO: deprecate this
   /// @notice Perform increase position when ticks are out of range.
   /// @param _currTick Current tick
   /// @param _tickLower Tick lower
