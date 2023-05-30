@@ -191,54 +191,41 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     }
 
     // Prepare optimal tokens for adding liquidity
-    uint256 _amount0Desired;
-    uint256 _amount1Desired;
-    {
-      (, int24 _currTick,,,,,) = pool.slot0();
-      if (_tickLower <= _currTick && _currTick <= _tickUpper) {
-        (_amount0Desired, _amount1Desired) = _prepareOptimalTokensForIncreaseInRange(
-          address(_token0), address(_token1), _tickLower, _tickUpper, _amountIn0, _amountIn1
-        );
-      } else {
-        (_amount0Desired, _amount1Desired) = _prepareOptimalTokensForIncreaseOutOfRange(
-          address(_token0), address(_token1), _currTick, _tickLower, _tickUpper, _amountIn0, _amountIn1
-        );
-      }
-    }
+    (uint256 _amount0Desired, uint256 _amount1Desired) = _prepareOptimalTokensForIncrease(
+      address(_token0), address(_token1), _tickLower, _tickUpper, _amountIn0, _amountIn1
+    );
 
     // Mint new position and stake it with masterchef
-    {
-      // SLOAD
-      ICommonV3PositionManager _nftPositionManager = nftPositionManager;
+    // SLOAD
+    ICommonV3PositionManager _nftPositionManager = nftPositionManager;
 
-      ERC20(_token0).safeApprove(address(_nftPositionManager), _amount0Desired);
-      ERC20(_token1).safeApprove(address(_nftPositionManager), _amount1Desired);
-      (uint256 _nftTokenId,, uint256 _amount0, uint256 _amount1) = _nftPositionManager.mint(
-        ICommonV3PositionManager.MintParams({
-          token0: address(_token0),
-          token1: address(_token1),
-          fee: poolFee,
-          tickLower: _tickLower,
-          tickUpper: _tickUpper,
-          amount0Desired: _amount0Desired,
-          amount1Desired: _amount1Desired,
-          amount0Min: 0,
-          amount1Min: 0,
-          recipient: address(this),
-          deadline: block.timestamp
-        })
-      );
-      // Stake to PancakeMasterChefV3
-      _nftPositionManager.safeTransferFrom(address(this), address(masterChef), _nftTokenId);
-      // Update token id
-      nftTokenId = _nftTokenId;
-
-      emit LogOpenPosition(_nftTokenId, msg.sender, _tickLower, _tickUpper, _amount0, _amount1);
-    }
+    ERC20(_token0).safeApprove(address(_nftPositionManager), _amount0Desired);
+    ERC20(_token1).safeApprove(address(_nftPositionManager), _amount1Desired);
+    (uint256 _nftTokenId,, uint256 _amount0, uint256 _amount1) = _nftPositionManager.mint(
+      ICommonV3PositionManager.MintParams({
+        token0: address(_token0),
+        token1: address(_token1),
+        fee: poolFee,
+        tickLower: _tickLower,
+        tickUpper: _tickUpper,
+        amount0Desired: _amount0Desired,
+        amount1Desired: _amount1Desired,
+        amount0Min: 0,
+        amount1Min: 0,
+        recipient: address(this),
+        deadline: block.timestamp
+      })
+    );
+    // Stake to PancakeMasterChefV3
+    _nftPositionManager.safeTransferFrom(address(this), address(masterChef), _nftTokenId);
+    // Update token id
+    nftTokenId = _nftTokenId;
 
     // Update worker ticks config
     posTickLower = _tickLower;
     posTickUpper = _tickUpper;
+
+    emit LogOpenPosition(_nftTokenId, msg.sender, _tickLower, _tickUpper, _amount0, _amount1);
   }
 
   function increasePosition(uint256 _amountIn0, uint256 _amountIn1) external nonReentrant onlyExecutorInScope {
@@ -262,41 +249,48 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     }
 
     // Prepare optimal tokens for adding liquidity
-    uint256 _amount0Desired;
-    uint256 _amount1Desired;
-    {
-      (, int24 _currTick,,,,,) = pool.slot0();
-      if (_tickLower <= _currTick && _currTick <= _tickUpper) {
-        (_amount0Desired, _amount1Desired) = _prepareOptimalTokensForIncreaseInRange(
-          address(_token0), address(_token1), _tickLower, _tickUpper, _amountIn0, _amountIn1
-        );
-      } else {
-        (_amount0Desired, _amount1Desired) = _prepareOptimalTokensForIncreaseOutOfRange(
-          address(_token0), address(_token1), _currTick, _tickLower, _tickUpper, _amountIn0, _amountIn1
-        );
-      }
-    }
+    (uint256 _amount0Desired, uint256 _amount1Desired) = _prepareOptimalTokensForIncrease(
+      address(_token0), address(_token1), _tickLower, _tickUpper, _amountIn0, _amountIn1
+    );
 
     // Increase existing position liquidity
-    {
-      // SLOAD
-      IPancakeV3MasterChef _masterChef = masterChef;
-      uint256 _nftTokenId = nftTokenId;
+    // SLOAD
+    IPancakeV3MasterChef _masterChef = masterChef;
+    uint256 _nftTokenId = nftTokenId;
 
-      _token0.safeApprove(address(_masterChef), _amount0Desired);
-      _token1.safeApprove(address(_masterChef), _amount1Desired);
-      (, uint256 _amount0, uint256 _amount1) = _masterChef.increaseLiquidity(
-        IPancakeV3MasterChef.IncreaseLiquidityParams({
-          tokenId: _nftTokenId,
-          amount0Desired: _amount0Desired,
-          amount1Desired: _amount1Desired,
-          amount0Min: 0,
-          amount1Min: 0,
-          deadline: block.timestamp
-        })
+    _token0.safeApprove(address(_masterChef), _amount0Desired);
+    _token1.safeApprove(address(_masterChef), _amount1Desired);
+    (, uint256 _amount0, uint256 _amount1) = _masterChef.increaseLiquidity(
+      IPancakeV3MasterChef.IncreaseLiquidityParams({
+        tokenId: _nftTokenId,
+        amount0Desired: _amount0Desired,
+        amount1Desired: _amount1Desired,
+        amount0Min: 0,
+        amount1Min: 0,
+        deadline: block.timestamp
+      })
+    );
+
+    emit LogIncreasePosition(_nftTokenId, msg.sender, _tickLower, _tickUpper, _amount0, _amount1);
+  }
+
+  function _prepareOptimalTokensForIncrease(
+    address _token0,
+    address _token1,
+    int24 _tickLower,
+    int24 _tickUpper,
+    uint256 _amountIn0,
+    uint256 _amountIn1
+  ) internal returns (uint256 _amount0Desired, uint256 _amount1Desired) {
+    (, int24 _currTick,,,,,) = pool.slot0();
+    if (_tickLower <= _currTick && _currTick <= _tickUpper) {
+      (_amount0Desired, _amount1Desired) = _prepareOptimalTokensForIncreaseInRange(
+        address(_token0), address(_token1), _tickLower, _tickUpper, _amountIn0, _amountIn1
       );
-
-      emit LogIncreasePosition(_nftTokenId, msg.sender, _tickLower, _tickUpper, _amount0, _amount1);
+    } else {
+      (_amount0Desired, _amount1Desired) = _prepareOptimalTokensForIncreaseOutOfRange(
+        address(_token0), address(_token1), _currTick, _tickLower, _tickUpper, _amountIn0, _amountIn1
+      );
     }
   }
 
