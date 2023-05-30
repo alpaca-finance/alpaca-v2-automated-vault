@@ -152,13 +152,13 @@ contract PCSV3Executor01 is Executor {
   }
 
   /// @notice Borrow token from Bank
-  function borrow(address _vaultToken, address _token, uint256 _amount) external onlySelf {
-    bank.borrowOnBehalfOf(_vaultToken, _token, _amount);
+  function borrow(address _token, uint256 _amount) external onlySelf {
+    bank.borrowOnBehalfOf(_getCurrentVaultToken(), _token, _amount);
   }
 
   /// @notice Repay token back to Bank
   /// TODO: what would happened if repay more than debt, should Bank revert?
-  function repay(address _vaultToken, address _token, uint256 _amount) external onlySelf {
-    bank.repayOnBehalfOf(_vaultToken, _token, _amount);
+  function repay(address _token, uint256 _amount) external onlySelf {
+    bank.repayOnBehalfOf(_getCurrentVaultToken(), _token, _amount);
   }
 }
