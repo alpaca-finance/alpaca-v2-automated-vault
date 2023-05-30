@@ -82,7 +82,7 @@ contract PCSV3Executor01BorrowTest is PCSV3Executor01ActionTest {
     executor.borrow(address(mockToken0), 1e18);
   }
 
-  function testRevert_OpenPosition_NotSelfCall() public {
+  function testRevert_Borrow_NotSelfCall() public {
     vm.prank(address(1234));
     vm.expectRevert(PCSV3Executor01.PCSV3Executor01_NotSelf.selector);
     executor.borrow(address(mockToken0), 1e18);
@@ -104,7 +104,7 @@ contract PCSV3Executor01RepayTest is PCSV3Executor01ActionTest {
     executor.repay(address(mockToken0), 1e18);
   }
 
-  function testRevert_OpenPosition_NotSelfCall() public {
+  function testRevert_Repay_NotSelfCall() public {
     vm.prank(address(1234));
     vm.expectRevert(PCSV3Executor01.PCSV3Executor01_NotSelf.selector);
     executor.repay(address(mockToken0), 1e18);
