@@ -301,15 +301,20 @@ contract PancakeV3Worker_TransferTest is BasePancakeV3WorkerTest {
     assertEq(token1.balanceOf(address(IN_SCOPE_EXECUTOR)), _executorToken1AmountBefore + _amount);
   }
 
+  function testRevert_WhenCallerIsNotExecutorInScope() external {
+    vm.expectRevert(PancakeV3Worker.PancakeV3Worker_Unauthorized.selector);
+    worker.transfer(address(token1), IN_SCOPE_EXECUTOR, 1 ether);
+  }
+
   function testRevert_WhenDestinationAddressIsZero() external {
     vm.prank(IN_SCOPE_EXECUTOR);
-    vm.expectRevert();
+    vm.expectRevert(PancakeV3Worker.PancakeV3Worker_InvalidParams.selector);
     worker.transfer(address(token1), address(0), 1 ether);
   }
 
   function testRevert_WhenTransferAmountIsZero() external {
     vm.prank(IN_SCOPE_EXECUTOR);
-    vm.expectRevert();
+    vm.expectRevert(PancakeV3Worker.PancakeV3Worker_InvalidParams.selector);
     worker.transfer(address(token1), IN_SCOPE_EXECUTOR, 0);
   }
 }
