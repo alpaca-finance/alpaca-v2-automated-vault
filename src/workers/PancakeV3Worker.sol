@@ -98,7 +98,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   function initialize(ConstructorParams calldata _params) external initializer {
     Ownable2StepUpgradeable.__Ownable2Step_init();
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
-
+    // TODO: validate _params
     vaultManager = _params.vaultManager;
 
     nftPositionManager = _params.positionManager;
@@ -116,6 +116,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     posTickUpper = _params.tickUpper;
 
     performanceFeeBps = _params.performanceFeeBps;
+    performanceFeeBucket = _params.performanceFeeBucket;
   }
 
   // TODO: deprecate doWork in favor of individual function
@@ -130,7 +131,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     }
 
     // Effect
-    // Before doing anything, reinvest first.
+    // Before doing anything, harvest first.
     _harvest();
 
     // Perform action according to the command
@@ -632,6 +633,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
    * 1. claim trading fee and harvest reward
    * 2. collect performance fee based
    */
+  // TODO: handle when either token0 or token1 is reward(cake) token
   function _harvest() internal {
     // Skip reinvest if already done before in same block
     if (block.timestamp == lastReinvest) return;
@@ -652,7 +654,6 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
 
     // Harvest CAKE rewards
     uint256 _cakeRewards = masterChef.harvest(nftTokenId, address(this));
-
     // Collect performance fee
     // SLOAD performanceFeeBucket and performanceFeeBps to save gas
     address _performanceFeeBucket = performanceFeeBucket;
@@ -660,6 +661,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     // _cachedFee is for emitting the event. So we don't have to calc fee * performanceFeeBps / MAX_BPS twice
     uint256 _cachedFee = 0;
     // Handling performance fees
+
     if (_fee0 > 0) {
       // Collect token0 performance fee
       token0.safeTransfer(_performanceFeeBucket, _cachedFee = _fee0 * _performanceFeeBps / MAX_BPS);
@@ -684,6 +686,8 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
         _tokenOut = address(token1);
       }
 
+      uint256 _swapAmount = cake.balanceOf(address(this));
+      cake.safeApprove(address(router), _swapAmount);
       // TODO: multi-hop swap
       // Swap CAKE for token0 or token1
       router.exactInputSingle(
@@ -692,7 +696,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
           tokenOut: _tokenOut,
           fee: poolFee,
           recipient: address(this),
-          amountIn: cake.balanceOf(address(this)),
+          amountIn: _swapAmount,
           amountOutMinimum: 0,
           sqrtPriceLimitX96: 0
         })
