@@ -266,10 +266,10 @@ contract PancakeV3Worker_IncreaseLiquidityTest is BasePancakeV3WorkerTest {
 }
 
 // TODO: more test
-contract PancakeV3Worker_ReinvestTest is BasePancakeV3WorkerTest {
+contract PancakeV3Worker_HarvestTest is BasePancakeV3WorkerTest {
   constructor() BasePancakeV3WorkerTest() { }
 
-  function testCorrectness_WhenInRange_WhenReinvest() external {
+  function testCorrectness_WhenInRange_WhenHarvest() external {
     // Assert
     // - Worker's tokenId must be 0
     assertEq(worker.nftTokenId(), 0, "tokenId must be 0");
@@ -282,6 +282,36 @@ contract PancakeV3Worker_ReinvestTest is BasePancakeV3WorkerTest {
     _swapExactInput(address(token1), address(token0), poolFee, 500 ether);
 
     // Now call reinvest
-    worker.reinvest();
+    worker.harvest();
+  }
+
+  function testCorrectness_WorkerHasNoUnClaimTrandingFeeAndReward_WhenHarvest_ShouldWork() external{
+
+    uint256 token0Before = token0.balanceOf(address(worker));
+    uint256 token1Before = token1.balanceOf(address(worker));
+    uint256 cakeBefofe = cake.balanceOf(address(worker));
+
+    worker.harvest();
+
+
+    assertEq(token0Before, token0.balanceOf(address(worker)));
+    assertEq(token1Before,token1.balanceOf(address(worker)));
+    assertEq(cakeBefofe,cake.balanceOf(address(worker)));
+    
+  }
+
+  function testCorrectness_WorkerHasUnClaimTrandingFeeAndReward_WhenHarvest_ShouldWork() external{
+
+    uint256 token0Before = token0.balanceOf(address(worker));
+    uint256 token1Before = token1.balanceOf(address(worker));
+    uint256 cakeBefofe = cake.balanceOf(address(worker));
+
+    worker.harvest();
+
+
+    assertEq(token0Before, token0.balanceOf(address(worker)));
+    assertEq(token1Before,token1.balanceOf(address(worker)));
+    assertEq(cakeBefofe,cake.balanceOf(address(worker)));
+    
   }
 }

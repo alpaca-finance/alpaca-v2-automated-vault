@@ -129,7 +129,7 @@ contract PCSV3Executor01 is Executor {
     returns (bytes memory _result)
   {
     bank.accrueInterest(_vaultToken);
-    _worker.reinvest();
+    _worker.harvest();
     return abi.encode();
   }
 

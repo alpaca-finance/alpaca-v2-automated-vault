@@ -131,7 +131,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
 
     // Effect
     // Before doing anything, reinvest first.
-    _reinvestInternal();
+    _harvest();
 
     // Perform action according to the command
     if (_task == Tasks.INCREASE) {
@@ -621,14 +621,18 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     emit LogDecreaseLiquidity(nftTokenId, _amount0, _amount1, _liquidity);
   }
 
-  /// @notice Allow to trigger reinvest without passing through "doWork" routine.
-  /// @dev This is useful when pool is idle and we want to trigger reinvest.
-  function reinvest() external {
-    _reinvestInternal();
+  /// @notice claim trading fee and harvest reward from masterchef.
+  /// @dev This is a routine for update worker state from pending rewards.
+  function harvest() external {
+    _harvest();
   }
 
-  /// @notice Perform the actual reinvest.
-  function _reinvestInternal() internal {
+  /**
+   * @dev Perform the actual claim and harvest.
+   * 1. claim trading fee and harvest reward
+   * 2. collect performance fee based
+   */
+  function _harvest() internal {
     // Skip reinvest if already done before in same block
     if (block.timestamp == lastReinvest) return;
     lastReinvest = uint40(block.timestamp);
@@ -695,14 +699,5 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
       );
     }
 
-    // Add liquidity
-    uint256 _token0Balance = token0.balanceOf(address(this));
-    uint256 _token1Balance = token1.balanceOf(address(this));
-
-    if (_token0Balance > 0 || _token1Balance > 0) {
-      // If there is any token0 or token1 left, then we will add liquidity
-      // to increase position
-      _increasePositionInternal(_token0Balance, _token1Balance);
-    }
   }
 }
