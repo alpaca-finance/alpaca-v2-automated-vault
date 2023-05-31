@@ -157,7 +157,6 @@ contract PCSV3Executor01 is Executor {
   }
 
   /// @notice Repay token back to Bank
-  /// TODO: what would happened if repay more than debt, should Bank revert?
   function repay(address _token, uint256 _amount) external onlySelf {
     bank.repayOnBehalfOf(_getCurrentVaultToken(), _token, _amount);
   }
