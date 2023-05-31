@@ -64,3 +64,22 @@ contract PCSV3Executor01OpenPositionTest is PCSV3Executor01ActionTest {
     executor.openPosition(1, 2, 1 ether, 1e6);
   }
 }
+
+contract PCSV3Executor01TransferTest is PCSV3Executor01ActionTest {
+  function testCorrectness_Transfer_SelfCall() public {
+    vm.mockCall(mockWorker, abi.encodeWithSignature("transfer(address,address,uint256)"), abi.encode());
+    vm.prank(mockVaultManager);
+    executor.setExecutionScope(mockWorker, mockVaultToken);
+
+    vm.expectCall(mockWorker, abi.encodeWithSignature("transfer(address,address,uint256)"), 1);
+
+    vm.prank(address(executor));
+    executor.transferFromWorker(address(mockToken0), address(1234), 1 ether);
+  }
+
+  function testRevert_OpenPosition_NotSelfCall() public {
+    vm.prank(address(1234));
+    vm.expectRevert(PCSV3Executor01.PCSV3Executor01_NotSelf.selector);
+    executor.transferFromWorker(address(mockToken0), address(1234), 1 ether);
+  }
+}

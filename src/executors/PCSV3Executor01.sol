@@ -150,4 +150,9 @@ contract PCSV3Executor01 is Executor {
     _worker.token1().safeApprove(address(_worker), _amountIn1);
     _worker.openPosition(_tickLower, _tickUpper, _amountIn0, _amountIn1);
   }
+
+  function transferFromWorker(address _token, address _to, uint256 _amount) external onlySelf {
+    PancakeV3Worker _worker = PancakeV3Worker(_getCurrentWorker());
+    _worker.transfer(_token, _to, _amount);
+  }
 }
