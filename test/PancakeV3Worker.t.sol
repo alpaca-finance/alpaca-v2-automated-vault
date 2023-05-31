@@ -267,25 +267,7 @@ contract PancakeV3Worker_IncreaseLiquidityTest is BasePancakeV3WorkerTest {
 
 // TODO: more test
 contract PancakeV3Worker_HarvestTest is BasePancakeV3WorkerTest {
-  constructor() BasePancakeV3WorkerTest() {
-    vm.prank(IN_SCOPE_EXECUTOR);
-  }
-
-  function testCorrectness_WhenInRange_WhenHarvest() external {
-    // Assert
-    // - Worker's tokenId must be 0
-    assertEq(worker.nftTokenId(), 0, "tokenId must be 0");
-
-    // Increase position by 10_000 TKN0 and 1 TKN1
-    vm.prank(IN_SCOPE_EXECUTOR);
-    worker.doWork(Tasks.INCREASE, abi.encode(10_000 ether, 1 ether));
-
-    // Assuming some trades happened
-    _swapExactInput(address(token1), address(token0), poolFee, 500 ether);
-
-    // Now call reinvest
-    worker.harvest();
-  }
+  constructor() BasePancakeV3WorkerTest() { }
 
   function testCorrectness_WorkerHasNoUnClaimTrandingFeeAndReward_WhenHarvest_ShouldWork() external {
     uint256 token0Before = token0.balanceOf(address(worker));
@@ -356,8 +338,8 @@ contract PancakeV3Worker_HarvestTest is BasePancakeV3WorkerTest {
     assertEq(cake.balanceOf(PERFORMANCE_FEE_BUCKET), _cakeToBucket);
 
     // Assert worker Balance
-    assertGe(token0.balanceOf(address(worker)), _token0CollectAmount - _token0ToBucket);
-    assertGe(token1.balanceOf(address(worker)), _token1CollectAmount + _token1SwapAmountOut - _token1ToBucket);
-    assertGe(cake.balanceOf(address(worker)), 0);
+    assertEq(token0.balanceOf(address(worker)), _token0CollectAmount - _token0ToBucket);
+    assertEq(token1.balanceOf(address(worker)), _token1CollectAmount + _token1SwapAmountOut - _token1ToBucket);
+    assertEq(cake.balanceOf(address(worker)), 0);
   }
 }

@@ -273,7 +273,6 @@ contract BankTest is ProtocolActorFixture {
     wbnb.approve(address(bank), type(uint256).max);
     usdt.approve(address(bank), type(uint256).max);
 
-
     // Create debt without interest
     bank.borrowOnBehalfOf(vault1, address(wbnb), 1 ether);
     bank.borrowOnBehalfOf(vault1, address(usdt), 1 ether);
