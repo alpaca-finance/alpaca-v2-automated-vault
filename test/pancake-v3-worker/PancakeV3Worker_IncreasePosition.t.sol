@@ -24,8 +24,8 @@ contract PancakeV3WorkerIncreasePositionTest is PancakeV3WorkerFixture {
     worker.openPosition(TICK_LOWER, TICK_UPPER, 1 ether, 1 ether);
   }
 
-  // TODO: fuzz to get coverage of in and out of range
-  function testCorrectness_OpenPosition() public {
+  // TODO: out of range
+  function testCorrectness_OpenPosition_InRange() public {
     assertEq(worker.nftTokenId(), 0);
 
     uint256 amountIn0 = 1 ether;
@@ -37,20 +37,27 @@ contract PancakeV3WorkerIncreasePositionTest is PancakeV3WorkerFixture {
     vm.prank(IN_SCOPE_EXECUTOR);
     worker.openPosition(TICK_LOWER, TICK_UPPER, amountIn0, amountIn1);
 
-    // Assertions
-    // - executor's token0 should be deducted by specified amount
-    // - executor's token1 should be deducted by specified amount
-    // - `nftTokenId` should be set
-    // - `posTickLower` should be set to specified tick
-    // - `posTickUpper` should be set to specified tick
-    // - nft should be staked with masterChef
-    // - staked nft should have tick same as worker
-
+    // Executor assertions
+    // - token0 should be deducted by specified amount
+    // - token1 should be deducted by specified amount
     assertEq(token0Before - token0.balanceOf(IN_SCOPE_EXECUTOR), amountIn0);
     assertEq(token1Before - token1.balanceOf(IN_SCOPE_EXECUTOR), amountIn1);
+
+    // Worker assertions
+    // - token0 remain less than DUST
+    // - token1 remain less than DUST
+    // - state `nftTokenId` should be set
+    // - state `posTickLower` should be set to specified tick
+    // - state `posTickUpper` should be set to specified tick
+    assertLt(token0.balanceOf(address(worker)), DUST);
+    assertLt(token1.balanceOf(address(worker)), DUST);
     assertEq(worker.nftTokenId(), 46528);
     assertEq(worker.posTickLower(), TICK_LOWER);
     assertEq(worker.posTickUpper(), TICK_UPPER);
+
+    // External assertions
+    // - nft should be staked with masterChef
+    // - staked nft should have tick same as worker
     IPancakeV3MasterChef.UserPositionInfo memory userInfo = pancakeV3MasterChef.userPositionInfos(worker.nftTokenId());
     assertEq(userInfo.user, address(worker));
     assertEq(userInfo.tickLower, worker.posTickLower());
@@ -72,8 +79,8 @@ contract PancakeV3WorkerIncreasePositionTest is PancakeV3WorkerFixture {
     worker.increasePosition(1 ether, 1 ether);
   }
 
-  // TODO: fuzz to get coverage of in and out of range
-  function testCorrectness_IncreasePosition() public {
+  // TODO: out of range
+  function testCorrectness_IncreasePosition_InRange() public {
     // Open position
     vm.prank(IN_SCOPE_EXECUTOR);
     worker.openPosition(TICK_LOWER, TICK_UPPER, 1 ether, 1 ether);
@@ -89,22 +96,22 @@ contract PancakeV3WorkerIncreasePositionTest is PancakeV3WorkerFixture {
     vm.prank(IN_SCOPE_EXECUTOR);
     worker.increasePosition(amountIn0, amountIn1);
 
-    // Assertions
-    // - executor's token0 should be deducted by specified amount
-    // - executor's token1 should be deducted by specified amount
-    // - staked position liquidity should be increased
-
+    // Executor assertions
+    // - token0 should be deducted by specified amount
+    // - token1 should be deducted by specified amount
     assertEq(token0Before - token0.balanceOf(IN_SCOPE_EXECUTOR), amountIn0);
     assertEq(token1Before - token1.balanceOf(IN_SCOPE_EXECUTOR), amountIn1);
+
+    // External assertions
+    // - staked position liquidity should be increased
     IPancakeV3MasterChef.UserPositionInfo memory userInfoAfter =
       pancakeV3MasterChef.userPositionInfos(worker.nftTokenId());
     assertGt(userInfoAfter.liquidity, userInfoBefore.liquidity);
 
-    // Invariants
-    // - `nftTokenId` should remain the same
-    // - `posTickLower` should remain the same
-    // - `posTickUpper` should remain the same
-
+    // Worker invariants
+    // - state `nftTokenId` should remain the same
+    // - state `posTickLower` should remain the same
+    // - state `posTickUpper` should remain the same
     assertEq(worker.nftTokenId(), 46528);
     assertEq(worker.posTickLower(), TICK_LOWER);
     assertEq(worker.posTickUpper(), TICK_UPPER);

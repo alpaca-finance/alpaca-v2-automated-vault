@@ -24,8 +24,8 @@ contract PancakeV3WorkerDecreasePositionTest is PancakeV3WorkerFixture {
     worker.closePosition();
   }
 
-  // TODO: fuzz to get coverage of in and out of range
-  function testCorrectness_ClosePosition() public {
+  // TODO: out of range
+  function testCorrectness_ClosePosition_InRange() public {
     // Open position
     vm.prank(IN_SCOPE_EXECUTOR);
     worker.openPosition(TICK_LOWER, TICK_UPPER, 1 ether, 1 ether);
@@ -38,22 +38,22 @@ contract PancakeV3WorkerDecreasePositionTest is PancakeV3WorkerFixture {
     vm.prank(IN_SCOPE_EXECUTOR);
     worker.closePosition();
 
-    // Assertions
-    // - worker's token0 should increase
-    // - worker's token1 should increase
-    // - `nftTokenId` should be empty
-    // - nft staked with masterChef should be gone
-
+    // Worker assertions
+    // - token0 should increase
+    // - token1 should increase
+    // - state `nftTokenId` should be empty
     assertGt(token0.balanceOf(address(worker)), token0Before);
     assertGt(token1.balanceOf(address(worker)), token1Before);
     assertEq(worker.nftTokenId(), 0);
+
+    // External assertions
+    // - nft staked with masterChef should be gone
     IPancakeV3MasterChef.UserPositionInfo memory userInfo = pancakeV3MasterChef.userPositionInfos(worker.nftTokenId());
     assertEq(userInfo.user, address(0));
 
-    // Invariants
-    // - `posTickLower` should remain the same
-    // - `posTickUpper` should remain the same
-
+    // Worker invariants
+    // - state `posTickLower` should remain the same
+    // - state `posTickUpper` should remain the same
     assertEq(worker.posTickLower(), TICK_LOWER);
     assertEq(worker.posTickUpper(), TICK_UPPER);
   }
@@ -73,8 +73,8 @@ contract PancakeV3WorkerDecreasePositionTest is PancakeV3WorkerFixture {
     worker.decreasePosition(1 ether);
   }
 
-  // TODO: fuzz to get coverage of in and out of range
-  function testCorrectness_DecreasePosition() public {
+  // TODO: out of range
+  function testCorrectness_DecreasePosition_InRange() public {
     // Open position
     vm.prank(IN_SCOPE_EXECUTOR);
     worker.openPosition(TICK_LOWER, TICK_UPPER, 1 ether, 1 ether);
@@ -89,22 +89,22 @@ contract PancakeV3WorkerDecreasePositionTest is PancakeV3WorkerFixture {
     vm.prank(IN_SCOPE_EXECUTOR);
     worker.decreasePosition(1 ether);
 
-    // Assertions
-    // - worker's token0 should increase
-    // - worker's token1 should increase
-    // - staked position liquidity should be decreased
-
+    // Worker assertions
+    // - token0 should increase
+    // - token1 should increase
     assertGt(token0.balanceOf(address(worker)), token0Before);
     assertGt(token1.balanceOf(address(worker)), token1Before);
+
+    // External assertions
+    // - staked position liquidity should be decreased
     IPancakeV3MasterChef.UserPositionInfo memory userInfoAfter =
       pancakeV3MasterChef.userPositionInfos(worker.nftTokenId());
     assertLt(userInfoAfter.liquidity, userInfoBefore.liquidity);
 
-    // Invariants
-    // - `nftTokenId` should remain the same
-    // - `posTickLower` should remain the same
-    // - `posTickUpper` should remain the same
-
+    // Worker invariants
+    // - state `nftTokenId` should remain the same
+    // - state `posTickLower` should remain the same
+    // - state `posTickUpper` should remain the same
     assertEq(worker.nftTokenId(), 46528);
     assertEq(worker.posTickLower(), TICK_LOWER);
     assertEq(worker.posTickUpper(), TICK_UPPER);
