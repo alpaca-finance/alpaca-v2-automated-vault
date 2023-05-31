@@ -285,33 +285,27 @@ contract PancakeV3Worker_HarvestTest is BasePancakeV3WorkerTest {
     worker.harvest();
   }
 
-  function testCorrectness_WorkerHasNoUnClaimTrandingFeeAndReward_WhenHarvest_ShouldWork() external{
-
+  function testCorrectness_WorkerHasNoUnClaimTrandingFeeAndReward_WhenHarvest_ShouldWork() external {
     uint256 token0Before = token0.balanceOf(address(worker));
     uint256 token1Before = token1.balanceOf(address(worker));
     uint256 cakeBefofe = cake.balanceOf(address(worker));
 
     worker.harvest();
 
-
     assertEq(token0Before, token0.balanceOf(address(worker)));
-    assertEq(token1Before,token1.balanceOf(address(worker)));
-    assertEq(cakeBefofe,cake.balanceOf(address(worker)));
-    
+    assertEq(token1Before, token1.balanceOf(address(worker)));
+    assertEq(cakeBefofe, cake.balanceOf(address(worker)));
   }
 
-  function testCorrectness_WorkerHasUnClaimTrandingFeeAndReward_WhenHarvest_ShouldWork() external{
-
+  function testCorrectness_WorkerHasUnClaimTrandingFeeAndReward_WhenHarvest_ShouldWork() external {
     uint256 token0Before = token0.balanceOf(address(worker));
     uint256 token1Before = token1.balanceOf(address(worker));
     uint256 cakeBefofe = cake.balanceOf(address(worker));
 
     worker.harvest();
 
-
     assertEq(token0Before, token0.balanceOf(address(worker)));
-    assertEq(token1Before,token1.balanceOf(address(worker)));
-    assertEq(cakeBefofe,cake.balanceOf(address(worker)));
-    
+    assertEq(token1Before, token1.balanceOf(address(worker)));
+    assertEq(cakeBefofe, cake.balanceOf(address(worker)));
   }
 }

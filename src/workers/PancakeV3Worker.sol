@@ -698,6 +698,5 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
         })
       );
     }
-
   }
 }
