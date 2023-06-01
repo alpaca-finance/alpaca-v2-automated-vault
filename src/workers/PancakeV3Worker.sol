@@ -640,12 +640,17 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     emit LogClosePosition(_prevNftTokenId, msg.sender, _amount0, _amount1, _positionInfo.liquidity);
   }
 
-  function decreasePosition(uint128 _liquidity) external nonReentrant onlyExecutorInScope {
+  function decreasePosition(uint128 _liquidity)
+    external
+    nonReentrant
+    onlyExecutorInScope
+    returns (uint256 _amount0, uint256 _amount1)
+  {
     uint256 _nftTokenId = nftTokenId;
     if (_nftTokenId == 0) {
       revert PancakeV3Worker_PositionNotExist();
     }
-    (uint256 _amount0, uint256 _amount1) = _decreaseLiquidity(_nftTokenId, masterChef, _liquidity);
+    (_amount0, _amount1) = _decreaseLiquidity(_nftTokenId, masterChef, _liquidity);
     emit LogDecreasePosition(_nftTokenId, msg.sender, _amount0, _amount1, _liquidity);
   }
 
