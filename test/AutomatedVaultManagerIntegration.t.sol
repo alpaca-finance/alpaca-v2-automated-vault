@@ -6,10 +6,10 @@ import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.so
 import { IZapV3 } from "src/interfaces/IZapV3.sol";
 
 // fixtures
-import "test/fixtures/PancakeV3WorkerFixture.f.sol";
+import "test/fixtures/CompleteFixture.f.sol";
 
-contract AutomatedVaultManagerIntegrationTest is PancakeV3WorkerFixture {
-  constructor() PancakeV3WorkerFixture() { }
+contract AutomatedVaultManagerIntegrationTest is CompleteFixture {
+  constructor() CompleteFixture() { }
 
   function setUp() public override {
     vm.createSelectFork("bsc_mainnet", BscFixture.FORK_BLOCK_NUMBER_1);

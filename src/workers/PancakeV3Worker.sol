@@ -77,6 +77,12 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   event LogIncreasePosition(
     uint256 indexed _tokenId, address _caller, int24 _tickLower, int24 _tickUpper, uint256 _amount0, uint256 _amount1
   );
+  event LogClosePosition(
+    uint256 indexed _tokenId, address _caller, uint256 _amount0Out, uint256 _amount1Out, uint128 _liquidityOut
+  );
+  event LogDecreasePosition(
+    uint256 indexed _tokenId, address _caller, uint256 _amount0Out, uint256 _amount1Out, uint128 _liquidityOut
+  );
   event LogTransfer(address indexed _token, address _to, uint256 _amount);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
@@ -560,6 +566,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     (_liquidity, _amount0, _amount1) = _safeMint(address(token0), address(token1), _token0Balance, _token1Balance);
   }
 
+  // TODO: deprecate this
   /// @notice Perform safe enter V3 position.
   /// @dev If position is not existed, then mint a new position and stake.
   /// Else increase liquidity through MasterChefV3.
@@ -613,6 +620,58 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     emit LogIncreaseLiquidity(nftTokenId, _amount0, _amount1, _liquidity);
   }
 
+  /// @dev Closing position (burning NFT) requires NFT to be empty (no tokens, rewards remain).
+  /// Executor should handle claiming rewards before closing position.
+  function closePosition() external nonReentrant onlyExecutorInScope {
+    uint256 _prevNftTokenId = nftTokenId;
+    if (_prevNftTokenId == 0) {
+      revert PancakeV3Worker_PositionNotExist();
+    }
+
+    // Reset nftTokenId
+    nftTokenId = 0;
+
+    IPancakeV3MasterChef _masterChef = masterChef;
+    IPancakeV3MasterChef.UserPositionInfo memory _positionInfo = _masterChef.userPositionInfos(_prevNftTokenId);
+    (uint256 _amount0, uint256 _amount1) = _decreaseLiquidity(_prevNftTokenId, _masterChef, _positionInfo.liquidity);
+    _masterChef.burn(_prevNftTokenId);
+
+    emit LogClosePosition(_prevNftTokenId, msg.sender, _amount0, _amount1, _positionInfo.liquidity);
+  }
+
+  function decreasePosition(uint128 _liquidity) external nonReentrant onlyExecutorInScope {
+    uint256 _nftTokenId = nftTokenId;
+    if (_nftTokenId == 0) {
+      revert PancakeV3Worker_PositionNotExist();
+    }
+    (uint256 _amount0, uint256 _amount1) = _decreaseLiquidity(_nftTokenId, masterChef, _liquidity);
+    emit LogDecreasePosition(_nftTokenId, msg.sender, _amount0, _amount1, _liquidity);
+  }
+
+  function _decreaseLiquidity(uint256 _nftTokenId, IPancakeV3MasterChef _masterChef, uint128 _liquidity)
+    internal
+    returns (uint256 _amount0, uint256 _amount1)
+  {
+    _masterChef.decreaseLiquidity(
+      IPancakeV3MasterChef.DecreaseLiquidityParams({
+        tokenId: _nftTokenId,
+        liquidity: _liquidity,
+        amount0Min: 0,
+        amount1Min: 0,
+        deadline: block.timestamp
+      })
+    );
+    (_amount0, _amount1) = _masterChef.collect(
+      IPancakeV3MasterChef.CollectParams({
+        tokenId: _nftTokenId,
+        recipient: address(this),
+        amount0Max: type(uint128).max,
+        amount1Max: type(uint128).max
+      })
+    );
+  }
+
+  // TODO: deprecate this
   /// @notice Perform decrease position according to a given liquidity.
   /// @param _liquidity Liquidity to decrease
   function _decreasePositionInternal(uint128 _liquidity) internal returns (uint256 _amount0, uint256 _amount1) {

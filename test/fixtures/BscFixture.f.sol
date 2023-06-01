@@ -22,6 +22,7 @@ contract BscFixture is Test {
   IERC20 public constant wbnb = IERC20(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
   IERC20 public constant usdt = IERC20(0x55d398326f99059fF775485246999027B3197955);
   IERC20 public constant doge = IERC20(0xbA2aE424d960c26247Dd6c32edC70B295c744C43);
+  IERC20 public constant cake = IERC20(0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82);
 
   // PancakeV3
   IPancakeV3Router public constant pancakeV3Router = IPancakeV3Router(0x13f4EA83D0bd40E75C8222255bc855a974568Dd4);
@@ -30,7 +31,7 @@ contract BscFixture is Test {
   IPancakeV3MasterChef public constant pancakeV3MasterChef =
     IPancakeV3MasterChef(0x556B9306565093C855AEA9AE92A594704c2Cd59e);
   IPancakeV3QuoterV2 public constant pancakeV3Quoter = IPancakeV3QuoterV2(0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997);
-  // token0 = USDT, token1 = WBNB
+  // token0 = USDT, token1 = WBNB, fee = 500
   ICommonV3Pool public constant pancakeV3USDTWBNBPool = ICommonV3Pool(0x36696169C63e42cd08ce11f5deeBbCeBae652050);
   // token0 = DOGE, token1 = WBNB, fee = 2500
   ICommonV3Pool public constant pancakeV3DOGEWBNBPool = ICommonV3Pool(0xce6160bB594fC055c943F59De92ceE30b8c6B32c);
