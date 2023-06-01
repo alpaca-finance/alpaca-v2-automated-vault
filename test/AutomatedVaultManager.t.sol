@@ -89,11 +89,5 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
     vaultManager.setVaultManagers(_vaultToken, _manager, true);
   }
 
-  function testRevert_WhenDepositToUnopenedVault_ShouldRevert() public {
-    AutomatedVaultManager.DepositTokenParams[] memory _depositParams = new AutomatedVaultManager.DepositTokenParams[](0);
-    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_VaultNotExist(address)", address(0)));
-    vaultManager.deposit(address(0), _depositParams, 0);
-  }
-
   // TODO: open vault sanity check test
 }

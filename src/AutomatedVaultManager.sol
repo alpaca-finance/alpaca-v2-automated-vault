@@ -134,7 +134,6 @@ contract AutomatedVaultManager is
     (uint256 _totalEquityBefore,) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
 
-    // todo: send deposit params to executor
     _result = IExecutor(_cachedVaultInfo.executor).onDeposit(_cachedVaultInfo.worker, _vaultToken);
     EXECUTOR_IN_SCOPE = address(0);
 
