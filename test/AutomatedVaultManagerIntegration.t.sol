@@ -38,36 +38,47 @@ contract AutomatedVaultManagerIntegrationTest is CompleteFixture {
     uint256 wbnbBefore = wbnb.balanceOf(address(this));
     uint256 usdtBefore = usdt.balanceOf(address(this));
 
-    // Assertions
-    // - slippage control
-    // - pull tokens from caller
-    // - call updateExecutor twice (deposit, withdraw)
-    // - call depositExecutor
-    // - call withdrawExecutor
-    // - mint shares based on equityChange
-    // - get token back as proportion of optimal swap output
-
+    // Deposit
     IAutomatedVaultManager.DepositTokenParams[] memory params = new IAutomatedVaultManager.DepositTokenParams[](2);
     params[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(wbnb), amount: wbnbIn });
     params[1] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: usdtIn });
 
+    // Fail case
+    // Vault manager assertions
     // Should fail because of slippage
     vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_TooLittleReceived()"));
     vaultManager.deposit(address(vaultToken), params, 10000 ether);
 
+    // Executor calls assertions
+    // - call `onUpdate` twice
+    // - call `onDeposit` once
+    // - call `onWithdraw` once
     vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onUpdate.selector), 1);
     vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onDeposit.selector), 1);
-    // should pass
+
+    // Success case
     vaultManager.deposit(address(vaultToken), params, 0);
 
+    // Vault manager assertions
+    // - pull tokens from caller
+    // - mint shares based on equityChange
+    // - get token back as proportion of optimal swap output
     assertEq(wbnbBefore - wbnb.balanceOf(address(this)), wbnbIn, "wbnb pulled");
     assertEq(usdtBefore - usdt.balanceOf(address(this)), usdtIn, "usdt pulled");
-
     // Calculate expected equity
     (, int256 wbnbAnswer,,,) = wbnbFeed.latestRoundData();
     (, int256 usdtAnswer,,,) = usdtFeed.latestRoundData();
     uint256 expectedEquity = wbnbIn * uint256(wbnbAnswer) / 1e8 + usdtIn * uint256(usdtAnswer) / 1e8;
     assertApproxEqRel(vaultToken.balanceOf(address(this)), expectedEquity, 1e12, "shares received");
+
+    // Withdraw
+    // Fail case
+    // Vault manager assertions
+    // Should fail because of slippage
+    // AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts = new AutomatedVaultManager.WithdrawSlippage[](1);
+    // minAmountOuts[0] = AutomatedVaultManager.WithdrawSlippage({ token: address(wbnb), minAmountOut: 10000 ether });
+    // vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_ExceedSlippage.selector);
+    // vaultManager.withdraw(address(vaultToken), vaultToken.balanceOf(address(this)), minAmountOuts);
   }
 
   function testRevert_WhenDepositBelowMinimumDepositSize() public {

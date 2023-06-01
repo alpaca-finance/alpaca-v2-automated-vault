@@ -69,60 +69,99 @@ contract PCSV3Executor01 is Executor {
     return abi.encode(_amountIn0, _amountIn1);
   }
 
-  // NOTE: beware of access control checking
+  /// @notice Decrease liquidity, transfer undeployed funds from worker and repay debt
   function onWithdraw(PancakeV3Worker _worker, address _vaultToken, uint256 _sharesToWithdraw)
     external
     override
     onlyVaultManager
     returns (IAutomatedVaultManager.WithdrawResult[] memory _results)
   {
-    uint128 _liquidity;
-    {
-      uint256 _tokenId = _worker.nftTokenId();
-      if (_tokenId != 0) {
-        (,,,,,,, _liquidity,,,,) = _worker.nftPositionManager().positions(_tokenId);
-      }
-    }
     uint256 _totalShares = ERC20(_vaultToken).totalSupply();
-
     ERC20 _token0 = _worker.token0();
     ERC20 _token1 = _worker.token1();
 
-    if (_liquidity != 0) {
-      _worker.doWork(Tasks.DECREASE, abi.encode(_liquidity * _sharesToWithdraw / _totalShares));
-    }
-
-    uint256 _token0Before = _token0.balanceOf(address(this));
-    uint256 _token1Before = _token1.balanceOf(address(this));
-
-    uint256 _token0Repay;
-    uint256 _token1Repay;
+    // Withdraw from nft liquidity (if applicable) and undeployed funds
+    uint256 _amount0Withdraw;
+    uint256 _amount1Withdraw;
     {
-      (, uint256 _token0Debt) = bank.getVaultDebt(_vaultToken, address(_token0));
-      _token0Repay = _token0Debt * _sharesToWithdraw / _totalShares;
-      (, uint256 _token1Debt) = bank.getVaultDebt(_vaultToken, address(_token1));
-      _token1Repay = _token1Debt * _sharesToWithdraw / _totalShares;
+      _amount0Withdraw = _token0.balanceOf(address(_worker)) * _sharesToWithdraw / _totalShares;
+      _amount1Withdraw = _token1.balanceOf(address(_worker)) * _sharesToWithdraw / _totalShares;
+      {
+        uint256 _tokenId = _worker.nftTokenId();
+        if (_tokenId != 0) {
+          (,,,,,,, uint128 _liquidity,,,,) = _worker.nftPositionManager().positions(_tokenId);
+          if (_liquidity != 0) {
+            (uint256 _amount0Decreased, uint256 _amount1Decreased) =
+              _worker.decreasePosition(uint128(_liquidity * _sharesToWithdraw / _totalShares));
+            // Tokens still with worker after `decreasePosition` so we need to add to withdrawal
+            _amount0Withdraw += _amount0Decreased;
+            _amount1Withdraw += _amount1Decreased;
+          }
+        }
+      }
+      // Withdraw undeployed funds and decreased liquidity if any
+      if (_amount0Withdraw != 0) {
+        _worker.transfer(address(_token0), address(this), _amount0Withdraw);
+      }
+      if (_amount1Withdraw != 0) {
+        _worker.transfer(address(_token1), address(this), _amount1Withdraw);
+      }
     }
 
-    if (_token0Repay != 0) {
-      _token0.approve(address(bank), _token0Repay);
-      bank.repayOnBehalfOf(_vaultToken, address(_token0), _token0Repay);
-    }
-    if (_token1Repay != 0) {
-      _token1.approve(address(bank), _token1Repay);
-      bank.repayOnBehalfOf(_vaultToken, address(_token1), _token1Repay);
-    }
+    // Repay with amount withdrawn, swap other token to repay token if not enough
+    // NOTE: can't repay if vault has no equity (position value < debt value)
+    // due to amount withdrawn is not enough to repay and will revert
+    _repay(_worker, _vaultToken, _sharesToWithdraw, _totalShares, _amount0Withdraw, _token0, _token1);
+    _repay(_worker, _vaultToken, _sharesToWithdraw, _totalShares, _amount1Withdraw, _token1, _token0);
 
-    _token0.safeTransfer(msg.sender, _token0Before - _token0Repay);
-    _token1.safeTransfer(msg.sender, _token1Before - _token1Repay);
+    // What is left after repayment belongs to user
+    uint256 _amount0AfterRepay = _token0.balanceOf(address(this));
+    if (_amount0AfterRepay != 0) {
+      _token0.safeTransfer(msg.sender, _amount0AfterRepay);
+    }
+    uint256 _amount1AfterRepay = _token1.balanceOf(address(this));
+    if (_amount1AfterRepay != 0) {
+      _token1.safeTransfer(msg.sender, _amount1AfterRepay);
+    }
 
     _results = new IAutomatedVaultManager.WithdrawResult[](2);
-    _results[0] =
-      IAutomatedVaultManager.WithdrawResult({ token: address(_token0), amount: _token0Before - _token0Repay });
-    _results[1] =
-      IAutomatedVaultManager.WithdrawResult({ token: address(_token1), amount: _token1Before - _token1Repay });
-
+    _results[0] = IAutomatedVaultManager.WithdrawResult({ token: address(_token0), amount: _amount0AfterRepay });
+    _results[1] = IAutomatedVaultManager.WithdrawResult({ token: address(_token1), amount: _amount1AfterRepay });
     return _results;
+  }
+
+  function _repay(
+    PancakeV3Worker _worker,
+    address _vaultToken,
+    uint256 _sharesToWithdraw,
+    uint256 _totalShares,
+    uint256 _repayTokenBalance,
+    ERC20 _repayToken,
+    ERC20 _otherToken
+  ) internal {
+    uint256 _repayAmount;
+    (, uint256 _debtAmount) = bank.getVaultDebt(_vaultToken, address(_repayToken));
+    _repayAmount = _debtAmount * _sharesToWithdraw / _totalShares;
+
+    // Swap if not enough to repay
+    if (_repayAmount > _repayTokenBalance) {
+      uint256 _diffAmount = _repayAmount - _repayTokenBalance;
+      bool _zeroForOne = address(_otherToken) < address(_repayToken);
+
+      ICommonV3Pool _pool = _worker.pool();
+      _pool.swap(
+        address(this),
+        _zeroForOne,
+        -int256(_diffAmount), // negative = exact output
+        _zeroForOne ? LibTickMath.MIN_SQRT_RATIO + 1 : LibTickMath.MAX_SQRT_RATIO - 1, // no price limit
+        abi.encode(_pool.token0(), _pool.token1(), _pool.fee())
+      );
+    }
+
+    if (_repayAmount != 0) {
+      _repayToken.approve(address(bank), _repayAmount);
+      bank.repayOnBehalfOf(_vaultToken, address(_repayToken), _repayAmount);
+    }
   }
 
   function onUpdate(address _vaultToken, PancakeV3Worker _worker)

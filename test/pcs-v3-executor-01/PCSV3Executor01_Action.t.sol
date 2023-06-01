@@ -72,7 +72,7 @@ contract PCSV3Executor01OpenPositionTest is PCSV3Executor01ActionTest {
 
 contract PCSV3Executor01DecreasePositionTest is PCSV3Executor01ActionTest {
   function testCorrectness_DecreasePosition_WorkerScopeSet() public {
-    vm.mockCall(mockWorker, abi.encodeWithSignature("decreasePosition(uint128)"), abi.encode());
+    vm.mockCall(mockWorker, abi.encodeWithSignature("decreasePosition(uint128)"), abi.encode(0, 0));
     vm.prank(mockVaultManager);
     executor.setExecutionScope(mockWorker, mockVaultToken);
 
