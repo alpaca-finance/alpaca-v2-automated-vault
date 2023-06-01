@@ -95,7 +95,7 @@ contract AutomatedVaultManagerIntegrationTest is CompleteFixture {
     vaultManager.setAllowToken(address(vaultToken), address(usdt), false);
     IAutomatedVaultManager.DepositTokenParams[] memory params = new IAutomatedVaultManager.DepositTokenParams[](1);
     params[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: 1 ether });
-    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_InvalidParams()"));
+    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_TokenNotAllowed()"));
     vaultManager.deposit(address(vaultToken), params, 0);
   }
 

@@ -37,6 +37,7 @@ contract AutomatedVaultManager is
   error AutomatedVaultManager_ExceedSlippage();
   error AutomatedVaultManager_BelowMinimumDeposit();
   error AutomatedVaultManager_TooLittleReceived();
+  error AutomatedVaultManager_TokenNotAllowed();
 
   struct VaultInfo {
     address worker;
@@ -109,7 +110,7 @@ contract AutomatedVaultManager is
     uint256 _depositLength = _deposits.length;
     for (uint256 _i; _i < _depositLength;) {
       if (!allowTokens[_vaultToken][_deposits[_i].token]) {
-        revert AutomatedVaultManager_InvalidParams();
+        revert AutomatedVaultManager_TokenNotAllowed();
       }
       ERC20(_deposits[_i].token).safeTransferFrom(msg.sender, _destination, _deposits[_i].amount);
       unchecked {
