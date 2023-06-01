@@ -69,7 +69,7 @@ contract PCSV3Executor01 is Executor {
     return abi.encode(_amountIn0, _amountIn1);
   }
 
-  // NOTE: beware of access control checking
+  /// @notice Decrease liquidity, transfer undeployed funds from worker and repay debt
   function onWithdraw(PancakeV3Worker _worker, address _vaultToken, uint256 _sharesToWithdraw)
     external
     override
@@ -77,11 +77,10 @@ contract PCSV3Executor01 is Executor {
     returns (IAutomatedVaultManager.WithdrawResult[] memory _results)
   {
     uint256 _totalShares = ERC20(_vaultToken).totalSupply();
-
     ERC20 _token0 = _worker.token0();
     ERC20 _token1 = _worker.token1();
 
-    // Withdraw from liquidity (if applicable) and undeployed funds
+    // Withdraw from nft liquidity (if applicable) and undeployed funds
     uint256 _amount0Withdraw;
     uint256 _amount1Withdraw;
     {
@@ -109,7 +108,9 @@ contract PCSV3Executor01 is Executor {
       }
     }
 
-    // Repay with amount withdrawn, swap if needed
+    // Repay with amount withdrawn, swap other token to repay token if not enough
+    // NOTE: can't repay if vault has no equity (position value < debt value)
+    // due to amount withdrawn is not enough to repay and will revert
     _repay(_worker, _vaultToken, _sharesToWithdraw, _totalShares, _amount0Withdraw, _token0, _token1);
     _repay(_worker, _vaultToken, _sharesToWithdraw, _totalShares, _amount1Withdraw, _token1, _token0);
 
@@ -126,7 +127,6 @@ contract PCSV3Executor01 is Executor {
     _results = new IAutomatedVaultManager.WithdrawResult[](2);
     _results[0] = IAutomatedVaultManager.WithdrawResult({ token: address(_token0), amount: _amount0AfterRepay });
     _results[1] = IAutomatedVaultManager.WithdrawResult({ token: address(_token1), amount: _amount1AfterRepay });
-
     return _results;
   }
 
