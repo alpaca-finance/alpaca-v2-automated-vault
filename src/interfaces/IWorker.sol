@@ -6,5 +6,5 @@ import { Tasks } from "src/libraries/Constants.sol";
 interface IWorker {
   function doWork(Tasks _task, bytes calldata _params) external returns (bytes memory);
 
-  function reinvest() external;
+  function harvest() external;
 }

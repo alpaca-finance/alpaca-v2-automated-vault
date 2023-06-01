@@ -270,7 +270,6 @@ contract BankTest is ProtocolActorFixture {
     address vault2 = makeAddr("VAULT_2");
 
     vm.startPrank(IN_SCOPE_EXECUTOR);
-
     wbnb.approve(address(bank), type(uint256).max);
     usdt.approve(address(bank), type(uint256).max);
 
@@ -279,6 +278,7 @@ contract BankTest is ProtocolActorFixture {
     bank.borrowOnBehalfOf(vault1, address(usdt), 1 ether);
     bank.borrowOnBehalfOf(vault2, address(wbnb), 2 ether);
     bank.borrowOnBehalfOf(vault2, address(usdt), 2 ether);
+    vm.stopPrank();
 
     // Vault 1 repay half while no interest, debt shares should decrease by repay amount
     _doAndAssertRepayOnBehalfOf(vault1, address(wbnb), 0.5 ether, 0.5 ether);

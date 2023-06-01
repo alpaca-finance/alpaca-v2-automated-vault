@@ -21,7 +21,7 @@ import { DeployHelper } from "test/helpers/DeployHelper.sol";
 contract BasePancakeV3WorkerTest is BscFixture, ProtocolActorFixture {
   int24 internal constant TICK_LOWER = -58000;
   int24 internal constant TICK_UPPER = -57750;
-  uint16 internal constant PERFORMANCE_FEE_BPS = 1_000;
+  uint16 internal constant PERFORMANCE_FEE_BPS = 100;
   uint256 internal constant DUST = 0.000000001 ether;
 
   PancakeV3Worker worker;
@@ -266,23 +266,81 @@ contract PancakeV3Worker_IncreaseLiquidityTest is BasePancakeV3WorkerTest {
 }
 
 // TODO: more test
-contract PancakeV3Worker_ReinvestTest is BasePancakeV3WorkerTest {
+contract PancakeV3Worker_HarvestTest is BasePancakeV3WorkerTest {
   constructor() BasePancakeV3WorkerTest() { }
 
-  function testCorrectness_WhenInRange_WhenReinvest() external {
-    // Assert
-    // - Worker's tokenId must be 0
-    assertEq(worker.nftTokenId(), 0, "tokenId must be 0");
+  function testCorrectness_WorkerHasNoUnClaimTrandingFeeAndReward_WhenHarvest_ShouldWork() external {
+    uint256 token0Before = token0.balanceOf(address(worker));
+    uint256 token1Before = token1.balanceOf(address(worker));
+    uint256 cakeBefore = cake.balanceOf(address(worker));
 
+    worker.harvest();
+
+    assertEq(token0Before, token0.balanceOf(address(worker)));
+    assertEq(token1Before, token1.balanceOf(address(worker)));
+    assertEq(cakeBefore, cake.balanceOf(address(worker)));
+  }
+
+  function testCorrectness_WorkerHasUnClaimTrandingFeeAndReward_WhenHarvest_ShouldWork() external {
     // Increase position by 10_000 TKN0 and 1 TKN1
     vm.prank(IN_SCOPE_EXECUTOR);
     worker.doWork(Tasks.INCREASE, abi.encode(10_000 ether, 1 ether));
 
     // Assuming some trades happened
+    // pool current Tick at -57856
     _swapExactInput(address(token1), address(token0), poolFee, 500 ether);
+    _swapExactInput(address(token0), address(token1), poolFee, 500 ether);
 
-    // Now call reinvest
-    worker.reinvest();
+    // move block timestamp to bypass same blocktimeStamp check
+    vm.warp(block.timestamp + 100);
+
+    // snapshot evm state and get the actual reward of the worker for easy calculation
+    uint256 snapShotId = vm.snapshot();
+    vm.startPrank(address(worker));
+
+    (uint256 _token0CollectAmount, uint256 _token1CollectAmount) = pancakeV3MasterChef.collect(
+      IPancakeV3MasterChef.CollectParams({
+        tokenId: worker.nftTokenId(),
+        recipient: address(worker),
+        amount0Max: type(uint128).max,
+        amount1Max: type(uint128).max
+      })
+    );
+
+    uint256 _token0ToBucket = _token0CollectAmount * PERFORMANCE_FEE_BPS / 10_000;
+    uint256 _token1ToBucket = _token1CollectAmount * PERFORMANCE_FEE_BPS / 10_000;
+    uint256 _harvestAmount = pancakeV3MasterChef.harvest(worker.nftTokenId(), address(worker));
+    uint256 _cakeToBucket = _harvestAmount * PERFORMANCE_FEE_BPS / 10_000;
+    uint256 _swapAmount = _harvestAmount - _cakeToBucket;
+
+    cake.approve(address(pancakeV3Router), _swapAmount);
+    uint256 _token1SwapAmountOut = pancakeV3Router.exactInputSingle(
+      IPancakeV3Router.ExactInputSingleParams({
+        tokenIn: address(cake),
+        tokenOut: address(token1),
+        fee: poolFee,
+        recipient: address(worker),
+        amountIn: _swapAmount,
+        amountOutMinimum: 0,
+        sqrtPriceLimitX96: 0
+      })
+    );
+    vm.stopPrank();
+    vm.revertTo(snapShotId);
+
+    // call actual harvest
+    worker.harvest();
+
+    // Assert PERFORMANCE_FEE_BUCK Balance
+    // PERFORMANCE_FEE_BUCK get PERFORMANCE_FEE_BPS% from the total reward
+    assertEq(token0.balanceOf(PERFORMANCE_FEE_BUCKET), _token0ToBucket);
+    assertEq(token1.balanceOf(PERFORMANCE_FEE_BUCKET), _token1ToBucket);
+    assertEq(cake.balanceOf(PERFORMANCE_FEE_BUCKET), _cakeToBucket);
+
+    // Assert worker Balance
+    assertEq(token0.balanceOf(address(worker)), _token0CollectAmount - _token0ToBucket);
+    assertEq(token1.balanceOf(address(worker)), _token1CollectAmount + _token1SwapAmountOut - _token1ToBucket);
+    assertEq(cake.balanceOf(address(worker)), 0);
   }
 }
 
