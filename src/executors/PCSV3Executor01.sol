@@ -182,7 +182,7 @@ contract PCSV3Executor01 is Executor {
       address(this),
       _zeroForOne,
       int256(_amountIn), // positive = exact input
-      _zeroForOne ? LibTickMath.MIN_SQRT_RATIO + 1 : LibTickMath.MAX_SQRT_RATIO - 1,
+      _zeroForOne ? LibTickMath.MIN_SQRT_RATIO + 1 : LibTickMath.MAX_SQRT_RATIO - 1, // no price limit
       abi.encode(_pool.token0(), _pool.token1(), _pool.fee())
     );
   }
