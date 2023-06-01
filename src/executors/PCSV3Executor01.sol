@@ -11,7 +11,6 @@ import { Executor } from "src/executors/Executor.sol";
 
 // interfaces
 import { IExecutor } from "src/interfaces/IExecutor.sol";
-import { IWorker } from "src/interfaces/IWorker.sol";
 import { IBank } from "src/interfaces/IBank.sol";
 import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
 import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
@@ -50,14 +49,6 @@ contract PCSV3Executor01 is Executor {
     ERC20 _token1 = _worker.token1();
     uint256 _amountIn0 = _token0.balanceOf(address(this));
     uint256 _amountIn1 = _token1.balanceOf(address(this));
-
-    // bank.borrowOnBehalfOf(_vaultToken, address(_token0), _amountIn0);
-    // bank.borrowOnBehalfOf(_vaultToken, address(_token1), _amountIn1);
-
-    // _token0.approve(address(_worker), _amountIn0 * 2);
-    // _token1.approve(address(_worker), _amountIn1 * 2);
-
-    // return _worker.doWork(Tasks.INCREASE, abi.encode(_amountIn0 * 2, _amountIn1 * 2));
 
     if (_amountIn0 != 0) {
       _token0.safeTransfer(address(_worker), _amountIn0);
