@@ -82,9 +82,11 @@ contract PCSV3Executor01 is Executor {
     ERC20 _token1 = _worker.token1();
 
     // Withdraw from liquidity (if applicable) and undeployed funds
+    uint256 _amount0Withdraw;
+    uint256 _amount1Withdraw;
     {
-      uint256 _amount0Withdraw = _token0.balanceOf(address(_worker)) * _sharesToWithdraw / _totalShares;
-      uint256 _amount1Withdraw = _token1.balanceOf(address(_worker)) * _sharesToWithdraw / _totalShares;
+      _amount0Withdraw = _token0.balanceOf(address(_worker)) * _sharesToWithdraw / _totalShares;
+      _amount1Withdraw = _token1.balanceOf(address(_worker)) * _sharesToWithdraw / _totalShares;
       {
         uint256 _tokenId = _worker.nftTokenId();
         if (_tokenId != 0) {
@@ -107,12 +109,16 @@ contract PCSV3Executor01 is Executor {
       }
     }
 
-    uint256 _amount0AfterRepay = _repay(_vaultToken, _sharesToWithdraw, _totalShares, _token0);
-    uint256 _amount1AfterRepay = _repay(_vaultToken, _sharesToWithdraw, _totalShares, _token1);
+    // Repay with amount withdrawn, swap if needed
+    _repay(_worker, _vaultToken, _sharesToWithdraw, _totalShares, _amount0Withdraw, _token0, _token1);
+    _repay(_worker, _vaultToken, _sharesToWithdraw, _totalShares, _amount1Withdraw, _token1, _token0);
 
+    // What is left after repayment belongs to user
+    uint256 _amount0AfterRepay = _token0.balanceOf(address(this));
     if (_amount0AfterRepay != 0) {
       _token0.safeTransfer(msg.sender, _amount0AfterRepay);
     }
+    uint256 _amount1AfterRepay = _token1.balanceOf(address(this));
     if (_amount1AfterRepay != 0) {
       _token1.safeTransfer(msg.sender, _amount1AfterRepay);
     }
@@ -124,22 +130,38 @@ contract PCSV3Executor01 is Executor {
     return _results;
   }
 
-  function _repay(address _vaultToken, uint256 _sharesToWithdraw, uint256 _totalShares, ERC20 _token)
-    internal
-    returns (uint256 amountAfterRepay)
-  {
-    uint256 _amountBefore = _token.balanceOf(address(this));
-
+  function _repay(
+    PancakeV3Worker _worker,
+    address _vaultToken,
+    uint256 _sharesToWithdraw,
+    uint256 _totalShares,
+    uint256 _repayTokenBalance,
+    ERC20 _repayToken,
+    ERC20 _otherToken
+  ) internal {
     uint256 _repayAmount;
-    (, uint256 _debtAmount) = bank.getVaultDebt(_vaultToken, address(_token));
+    (, uint256 _debtAmount) = bank.getVaultDebt(_vaultToken, address(_repayToken));
     _repayAmount = _debtAmount * _sharesToWithdraw / _totalShares;
 
-    if (_repayAmount != 0) {
-      _token.approve(address(bank), _repayAmount);
-      bank.repayOnBehalfOf(_vaultToken, address(_token), _repayAmount);
+    // Swap if not enough to repay
+    if (_repayAmount > _repayTokenBalance) {
+      uint256 _diffAmount = _repayAmount - _repayTokenBalance;
+      bool _zeroForOne = address(_otherToken) < address(_repayToken);
+
+      ICommonV3Pool _pool = _worker.pool();
+      _pool.swap(
+        address(this),
+        _zeroForOne,
+        -int256(_diffAmount), // negative = exact output
+        _zeroForOne ? LibTickMath.MIN_SQRT_RATIO + 1 : LibTickMath.MAX_SQRT_RATIO - 1, // no price limit
+        abi.encode(_pool.token0(), _pool.token1(), _pool.fee())
+      );
     }
 
-    return _amountBefore - _repayAmount;
+    if (_repayAmount != 0) {
+      _repayToken.approve(address(bank), _repayAmount);
+      bank.repayOnBehalfOf(_vaultToken, address(_repayToken), _repayAmount);
+    }
   }
 
   function onUpdate(address _vaultToken, PancakeV3Worker _worker)

@@ -11,17 +11,21 @@ import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.so
 
 import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { MockPancakeV3Worker } from "test/mocks/MockPancakeV3Worker.sol";
+import { MockBank } from "test/mocks/MockBank.sol";
+
+import "test/fixtures/BscFixture.f.sol";
 
 contract PCSV3Executor01OnWithdrawTest is Test {
   PCSV3Executor01 executor;
+  address mockBank;
   address mockVaultManager = makeAddr("mockVaultManager");
-  address mockBank = makeAddr("mockBank");
   address mockVaultToken = makeAddr("mockVaultToken");
   address mockPositionManager = makeAddr("mockPositionManager");
   MockERC20 mockToken0;
   MockERC20 mockToken1;
 
   function setUp() public {
+    mockBank = address(new MockBank());
     executor = new PCSV3Executor01(mockVaultManager,mockBank);
 
     mockToken0 = new MockERC20("Mock Token0", "MTKN0", 18);
@@ -44,6 +48,8 @@ contract PCSV3Executor01OnWithdrawTest is Test {
     uint256 workerToken1Before = mockToken1.balanceOf(mockWorker);
     uint256 vaultManagerToken0Before = mockToken0.balanceOf(mockVaultManager);
     uint256 vaultManagerToken1Before = mockToken1.balanceOf(mockVaultManager);
+    uint256 bankToken0Before = mockToken0.balanceOf(mockBank);
+    uint256 bankToken1Before = mockToken1.balanceOf(mockBank);
 
     vm.prank(mockVaultManager);
     IAutomatedVaultManager.WithdrawResult[] memory withdrawResults =
@@ -53,6 +59,8 @@ contract PCSV3Executor01OnWithdrawTest is Test {
     // - worker balance decrease
     // - withdraw results are correct
     // - vault manager balance increase equal to withdraw results
+    // - executor balance is 0
+    // - bank balance increase
 
     // Check worker balance
     assertEq(workerToken0Before - mockToken0.balanceOf(mockWorker), expected.workerToken0Decrease, "worker token0");
@@ -75,9 +83,17 @@ contract PCSV3Executor01OnWithdrawTest is Test {
       withdrawResults[1].amount,
       "vault manager token0"
     );
+
+    // Check executor balance
+    assertEq(mockToken0.balanceOf(address(executor)), 0);
+    assertEq(mockToken1.balanceOf(address(executor)), 0);
+
+    // Check bank balance
+    assertEq(mockToken0.balanceOf(mockBank) - bankToken0Before, expected.token0Repay);
+    assertEq(mockToken1.balanceOf(mockBank) - bankToken1Before, expected.token1Repay);
   }
 
-  function testFuzz_OnWithdraw(
+  function testFuzz_OnWithdraw_EnoughToRepay(
     uint256 sharesToWithdraw,
     uint256 totalShares,
     uint256 undeployedToken0,
@@ -138,5 +154,60 @@ contract PCSV3Executor01OnWithdrawTest is Test {
       token1Repay: debtToken1 * sharesToWithdraw / totalShares
     });
     _doAndAssertOnWithdraw(mockWorker, sharesToWithdraw, expected);
+  }
+}
+
+contract PCSV3Executor01OnWithdrawForkTest is BscFixture {
+  PCSV3Executor01 executor;
+  address mockBank;
+  address mockVaultManager = makeAddr("mockVaultManager");
+  address mockVaultToken = makeAddr("mockVaultToken");
+  address mockPositionManager = makeAddr("mockPositionManager");
+
+  constructor() BscFixture() {
+    vm.createSelectFork("bsc_mainnet", BscFixture.FORK_BLOCK_NUMBER_1);
+
+    mockBank = address(new MockBank());
+    executor = new PCSV3Executor01(mockVaultManager,mockBank);
+  }
+
+  function testCorrectness_OnWithdraw_NotEnoughToRepayHaveToSwap_OnlyUndeployedFunds() public {
+    uint256 undeployedToken0 = 371_981_035_982; // = 1 wbnb
+    uint256 undeployedToken1 = 0;
+    uint256 totalShares = 1 ether;
+    uint256 debtToken0 = 0;
+    uint256 debtToken1 = 1 ether;
+
+    // Prepare
+    address mockWorker = address(new MockPancakeV3Worker(address(doge), address(wbnb), 0));
+    // Deal undeployed funds
+    deal(address(doge), mockWorker, undeployedToken0);
+    deal(address(wbnb), mockWorker, undeployedToken1);
+    vm.mockCall(mockWorker, abi.encodeWithSignature("pool()"), abi.encode(address(pancakeV3DOGEWBNBPool)));
+    vm.mockCall(mockVaultToken, abi.encodeWithSignature("totalSupply()"), abi.encode(totalShares));
+    vm.mockCall(
+      mockBank,
+      abi.encodeWithSignature("getVaultDebt(address,address)", mockVaultToken, address(doge)),
+      abi.encode(debtToken0, debtToken0)
+    );
+    vm.mockCall(
+      mockBank,
+      abi.encodeWithSignature("getVaultDebt(address,address)", mockVaultToken, address(wbnb)),
+      abi.encode(debtToken1, debtToken1)
+    );
+
+    vm.prank(mockVaultManager);
+    executor.onWithdraw(PancakeV3Worker(mockWorker), mockVaultToken, totalShares);
+
+    // Assertions
+    // - executor balance is 0 since undeployed funds = debt (no equity)
+    // - worker balance is 0 since withdraw all
+    // - bank balance equal debt
+    assertEq(doge.balanceOf(address(executor)), 0);
+    assertEq(wbnb.balanceOf(address(executor)), 0);
+    assertEq(doge.balanceOf(address(mockWorker)), 0);
+    assertEq(wbnb.balanceOf(address(mockWorker)), 0);
+    assertEq(doge.balanceOf(address(mockBank)), debtToken0);
+    assertEq(wbnb.balanceOf(address(mockBank)), debtToken1);
   }
 }
