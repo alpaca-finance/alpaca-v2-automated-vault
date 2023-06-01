@@ -159,7 +159,17 @@ contract PCSV3Executor01 is Executor {
     PancakeV3Worker(_getCurrentWorker()).closePosition();
   }
 
-  function withdrawUndeployedFunds(address _token, uint256 _amount) external onlySelf {
-    PancakeV3Worker(_getCurrentWorker()).withdrawUndeployedFunds(_token, _amount);
+  function transferFromWorker(address _token, address _to, uint256 _amount) external onlySelf {
+    PancakeV3Worker(_getCurrentWorker()).transfer(_token, _to, _amount);
+  }
+
+  /// @notice Borrow token from Bank
+  function borrow(address _token, uint256 _amount) external onlySelf {
+    bank.borrowOnBehalfOf(_getCurrentVaultToken(), _token, _amount);
+  }
+
+  /// @notice Repay token back to Bank
+  function repay(address _token, uint256 _amount) external onlySelf {
+    bank.repayOnBehalfOf(_getCurrentVaultToken(), _token, _amount);
   }
 }

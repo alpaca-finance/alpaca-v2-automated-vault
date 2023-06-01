@@ -28,6 +28,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   error PancakeV3Worker_InvalidTask();
   error PancakeV3Worker_PositionExist();
   error PancakeV3Worker_PositionNotExist();
+  error PancakeV3Worker_InvalidParams();
 
   // pool info
   ERC20 public token0;
@@ -82,6 +83,7 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
   event LogDecreasePosition(
     uint256 indexed _tokenId, address _caller, uint256 _amount0Out, uint256 _amount1Out, uint128 _liquidityOut
   );
+  event LogTransfer(address indexed _token, address _to, uint256 _amount);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -278,6 +280,19 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     );
 
     emit LogIncreasePosition(_nftTokenId, msg.sender, _tickLower, _tickUpper, _amount0, _amount1);
+  }
+
+  /// @notice Transfer undeployed token out
+  /// @param _token Token to be transfered
+  /// @param _to The destination address
+  /// @param _amount The amount to transfer
+  function transfer(address _token, address _to, uint256 _amount) external nonReentrant onlyExecutorInScope {
+    if (_amount == 0 || _to == address(0)) {
+      revert PancakeV3Worker_InvalidParams();
+    }
+
+    ERC20(_token).safeTransfer(_to, _amount);
+    emit LogTransfer(_token, _to, _amount);
   }
 
   function _prepareOptimalTokensForIncrease(
