@@ -14,9 +14,11 @@ import { IExecutor } from "src/interfaces/IExecutor.sol";
 import { IWorker } from "src/interfaces/IWorker.sol";
 import { IBank } from "src/interfaces/IBank.sol";
 import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
 
 // libraries
 import { Tasks } from "src/libraries/Constants.sol";
+import { LibTickMath } from "src/libraries/LibTickMath.sol";
 
 contract PCSV3Executor01 is Executor {
   using SafeTransferLib for ERC20;
@@ -24,6 +26,7 @@ contract PCSV3Executor01 is Executor {
   error PCSV3Executor01_NotSelf();
   error PCSV3Executor01_PositionAlreadyExist();
   error PCSV3Executor01_PositionNotExist();
+  error PCSV3Executor01_NotPool();
 
   IBank public immutable bank;
 
@@ -171,5 +174,43 @@ contract PCSV3Executor01 is Executor {
   /// @notice Repay token back to Bank
   function repay(address _token, uint256 _amount) external onlySelf {
     bank.repayOnBehalfOf(_getCurrentVaultToken(), _token, _amount);
+  }
+
+  function pancakeV3SwapExactInputSingle(bool _zeroForOne, uint256 _amountIn) external onlySelf {
+    ICommonV3Pool _pool = PancakeV3Worker(_getCurrentWorker()).pool();
+    _pool.swap(
+      address(this),
+      _zeroForOne,
+      int256(_amountIn), // positive = exact input
+      _zeroForOne ? LibTickMath.MIN_SQRT_RATIO + 1 : LibTickMath.MAX_SQRT_RATIO - 1, // no price limit
+      abi.encode(_pool.token0(), _pool.token1(), _pool.fee())
+    );
+  }
+
+  function pancakeV3SwapCallback(int256 _amount0Delta, int256 _amount1Delta, bytes calldata _data) external {
+    (address _token0, address _token1, uint24 _fee) = abi.decode(_data, (address, address, uint24));
+    address _pool = address(
+      uint160(
+        uint256(
+          keccak256(
+            abi.encodePacked(
+              hex"ff",
+              0x41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c9,
+              keccak256(abi.encode(_token0, _token1, _fee)),
+              bytes32(0x6ce8eb472fa82df5469c6ab6d485f17c3ad13c8cd7af59b3d4a8026c5ce0f7e2)
+            )
+          )
+        )
+      )
+    );
+    if (msg.sender == _pool) {
+      if (_amount0Delta > 0) {
+        ERC20(_token0).safeTransfer(msg.sender, uint256(_amount0Delta));
+      } else {
+        ERC20(_token1).safeTransfer(msg.sender, uint256(_amount1Delta));
+      }
+    } else {
+      revert PCSV3Executor01_NotPool();
+    }
   }
 }
