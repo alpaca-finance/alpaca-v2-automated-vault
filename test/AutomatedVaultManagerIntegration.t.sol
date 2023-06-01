@@ -15,9 +15,12 @@ contract AutomatedVaultManagerIntegrationTest is CompleteFixture {
     vm.createSelectFork("bsc_mainnet", BscFixture.FORK_BLOCK_NUMBER_1);
     super.setUp();
 
-    // whitelist manager
-    vm.prank(DEPLOYER);
+    // whitelist manager and token
+    vm.startPrank(DEPLOYER);
     vaultManager.setVaultManagers(address(vaultToken), MANAGER, true);
+    vaultManager.setAllowToken(address(vaultToken), address(wbnb), true);
+    vaultManager.setAllowToken(address(vaultToken), address(usdt), true);
+    vm.stopPrank();
   }
 
   function testCorrectness_Deposit() public {
@@ -81,6 +84,18 @@ contract AutomatedVaultManagerIntegrationTest is CompleteFixture {
     IAutomatedVaultManager.DepositTokenParams[] memory params = new IAutomatedVaultManager.DepositTokenParams[](1);
     params[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: usdtIn });
     vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_BelowMinimumDeposit()"));
+    vaultManager.deposit(address(vaultToken), params, 0);
+  }
+
+  function testRevert_WhenDepositTokenThatIsNotAllowed() public {
+    // Assertions
+    // - Should fail if token is not allowed
+
+    vm.prank(DEPLOYER);
+    vaultManager.setAllowToken(address(vaultToken), address(usdt), false);
+    IAutomatedVaultManager.DepositTokenParams[] memory params = new IAutomatedVaultManager.DepositTokenParams[](1);
+    params[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: 1 ether });
+    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_TokenNotAllowed()"));
     vaultManager.deposit(address(vaultToken), params, 0);
   }
 

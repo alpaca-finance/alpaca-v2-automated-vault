@@ -37,6 +37,7 @@ contract AutomatedVaultManager is
   error AutomatedVaultManager_ExceedSlippage();
   error AutomatedVaultManager_BelowMinimumDeposit();
   error AutomatedVaultManager_TooLittleReceived();
+  error AutomatedVaultManager_TokenNotAllowed();
 
   struct VaultInfo {
     address worker;
@@ -49,7 +50,10 @@ contract AutomatedVaultManager is
 
   // vault's ERC20 address => vault info
   mapping(address => VaultInfo) public vaultInfos;
+
   mapping(address => mapping(address => bool)) isManager;
+
+  mapping(address => mapping(address => bool)) allowTokens;
   /// @dev execution scope to tell downstream contracts (Bank, Worker, etc.)
   /// that current executor is acting on behalf of vault and can be trusted
   address public EXECUTOR_IN_SCOPE;
@@ -60,6 +64,7 @@ contract AutomatedVaultManager is
   );
   event LogWithdraw(address indexed _vaultToken, address indexed _user, uint256 _sharesWithdrawn);
   event LogSetVaultManager(address indexed _vaultToken, address _manager, bool _isOk);
+  event LogSetAllowToken(address indexed _vaultToken, address _token, bool _isAllowed);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -86,6 +91,14 @@ contract AutomatedVaultManager is
     emit LogOpenVault(_vaultToken, _vaultInfo);
   }
 
+  function setAllowToken(address _vaultToken, address _token, bool _isAllowed) external onlyOwner {
+    // sanity check, should revert if vault not opened
+    _getVaultInfo(_vaultToken);
+    allowTokens[_vaultToken][_token] = _isAllowed;
+
+    emit LogSetAllowToken(_vaultToken, _token, _isAllowed);
+  }
+
   function _getVaultInfo(address _vaultToken) internal view returns (VaultInfo memory _vaultInfo) {
     _vaultInfo = vaultInfos[_vaultToken];
     if (_vaultInfo.worker == address(0)) {
@@ -93,9 +106,12 @@ contract AutomatedVaultManager is
     }
   }
 
-  function _pullTokens(address _destination, DepositTokenParams[] calldata _deposits) internal {
+  function _pullTokens(address _vaultToken, address _destination, DepositTokenParams[] calldata _deposits) internal {
     uint256 _depositLength = _deposits.length;
     for (uint256 _i; _i < _depositLength;) {
+      if (!allowTokens[_vaultToken][_deposits[_i].token]) {
+        revert AutomatedVaultManager_TokenNotAllowed();
+      }
       ERC20(_deposits[_i].token).safeTransferFrom(msg.sender, _destination, _deposits[_i].amount);
       unchecked {
         ++_i;
@@ -109,7 +125,7 @@ contract AutomatedVaultManager is
   {
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
 
-    _pullTokens(_cachedVaultInfo.executor, _depositParams);
+    _pullTokens(_vaultToken, _cachedVaultInfo.executor, _depositParams);
 
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
