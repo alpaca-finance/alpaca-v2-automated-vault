@@ -150,4 +150,14 @@ contract PCSV3Executor01 is Executor {
     _worker.token1().safeApprove(address(_worker), _amountIn1);
     _worker.openPosition(_tickLower, _tickUpper, _amountIn0, _amountIn1);
   }
+
+  /// @notice Borrow token from Bank
+  function borrow(address _token, uint256 _amount) external onlySelf {
+    bank.borrowOnBehalfOf(_getCurrentVaultToken(), _token, _amount);
+  }
+
+  /// @notice Repay token back to Bank
+  function repay(address _token, uint256 _amount) external onlySelf {
+    bank.repayOnBehalfOf(_getCurrentVaultToken(), _token, _amount);
+  }
 }
