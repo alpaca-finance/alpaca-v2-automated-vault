@@ -671,10 +671,6 @@ contract PancakeV3Worker is IWorker, Initializable, Ownable2StepUpgradeable, Ree
     );
   }
 
-  function withdrawUndeployedFunds(address _token, uint256 _amount) external onlyExecutorInScope {
-    ERC20(_token).safeTransfer(msg.sender, _amount);
-  }
-
   // TODO: deprecate this
   /// @notice Perform decrease position according to a given liquidity.
   /// @param _liquidity Liquidity to decrease

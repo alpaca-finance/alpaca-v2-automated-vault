@@ -116,30 +116,6 @@ contract PCSV3Executor01ClosePositionTest is PCSV3Executor01ActionTest {
   }
 }
 
-contract PCSV3Executor01WithdrawUndeployedFundsTest is PCSV3Executor01ActionTest {
-  function testCorrectness_WithdrawUndeployedFunds_WorkerScopeSet() public {
-    vm.mockCall(mockWorker, abi.encodeWithSignature("withdrawUndeployedFunds(address,uint256)"), abi.encode());
-    vm.prank(mockVaultManager);
-    executor.setExecutionScope(mockWorker, mockVaultToken);
-
-    vm.expectCall(mockWorker, abi.encodeWithSignature("withdrawUndeployedFunds(address,uint256)"), 1);
-
-    vm.prank(address(executor));
-    executor.withdrawUndeployedFunds(address(1), 1 ether);
-  }
-
-  function testRevert_WithdrawUndeployedFunds_WorkerScopeNotSet() public {
-    vm.prank(mockVaultManager);
-    executor.setExecutionScope(address(0), mockVaultToken);
-
-    vm.expectCall(mockWorker, abi.encodeWithSignature("withdrawUndeployedFunds(address,uint256)"), 0);
-
-    vm.prank(address(executor));
-    vm.expectRevert(Executor.Executor_NoCurrentWorker.selector);
-    executor.withdrawUndeployedFunds(address(1), 1 ether);
-  }
-}
-
 contract PCSV3Executor01TransferTest is PCSV3Executor01ActionTest {
   function testCorrectness_Transfer_SelfCall() public {
     vm.mockCall(mockWorker, abi.encodeWithSignature("transfer(address,address,uint256)"), abi.encode());
