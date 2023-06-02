@@ -1,24 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
+import "./BaseAutomatedVaultUnitTest.sol";
 
-// fixtures
-import "test/fixtures/ProtocolActorFixture.f.sol";
+import { IERC20 } from "src/interfaces/IERC20.sol";
 
-// helpers
-import { DeployHelper } from "test/helpers/DeployHelper.sol";
-
-contract AutomatedVaultUnitTest is ProtocolActorFixture {
-  AutomatedVaultManager vaultManager;
-
-  constructor() ProtocolActorFixture() {
-    vm.startPrank(DEPLOYER);
-    vaultManager = AutomatedVaultManager(
-      DeployHelper.deployUpgradeable("AutomatedVaultManager", abi.encodeWithSignature("initialize()"))
-    );
-    vm.stopPrank();
-  }
+// TODO: open vault sanity check test
+contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
+  constructor() BaseAutomatedVaultUnitTest() { }
 
   function testCorrectness_OpenVault() public {
     address worker = makeAddr("worker");
@@ -79,21 +68,4 @@ contract AutomatedVaultUnitTest is ProtocolActorFixture {
       })
     );
   }
-
-  function testRevert_SetVaultManager_NonOwnerIsCaller() public {
-    address _vaultToken = makeAddr("vaultToken");
-    address _manager = makeAddr("manager");
-
-    vm.prank(USER_ALICE);
-    vm.expectRevert("Ownable: caller is not the owner");
-    vaultManager.setVaultManagers(_vaultToken, _manager, true);
-  }
-
-  function testRevert_WhenDepositToUnopenedVault_ShouldRevert() public {
-    AutomatedVaultManager.DepositTokenParams[] memory _depositParams = new AutomatedVaultManager.DepositTokenParams[](0);
-    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_VaultNotExist(address)", address(0)));
-    vaultManager.deposit(address(0), _depositParams, 0);
-  }
-
-  // TODO: open vault sanity check test
 }

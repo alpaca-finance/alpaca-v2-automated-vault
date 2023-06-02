@@ -81,35 +81,6 @@ contract AutomatedVaultManagerIntegrationTest is CompleteFixture {
     // vaultManager.withdraw(address(vaultToken), vaultToken.balanceOf(address(this)), minAmountOuts);
   }
 
-  function testRevert_WhenDepositBelowMinimumDepositSize() public {
-    uint256 usdtIn = 2 ether;
-
-    deal(address(usdt), address(moneyMarket), usdtIn);
-
-    deal(address(usdt), address(this), usdtIn);
-    usdt.approve(address(vaultManager), type(uint256).max);
-
-    // Assertions
-    // - Should fail if size below limit
-
-    IAutomatedVaultManager.DepositTokenParams[] memory params = new IAutomatedVaultManager.DepositTokenParams[](1);
-    params[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: usdtIn });
-    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_BelowMinimumDeposit()"));
-    vaultManager.deposit(address(vaultToken), params, 0);
-  }
-
-  function testRevert_WhenDepositTokenThatIsNotAllowed() public {
-    // Assertions
-    // - Should fail if token is not allowed
-
-    vm.prank(DEPLOYER);
-    vaultManager.setAllowToken(address(vaultToken), address(usdt), false);
-    IAutomatedVaultManager.DepositTokenParams[] memory params = new IAutomatedVaultManager.DepositTokenParams[](1);
-    params[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: 1 ether });
-    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_TokenNotAllowed()"));
-    vaultManager.deposit(address(vaultToken), params, 0);
-  }
-
   // function testCorrectness_SimpleDepositWithdraw_EmptyVault() public {
   //   uint256 wbnbIn = 1 ether;
   //   uint256 usdtIn = 2 ether;
@@ -302,17 +273,6 @@ contract AutomatedVaultManagerIntegrationTest is CompleteFixture {
   //     usdt.balanceOf(address(this)) - usdtBefore, expectedAddLiquidityUSDT - usdtIn, 1e12, "usdt withdraw"
   //   );
   // }
-
-  function testCorrectness_ManagingVaultResultInHealthyState_ShouldWork() external {
-    vm.prank(MANAGER);
-    vaultManager.manage(address(vaultToken), new bytes[](0));
-  }
-
-  function testRevert_WhenNonManagerCallManage_ShouldRevert() external {
-    bytes[] memory _params = new bytes[](1);
-    vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_Unauthorized.selector);
-    vaultManager.manage(address(vaultToken), _params);
-  }
 }
 
 // import "test/base/BaseForkTest.sol";

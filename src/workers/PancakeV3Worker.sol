@@ -18,7 +18,7 @@ import { IPancakeV3MasterChef } from "src/interfaces/pancake-v3/IPancakeV3Master
 
 // libraries
 import { LibTickMath } from "src/libraries/LibTickMath.sol";
-import { Tasks, MAX_BPS } from "src/libraries/Constants.sol";
+import { MAX_BPS } from "src/libraries/Constants.sol";
 
 contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradeable {
   using SafeTransferLib for ERC20;

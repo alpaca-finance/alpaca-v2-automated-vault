@@ -16,7 +16,6 @@ import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.so
 import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
 
 // libraries
-import { Tasks } from "src/libraries/Constants.sol";
 import { LibTickMath } from "src/libraries/LibTickMath.sol";
 
 contract PCSV3Executor01 is Executor {
