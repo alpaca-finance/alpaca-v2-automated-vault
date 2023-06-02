@@ -32,6 +32,14 @@ contract MockVaultOracleAndExecutor {
     return results;
   }
 
+  function multicall(bytes[] calldata) external returns (bytes[] memory) {
+    // placeholder
+  }
+
+  function setExecutionScope(address, address) external {
+    // placeholder
+  }
+
   function setGetEquityAndDebtResult(
     uint256 _equityBefore,
     uint256 _debtBefore,

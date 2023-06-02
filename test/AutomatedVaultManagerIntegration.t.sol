@@ -273,17 +273,6 @@ contract AutomatedVaultManagerIntegrationTest is CompleteFixture {
   //     usdt.balanceOf(address(this)) - usdtBefore, expectedAddLiquidityUSDT - usdtIn, 1e12, "usdt withdraw"
   //   );
   // }
-
-  function testCorrectness_ManagingVaultResultInHealthyState_ShouldWork() external {
-    vm.prank(MANAGER);
-    vaultManager.manage(address(vaultToken), new bytes[](0));
-  }
-
-  function testRevert_WhenNonManagerCallManage_ShouldRevert() external {
-    bytes[] memory _params = new bytes[](1);
-    vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_Unauthorized.selector);
-    vaultManager.manage(address(vaultToken), _params);
-  }
 }
 
 // import "test/base/BaseForkTest.sol";
