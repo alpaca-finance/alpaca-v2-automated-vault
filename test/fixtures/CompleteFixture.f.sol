@@ -94,8 +94,6 @@ contract CompleteFixture is Test, BscFixture, ProtocolActorFixture {
             masterChef: pancakeV3MasterChef,
             zapV3: zapV3,
             performanceFeeBucket: PERFORMANCE_FEE_BUCKET,
-            tickLower: TICK_LOWER,
-            tickUpper: TICK_UPPER,
             performanceFeeBps: PERFORMANCE_FEE_BPS
           })
         )
