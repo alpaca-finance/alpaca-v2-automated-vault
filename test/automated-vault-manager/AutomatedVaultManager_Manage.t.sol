@@ -5,7 +5,7 @@ import "./BaseAutomatedVaultUnitTest.sol";
 
 import { IERC20 } from "src/interfaces/IERC20.sol";
 
-contract AutomatedVaultManagerManagerTest is BaseAutomatedVaultUnitTest {
+contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
   address vaultToken;
 
   constructor() BaseAutomatedVaultUnitTest() {
@@ -24,11 +24,11 @@ contract AutomatedVaultManagerManagerTest is BaseAutomatedVaultUnitTest {
     tolerance = uint16(bound(tolerance, 1, 10000)); // can't allow 100% loss
     equityBefore = bound(equityBefore, 1, 1e30);
     equityAfter = bound(equityAfter, 0, equityBefore * tolerance / 10000);
+    if (equityAfter > 0) equityAfter -= 1; // prevent equal case
 
     // tolerate up to 1% equity loss
     vaultToken = _openVault(DEFAULT_MINIMUM_DEPOSIT, tolerance, DEFAULT_MAX_LEVERAGE);
 
-    // set 50% equity loss
     mockVaultOracleAndExecutor.setGetEquityAndDebtResult(equityBefore, 0, equityAfter, 0);
 
     vm.prank(MANAGER);
