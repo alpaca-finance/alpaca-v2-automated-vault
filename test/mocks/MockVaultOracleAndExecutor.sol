@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IERC20 } from "src/interfaces/IERC20.sol";
+import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
 
 contract MockVaultOracleAndExecutor {
   uint256 private equityBefore;
@@ -9,13 +10,7 @@ contract MockVaultOracleAndExecutor {
   uint256 private equityAfter;
   uint256 private debtAfter;
   bool private isAfter;
-
-  function setResult(uint256 _equityBefore, uint256 _debtBefore, uint256 _equityAfter, uint256 _debtAfter) external {
-    equityBefore = _equityBefore;
-    debtBefore = _debtBefore;
-    equityAfter = _equityAfter;
-    debtAfter = _debtAfter;
-  }
+  IAutomatedVaultManager.WithdrawResult[] private results;
 
   function onUpdate(address, address) external returns (bytes memory) {
     // placeholder
@@ -24,6 +19,29 @@ contract MockVaultOracleAndExecutor {
   function onDeposit(address, address) external returns (bytes memory) {
     isAfter = true;
     return "";
+  }
+
+  function setOnWithdrawResult(IAutomatedVaultManager.WithdrawResult[] calldata _results) external {
+    for (uint256 i; i < _results.length; ++i) {
+      results.push(_results[i]);
+    }
+  }
+
+  function onWithdraw(address, address, uint256) external returns (IAutomatedVaultManager.WithdrawResult[] memory) {
+    isAfter = true;
+    return results;
+  }
+
+  function setGetEquityAndDebtResult(
+    uint256 _equityBefore,
+    uint256 _debtBefore,
+    uint256 _equityAfter,
+    uint256 _debtAfter
+  ) external {
+    equityBefore = _equityBefore;
+    debtBefore = _debtBefore;
+    equityAfter = _equityAfter;
+    debtAfter = _debtAfter;
   }
 
   function getEquityAndDebt(address, address) external view returns (uint256, uint256) {

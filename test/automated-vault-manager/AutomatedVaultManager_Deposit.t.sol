@@ -30,7 +30,7 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
     address vaultToken = _openVault(1 ether, DEFAULT_TOLERANCE_BPS, DEFAULT_MAX_LEVERAGE);
     uint256 equityAfter = 0.1 ether;
 
-    mockVaultOracleAndExecutor.setResult(0, 0, equityAfter, 0);
+    mockVaultOracleAndExecutor.setGetEquityAndDebtResult(0, 0, equityAfter, 0);
 
     IAutomatedVaultManager.DepositTokenParams[] memory params;
     vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_BelowMinimumDeposit()"));
@@ -41,7 +41,7 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
     address vaultToken = _openDefaultVault();
     uint256 sharesOut = 1 ether;
 
-    mockVaultOracleAndExecutor.setResult(0, 0, sharesOut, 0);
+    mockVaultOracleAndExecutor.setGetEquityAndDebtResult(0, 0, sharesOut, 0);
 
     IAutomatedVaultManager.DepositTokenParams[] memory params;
     vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_TooLittleReceived()"));
@@ -53,7 +53,7 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
     uint256 equityChanged = 1 ether;
     uint256 depositAmount = 1 ether;
     deal(address(mockToken0), address(this), depositAmount);
-    mockVaultOracleAndExecutor.setResult(0, 0, equityChanged, 0);
+    mockVaultOracleAndExecutor.setGetEquityAndDebtResult(0, 0, equityChanged, 0);
 
     uint256 balanceBefore = mockToken0.balanceOf(address(this));
 
@@ -63,8 +63,12 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
     mockToken0.approve(address(vaultManager), depositAmount);
     vaultManager.deposit(vaultToken, params, 0);
 
+    // Assertions
+    // - user balance deducted by depositAmount
+    // - user receive shares equal to equity change
     assertEq(balanceBefore - mockToken0.balanceOf(address(this)), depositAmount);
     assertEq(IERC20(vaultToken).balanceOf(address(this)), equityChanged);
+
     // Invariant: EXECUTOR_IN_SCOPE == address(0)
     assertEq(vaultManager.EXECUTOR_IN_SCOPE(), address(0));
   }

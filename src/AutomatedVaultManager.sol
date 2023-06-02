@@ -30,7 +30,7 @@ contract AutomatedVaultManager is
   using LibShareUtil for uint256;
 
   error AutomatedVaultManager_VaultNotExist(address _vaultToken);
-  error AutomatedVaultManager_InvalidParams();
+  error AutomatedVaultManager_WithdrawExceedBalance();
   error AutomatedVaultManager_Unauthorized();
   error AutomatedVaultManager_TooMuchEquityLoss();
   error AutomatedVaultManager_TooMuchLeverage();
@@ -121,6 +121,7 @@ contract AutomatedVaultManager is
 
   function deposit(address _vaultToken, DepositTokenParams[] calldata _depositParams, uint256 _minReceive)
     external
+    nonReentrant
     returns (bytes memory _result)
   {
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
@@ -216,13 +217,14 @@ contract AutomatedVaultManager is
   function withdraw(address _vaultToken, uint256 _sharesToWithdraw, WithdrawSlippage[] calldata _minAmountOuts)
     external
     nonReentrant
+    returns (IAutomatedVaultManager.WithdrawResult[] memory _results)
   {
+    VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
+
     // Revert if withdraw shares more than balance
     if (_sharesToWithdraw > IAutomatedVaultERC20(_vaultToken).balanceOf(msg.sender)) {
-      revert AutomatedVaultManager_InvalidParams();
+      revert AutomatedVaultManager_WithdrawExceedBalance();
     }
-
-    VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
 
     /////////////////////////
     // Open executor scope //
@@ -237,36 +239,15 @@ contract AutomatedVaultManager is
 
     // Execute withdraw
     // Executor should send withdrawn funds back here to check slippage
-    IAutomatedVaultManager.WithdrawResult[] memory _results =
-      IExecutor(_cachedVaultInfo.executor).onWithdraw(_cachedVaultInfo.worker, _vaultToken, _sharesToWithdraw);
+    _results = IExecutor(_cachedVaultInfo.executor).onWithdraw(_cachedVaultInfo.worker, _vaultToken, _sharesToWithdraw);
 
     //////////////////////////
     // Close executor scope //
     //////////////////////////
     EXECUTOR_IN_SCOPE = address(0);
 
-    // Check slippage
-    uint256 _len = _minAmountOuts.length;
-    for (uint256 _i; _i < _len;) {
-      if (ERC20(_minAmountOuts[_i].token).balanceOf(address(this)) < _minAmountOuts[_i].minAmountOut) {
-        revert AutomatedVaultManager_ExceedSlippage();
-      }
-      unchecked {
-        ++_i;
-      }
-    }
-
-    // Transfer withdrawn funds to user
-    // Tokens should be transferred from executor to here during `onWithdraw`
-    _len = _results.length;
-    for (uint256 _i; _i < _len;) {
-      ERC20(_results[_i].token).safeTransfer(msg.sender, _results[_i].amount);
-      unchecked {
-        ++_i;
-      }
-    }
-
     // Check equity changed shouldn't exceed shares withdrawn proportion
+    // e.g. equityBefore = 100 USD, withdraw 10% of shares, equity shouldn't loss more than 10 USD
     uint256 _equityChanged;
     {
       (uint256 _totalEquityAfter,) =
@@ -278,8 +259,34 @@ contract AutomatedVaultManager is
       revert AutomatedVaultManager_TooMuchEquityLoss();
     }
 
-    // Burn shares per requested amount
+    // Burn shares per requested amount before transfer out
     IAutomatedVaultERC20(_vaultToken).burn(msg.sender, _sharesToWithdraw);
+
+    // Transfer withdrawn funds to user
+    // Tokens should be transferred from executor to here during `onWithdraw`
+    {
+      uint256 _len = _results.length;
+      uint256 _minAmountOutsLen = _minAmountOuts.length;
+      address _token;
+      uint256 _amount;
+      for (uint256 _i; _i < _len;) {
+        _token = _results[_i].token;
+        _amount = _results[_i].amount;
+        // Check slippage
+        for (uint256 _j; _j < _minAmountOutsLen;) {
+          if (_minAmountOuts[_j].token == _token && _minAmountOuts[_j].minAmountOut > _amount) {
+            revert AutomatedVaultManager_ExceedSlippage();
+          }
+          unchecked {
+            ++_j;
+          }
+        }
+        ERC20(_token).safeTransfer(msg.sender, _amount);
+        unchecked {
+          ++_i;
+        }
+      }
+    }
 
     emit LogWithdraw(_vaultToken, msg.sender, _sharesToWithdraw);
   }
