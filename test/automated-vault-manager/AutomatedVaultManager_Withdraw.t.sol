@@ -29,7 +29,12 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
 
     address vaultToken = _openDefaultVault();
     deal(vaultToken, address(this), totalShares, true);
-    mockVaultOracleAndExecutor.setGetEquityAndDebtResult(100, 0, 50, 0);
+    mockVaultOracleAndExecutor.setGetEquityAndDebtResult({
+      _equityBefore: 100,
+      _debtBefore: 0,
+      _equityAfter: 50,
+      _debtAfter: 0
+    });
 
     // Calculation
     // equity before = 100, after = 50 => equityChanged = 50

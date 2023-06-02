@@ -29,7 +29,12 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
     // tolerate up to 1% equity loss
     vaultToken = _openVault(DEFAULT_MINIMUM_DEPOSIT, tolerance, DEFAULT_MAX_LEVERAGE);
 
-    mockVaultOracleAndExecutor.setGetEquityAndDebtResult(equityBefore, 0, equityAfter, 0);
+    mockVaultOracleAndExecutor.setGetEquityAndDebtResult({
+      _equityBefore: equityBefore,
+      _debtBefore: 0,
+      _equityAfter: equityAfter,
+      _debtAfter: 0
+    });
 
     vm.prank(MANAGER);
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_TooMuchEquityLoss.selector);
@@ -42,7 +47,12 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
 
     // 10x leverage with 100 equity allow up to 900 debt
     // 901 should revert
-    mockVaultOracleAndExecutor.setGetEquityAndDebtResult(100, 0, 100, 901);
+    mockVaultOracleAndExecutor.setGetEquityAndDebtResult({
+      _equityBefore: 100,
+      _debtBefore: 0,
+      _equityAfter: 100,
+      _debtAfter: 901
+    });
 
     vm.prank(MANAGER);
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_TooMuchLeverage.selector);

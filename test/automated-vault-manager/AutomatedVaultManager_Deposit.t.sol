@@ -30,7 +30,12 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
     address vaultToken = _openVault(1 ether, DEFAULT_TOLERANCE_BPS, DEFAULT_MAX_LEVERAGE);
     uint256 equityAfter = 0.1 ether;
 
-    mockVaultOracleAndExecutor.setGetEquityAndDebtResult(0, 0, equityAfter, 0);
+    mockVaultOracleAndExecutor.setGetEquityAndDebtResult({
+      _equityBefore: 0,
+      _debtBefore: 0,
+      _equityAfter: equityAfter,
+      _debtAfter: 0
+    });
 
     IAutomatedVaultManager.DepositTokenParams[] memory params;
     vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_BelowMinimumDeposit()"));
@@ -41,7 +46,12 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
     address vaultToken = _openDefaultVault();
     uint256 sharesOut = 1 ether;
 
-    mockVaultOracleAndExecutor.setGetEquityAndDebtResult(0, 0, sharesOut, 0);
+    mockVaultOracleAndExecutor.setGetEquityAndDebtResult({
+      _equityBefore: 0,
+      _debtBefore: 0,
+      _equityAfter: sharesOut,
+      _debtAfter: 0
+    });
 
     IAutomatedVaultManager.DepositTokenParams[] memory params;
     vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_TooLittleReceived()"));
@@ -53,7 +63,12 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
     uint256 equityChanged = 1 ether;
     uint256 depositAmount = 1 ether;
     deal(address(mockToken0), address(this), depositAmount);
-    mockVaultOracleAndExecutor.setGetEquityAndDebtResult(0, 0, equityChanged, 0);
+    mockVaultOracleAndExecutor.setGetEquityAndDebtResult({
+      _equityBefore: 0,
+      _debtBefore: 0,
+      _equityAfter: equityChanged,
+      _debtAfter: 0
+    });
 
     uint256 balanceBefore = mockToken0.balanceOf(address(this));
 
