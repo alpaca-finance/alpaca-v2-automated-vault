@@ -19,6 +19,7 @@ import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.so
 
 // libraries
 import { LibShareUtil } from "src/libraries/LibShareUtil.sol";
+import { MAX_BPS } from "src/libraries/Constants.sol";
 
 contract AutomatedVaultManager is
   Initializable,
@@ -128,6 +129,9 @@ contract AutomatedVaultManager is
 
     _pullTokens(_vaultToken, _cachedVaultInfo.executor, _depositParams);
 
+    ///////////////////////////
+    // Executor scope opened //
+    ///////////////////////////
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
     IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, _cachedVaultInfo.worker);
@@ -137,6 +141,9 @@ contract AutomatedVaultManager is
 
     _result = IExecutor(_cachedVaultInfo.executor).onDeposit(_cachedVaultInfo.worker, _vaultToken);
     EXECUTOR_IN_SCOPE = address(0);
+    ///////////////////////////
+    // Executor scope closed //
+    ///////////////////////////
 
     uint256 _equityChanged;
     {
@@ -170,8 +177,12 @@ contract AutomatedVaultManager is
     }
 
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
-    // 1. Update the vault
+
+    ///////////////////////////
+    // Executor scope opened //
+    ///////////////////////////
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
+    // 1. Update the vault
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
     IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, _cachedVaultInfo.worker);
 
@@ -179,17 +190,22 @@ contract AutomatedVaultManager is
     (uint256 _totalEquityBefore,) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
 
+    // Set executor execution scope (worker, vault token) so that we don't have to pass them through multicall
     IExecutor(_cachedVaultInfo.executor).setExecutionScope(_cachedVaultInfo.worker, _vaultToken);
     _result = IExecutor(_cachedVaultInfo.executor).multicall(_executorParams);
     IExecutor(_cachedVaultInfo.executor).setExecutionScope(address(0), address(0));
+
     EXECUTOR_IN_SCOPE = address(0);
+    ///////////////////////////
+    // Executor scope closed //
+    ///////////////////////////
 
     // 3. Check equity loss < threshold
     (uint256 _totalEquityAfter, uint256 _debtAfter) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
 
     // _totalEquityAfter  < _totalEquityBefore * _cachedVaultInfo.toleranceBps / MAX_BPS;
-    if (_totalEquityAfter * 10000 < _totalEquityBefore * _cachedVaultInfo.toleranceBps) {
+    if (_totalEquityAfter * MAX_BPS < _totalEquityBefore * _cachedVaultInfo.toleranceBps) {
       revert AutomatedVaultManager_TooMuchEquityLoss();
     }
 
@@ -198,7 +214,7 @@ contract AutomatedVaultManager is
     // debt + equity = max leverage * equity
     // debt = (max leverage * equity) - equity
     // debt = (leverage - 1) * equity
-    if ((_debtAfter) > (_cachedVaultInfo.maxLeverage - 1) * _totalEquityAfter) {
+    if (_debtAfter > (_cachedVaultInfo.maxLeverage - 1) * _totalEquityAfter) {
       revert AutomatedVaultManager_TooMuchLeverage();
     }
   }
@@ -226,9 +242,9 @@ contract AutomatedVaultManager is
       revert AutomatedVaultManager_WithdrawExceedBalance();
     }
 
-    /////////////////////////
-    // Open executor scope //
-    /////////////////////////
+    ///////////////////////////
+    // Executor scope opened //
+    ///////////////////////////
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
 
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
@@ -241,10 +257,10 @@ contract AutomatedVaultManager is
     // Executor should send withdrawn funds back here to check slippage
     _results = IExecutor(_cachedVaultInfo.executor).onWithdraw(_cachedVaultInfo.worker, _vaultToken, _sharesToWithdraw);
 
-    //////////////////////////
-    // Close executor scope //
-    //////////////////////////
     EXECUTOR_IN_SCOPE = address(0);
+    ///////////////////////////
+    // Executor scope closed //
+    ///////////////////////////
 
     // Check equity changed shouldn't exceed shares withdrawn proportion
     // e.g. equityBefore = 100 USD, withdraw 10% of shares, equity shouldn't loss more than 10 USD

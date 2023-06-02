@@ -33,7 +33,8 @@ contract MockVaultOracleAndExecutor {
   }
 
   function multicall(bytes[] calldata) external returns (bytes[] memory) {
-    // placeholder
+    isAfter = true;
+    return new bytes[](0);
   }
 
   function setExecutionScope(address, address) external {
