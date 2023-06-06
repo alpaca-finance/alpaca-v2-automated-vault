@@ -156,11 +156,16 @@ contract PCSV3Executor01BorrowTest is PCSV3Executor01ActionTest {
       abi.encodeWithSignature("borrowOnBehalfOf(address,address,uint256)", mockVaultToken, address(mockToken0), 1e18),
       abi.encode()
     );
+    deal(address(mockToken0), address(executor), 1 ether);
+
+    uint256 balanceBefore = mockToken0.balanceOf(mockWorker);
 
     vm.expectCall(mockBank, abi.encodeWithSignature("borrowOnBehalfOf(address,address,uint256)"), 1);
     vm.startPrank(mockVaultManager);
     executor.setExecutionScope(mockWorker, mockVaultToken);
-    executor.borrow(address(mockToken0), 1e18);
+    executor.borrow(address(mockToken0), 1 ether);
+
+    assertEq(mockToken0.balanceOf(mockWorker) - balanceBefore, 1 ether);
   }
 
   function testRevert_Borrow_CallerIsNotVaultManager() public {

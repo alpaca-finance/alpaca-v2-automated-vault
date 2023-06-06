@@ -191,6 +191,7 @@ contract PCSV3Executor01 is Executor {
   /// @notice Borrow token from Bank
   function borrow(address _token, uint256 _amount) external onlyVaultManager {
     bank.borrowOnBehalfOf(_getCurrentVaultToken(), _token, _amount);
+    ERC20(_token).safeTransfer(_getCurrentWorker(), _amount);
   }
 
   /// @notice Repay token back to Bank
