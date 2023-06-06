@@ -136,25 +136,16 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     ERC20 _token0 = token0;
     ERC20 _token1 = token1;
 
-    // Pull tokens
-    if (_amountIn0 != 0) {
-      _token0.safeTransferFrom(msg.sender, address(this), _amountIn0);
-    }
-    if (_amountIn1 != 0) {
-      _token1.safeTransferFrom(msg.sender, address(this), _amountIn1);
-    }
-
     // Prepare optimal tokens for adding liquidity
     (uint256 _amount0Desired, uint256 _amount1Desired) = _prepareOptimalTokensForIncrease(
       address(_token0), address(_token1), _tickLower, _tickUpper, _amountIn0, _amountIn1
     );
 
-    // Mint new position and stake it with masterchef
     // SLOAD
     ICommonV3PositionManager _nftPositionManager = nftPositionManager;
-
-    ERC20(_token0).safeApprove(address(_nftPositionManager), _amount0Desired);
-    ERC20(_token1).safeApprove(address(_nftPositionManager), _amount1Desired);
+    // Mint new position and stake it with masterchef
+    _token0.safeApprove(address(_nftPositionManager), _amount0Desired);
+    _token1.safeApprove(address(_nftPositionManager), _amount1Desired);
     (uint256 _nftTokenId,, uint256 _amount0, uint256 _amount1) = _nftPositionManager.mint(
       ICommonV3PositionManager.MintParams({
         token0: address(_token0),

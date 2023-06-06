@@ -27,6 +27,8 @@ contract PancakeV3WorkerDecreasePositionTest is PancakeV3WorkerFixture {
   // TODO: out of range
   function testCorrectness_ClosePosition_InRange() public {
     // Open position
+    deal(address(token0), address(worker), 1 ether);
+    deal(address(token1), address(worker), 1 ether);
     vm.prank(IN_SCOPE_EXECUTOR);
     worker.openPosition(TICK_LOWER, TICK_UPPER, 1 ether, 1 ether);
 
@@ -76,6 +78,8 @@ contract PancakeV3WorkerDecreasePositionTest is PancakeV3WorkerFixture {
   // TODO: out of range
   function testCorrectness_DecreasePosition_InRange() public {
     // Open position
+    deal(address(token0), address(worker), 1 ether);
+    deal(address(token1), address(worker), 1 ether);
     vm.prank(IN_SCOPE_EXECUTOR);
     worker.openPosition(TICK_LOWER, TICK_UPPER, 1 ether, 1 ether);
 
