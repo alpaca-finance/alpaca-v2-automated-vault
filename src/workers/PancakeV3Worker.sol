@@ -121,6 +121,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     performanceFeeBucket = _params.performanceFeeBucket;
   }
 
+  /// @dev Can't open position for pool that doesn't have CAKE reward (masterChef pid == 0).
   function openPosition(int24 _tickLower, int24 _tickUpper, uint256 _amountIn0, uint256 _amountIn1)
     external
     nonReentrant
@@ -170,6 +171,8 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
       })
     );
     // Stake to PancakeMasterChefV3
+    // NOTE: masterChef won't accept transfer from nft that associate with pool that doesn't have masterChef pid
+    // aka no CAKE reward
     _nftPositionManager.safeTransferFrom(address(this), address(masterChef), _nftTokenId);
     // Update token id
     nftTokenId = _nftTokenId;

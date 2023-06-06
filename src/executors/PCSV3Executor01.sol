@@ -171,6 +171,7 @@ contract PCSV3Executor01 is Executor {
 
   /// @notice Open new position for worker (zap add liquidity and deposit nft to masterchef).
   /// Worker will revert if position already exist.
+  /// Can't open position for pool that doesn't have CAKE reward in masterChef.
   function openPosition(int24 _tickLower, int24 _tickUpper, uint256 _amountIn0, uint256 _amountIn1)
     external
     onlyVaultManager
