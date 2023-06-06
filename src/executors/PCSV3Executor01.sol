@@ -196,6 +196,7 @@ contract PCSV3Executor01 is Executor {
 
   /// @notice Repay token back to Bank
   function repay(address _token, uint256 _amount) external onlyVaultManager {
+    ERC20(_token).safeApprove(address(bank), _amount);
     bank.repayOnBehalfOf(_getCurrentVaultToken(), _token, _amount);
   }
 
