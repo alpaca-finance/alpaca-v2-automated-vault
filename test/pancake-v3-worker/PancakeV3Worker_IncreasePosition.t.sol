@@ -84,19 +84,13 @@ contract PancakeV3WorkerIncreasePositionTest is PancakeV3WorkerFixture {
     uint256 amountIn0 = 1 ether;
     uint256 amountIn1 = 1 ether;
 
-    uint256 token0Before = token0.balanceOf(IN_SCOPE_EXECUTOR);
-    uint256 token1Before = token1.balanceOf(IN_SCOPE_EXECUTOR);
     IPancakeV3MasterChef.UserPositionInfo memory userInfoBefore =
       pancakeV3MasterChef.userPositionInfos(worker.nftTokenId());
 
+    deal(address(token0), address(worker), amountIn0);
+    deal(address(token1), address(worker), amountIn1);
     vm.prank(IN_SCOPE_EXECUTOR);
     worker.increasePosition(amountIn0, amountIn1);
-
-    // Executor assertions
-    // - token0 should be deducted by specified amount
-    // - token1 should be deducted by specified amount
-    assertEq(token0Before - token0.balanceOf(IN_SCOPE_EXECUTOR), amountIn0);
-    assertEq(token1Before - token1.balanceOf(IN_SCOPE_EXECUTOR), amountIn1);
 
     // External assertions
     // - staked position liquidity should be increased

@@ -160,16 +160,13 @@ contract PCSV3Executor01 is Executor {
     return abi.encode();
   }
 
-  /// @notice Increase existing position liquidity. Can provide arbitrary amount and worker will zap it in.
+  /// @notice Increase existing position liquidity using worker's undeployed funds.
   /// Worker will revert if it doesn't have position.
   function increasePosition(uint256 _amountIn0, uint256 _amountIn1) external onlyVaultManager {
-    PancakeV3Worker _worker = PancakeV3Worker(_getCurrentWorker());
-    _worker.token0().safeApprove(address(_worker), _amountIn0);
-    _worker.token1().safeApprove(address(_worker), _amountIn1);
-    _worker.increasePosition(_amountIn0, _amountIn1);
+    PancakeV3Worker(_getCurrentWorker()).increasePosition(_amountIn0, _amountIn1);
   }
 
-  /// @notice Open new position (zap add liquidity and deposit nft to masterchef) for worker
+  /// @notice Open new position (zap, add liquidity and deposit nft to masterchef) for worker
   /// using worker's undeployed funds. Worker will revert if position already exist.
   /// Can't open position for pool that doesn't have CAKE reward in masterChef.
   function openPosition(int24 _tickLower, int24 _tickUpper, uint256 _amountIn0, uint256 _amountIn1)
