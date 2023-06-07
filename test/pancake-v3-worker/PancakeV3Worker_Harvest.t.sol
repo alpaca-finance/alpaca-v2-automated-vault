@@ -41,6 +41,8 @@ contract PancakeV3WorkerHarvestTest is PancakeV3WorkerFixture {
 
   function testCorrectness_WorkerHasUnClaimTrandingFeeAndReward_WhenHarvest_ShouldWork() external {
     // Increase position by 10_000 TKN0 and 1 TKN1
+    deal(address(token0), address(worker), 10_000 ether);
+    deal(address(token1), address(worker), 1 ether);
     vm.prank(IN_SCOPE_EXECUTOR);
     worker.openPosition(TICK_LOWER, TICK_UPPER, 10_000 ether, 1 ether);
 

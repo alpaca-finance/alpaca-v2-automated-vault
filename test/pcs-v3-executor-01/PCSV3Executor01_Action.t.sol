@@ -29,7 +29,7 @@ contract PCSV3Executor01ActionTest is Test {
 }
 
 contract PCSV3Executor01IncreasePositionTest is PCSV3Executor01ActionTest {
-  function testCorrectness_IncreasePosition_SelfCall() public {
+  function testCorrectness_IncreasePosition_VaultManagerIsCaller() public {
     vm.mockCall(mockWorker, abi.encodeWithSignature("token0()"), abi.encode(address(mockToken0)));
     vm.mockCall(mockWorker, abi.encodeWithSignature("token1()"), abi.encode(address(mockToken1)));
     vm.mockCall(mockWorker, abi.encodeWithSignature("increasePosition(uint256,uint256)"), abi.encode());
@@ -38,19 +38,19 @@ contract PCSV3Executor01IncreasePositionTest is PCSV3Executor01ActionTest {
 
     vm.expectCall(mockWorker, abi.encodeWithSignature("increasePosition(uint256,uint256)"), 1);
 
-    vm.prank(address(executor));
+    vm.prank(mockVaultManager);
     executor.increasePosition(1 ether, 1e6);
   }
 
-  function testRevert_IncreasePosition_NotSelfCall() public {
+  function testRevert_IncreasePosition_CallerIsNotVaultManager() public {
     vm.prank(address(1234));
-    vm.expectRevert(PCSV3Executor01.PCSV3Executor01_NotSelf.selector);
+    vm.expectRevert(Executor.Executor_NotVaultManager.selector);
     executor.increasePosition(1 ether, 1e6);
   }
 }
 
 contract PCSV3Executor01OpenPositionTest is PCSV3Executor01ActionTest {
-  function testCorrectness_OpenPosition_SelfCall_PositionNotExist() public {
+  function testCorrectness_OpenPosition_VaultManagerIsCaller_PositionNotExist() public {
     vm.mockCall(mockWorker, abi.encodeWithSignature("token0()"), abi.encode(address(mockToken0)));
     vm.mockCall(mockWorker, abi.encodeWithSignature("token1()"), abi.encode(address(mockToken1)));
     vm.mockCall(mockWorker, abi.encodeWithSignature("openPosition(int24,int24,uint256,uint256)"), abi.encode());
@@ -59,13 +59,13 @@ contract PCSV3Executor01OpenPositionTest is PCSV3Executor01ActionTest {
 
     vm.expectCall(mockWorker, abi.encodeWithSignature("openPosition(int24,int24,uint256,uint256)"), 1);
 
-    vm.prank(address(executor));
+    vm.prank(mockVaultManager);
     executor.openPosition(1, 1, 1 ether, 1e6);
   }
 
-  function testRevert_OpenPosition_NotSelfCall() public {
+  function testRevert_OpenPosition_CallerIsNotVaultManager() public {
     vm.prank(address(1234));
-    vm.expectRevert(PCSV3Executor01.PCSV3Executor01_NotSelf.selector);
+    vm.expectRevert(Executor.Executor_NotVaultManager.selector);
     executor.openPosition(1, 2, 1 ether, 1e6);
   }
 }
@@ -78,7 +78,7 @@ contract PCSV3Executor01DecreasePositionTest is PCSV3Executor01ActionTest {
 
     vm.expectCall(mockWorker, abi.encodeWithSignature("decreasePosition(uint128)"), 1);
 
-    vm.prank(address(executor));
+    vm.prank(mockVaultManager);
     executor.decreasePosition(1 ether);
   }
 
@@ -88,8 +88,14 @@ contract PCSV3Executor01DecreasePositionTest is PCSV3Executor01ActionTest {
 
     vm.expectCall(mockWorker, abi.encodeWithSignature("decreasePosition(uint128)"), 0);
 
-    vm.prank(address(executor));
+    vm.prank(mockVaultManager);
     vm.expectRevert(Executor.Executor_NoCurrentWorker.selector);
+    executor.decreasePosition(1 ether);
+  }
+
+  function testRevert_DecreasePosition_CallerIsNotVaultManager() public {
+    vm.prank(address(1234));
+    vm.expectRevert(Executor.Executor_NotVaultManager.selector);
     executor.decreasePosition(1 ether);
   }
 }
@@ -102,7 +108,7 @@ contract PCSV3Executor01ClosePositionTest is PCSV3Executor01ActionTest {
 
     vm.expectCall(mockWorker, abi.encodeWithSignature("closePosition()"), 1);
 
-    vm.prank(address(executor));
+    vm.prank(mockVaultManager);
     executor.closePosition();
   }
 
@@ -112,55 +118,65 @@ contract PCSV3Executor01ClosePositionTest is PCSV3Executor01ActionTest {
 
     vm.expectCall(mockWorker, abi.encodeWithSignature("closePosition()"), 0);
 
-    vm.prank(address(executor));
+    vm.prank(mockVaultManager);
     vm.expectRevert(Executor.Executor_NoCurrentWorker.selector);
+    executor.closePosition();
+  }
+
+  function testRevert_ClosePosition_CallerIsNotVaultManager() public {
+    vm.prank(address(1234));
+    vm.expectRevert(Executor.Executor_NotVaultManager.selector);
     executor.closePosition();
   }
 }
 
 contract PCSV3Executor01TransferTest is PCSV3Executor01ActionTest {
-  function testCorrectness_Transfer_SelfCall() public {
+  function testCorrectness_Transfer_CallerIsVaultManager() public {
     vm.mockCall(mockWorker, abi.encodeWithSignature("transfer(address,address,uint256)"), abi.encode());
     vm.prank(mockVaultManager);
     executor.setExecutionScope(mockWorker, mockVaultToken);
 
     vm.expectCall(mockWorker, abi.encodeWithSignature("transfer(address,address,uint256)"), 1);
 
-    vm.prank(address(executor));
+    vm.prank(mockVaultManager);
     executor.transferFromWorker(address(mockToken0), address(1234), 1 ether);
   }
 
-  function testRevert_OpenPosition_NotSelfCall() public {
+  function testRevert_OpenPosition_CallerIsNotVaultManager() public {
     vm.prank(address(1234));
-    vm.expectRevert(PCSV3Executor01.PCSV3Executor01_NotSelf.selector);
+    vm.expectRevert(Executor.Executor_NotVaultManager.selector);
     executor.transferFromWorker(address(mockToken0), address(1234), 1 ether);
   }
 }
 
 contract PCSV3Executor01BorrowTest is PCSV3Executor01ActionTest {
-  function testCorrectness_Borrow_SelfCall() public {
+  function testCorrectness_Borrow_CallerIsVaultManager() public {
     vm.mockCall(
       mockBank,
       abi.encodeWithSignature("borrowOnBehalfOf(address,address,uint256)", mockVaultToken, address(mockToken0), 1e18),
       abi.encode()
     );
+    deal(address(mockToken0), address(executor), 1 ether);
+
+    uint256 balanceBefore = mockToken0.balanceOf(mockWorker);
 
     vm.expectCall(mockBank, abi.encodeWithSignature("borrowOnBehalfOf(address,address,uint256)"), 1);
-    vm.prank(mockVaultManager);
+    vm.startPrank(mockVaultManager);
     executor.setExecutionScope(mockWorker, mockVaultToken);
-    vm.prank(address(executor));
-    executor.borrow(address(mockToken0), 1e18);
+    executor.borrow(address(mockToken0), 1 ether);
+
+    assertEq(mockToken0.balanceOf(mockWorker) - balanceBefore, 1 ether);
   }
 
-  function testRevert_Borrow_NotSelfCall() public {
+  function testRevert_Borrow_CallerIsNotVaultManager() public {
     vm.prank(address(1234));
-    vm.expectRevert(PCSV3Executor01.PCSV3Executor01_NotSelf.selector);
+    vm.expectRevert(Executor.Executor_NotVaultManager.selector);
     executor.borrow(address(mockToken0), 1e18);
   }
 }
 
 contract PCSV3Executor01RepayTest is PCSV3Executor01ActionTest {
-  function testCorrectness_Repay_SelfCall() public {
+  function testCorrectness_Repay_VaultManagerIsCaller() public {
     vm.mockCall(
       mockBank,
       abi.encodeWithSignature("repayOnBehalfOf(address,address,uint256)", mockVaultToken, address(mockToken0), 1e18),
@@ -168,15 +184,14 @@ contract PCSV3Executor01RepayTest is PCSV3Executor01ActionTest {
     );
 
     vm.expectCall(mockBank, abi.encodeWithSignature("repayOnBehalfOf(address,address,uint256)"), 1);
-    vm.prank(mockVaultManager);
+    vm.startPrank(mockVaultManager);
     executor.setExecutionScope(mockWorker, mockVaultToken);
-    vm.prank(address(executor));
     executor.repay(address(mockToken0), 1e18);
   }
 
-  function testRevert_Repay_NotSelfCall() public {
+  function testRevert_Repay_CallerIsNotVaultManager() public {
     vm.prank(address(1234));
-    vm.expectRevert(PCSV3Executor01.PCSV3Executor01_NotSelf.selector);
+    vm.expectRevert(Executor.Executor_NotVaultManager.selector);
     executor.repay(address(mockToken0), 1e18);
   }
 }
@@ -203,11 +218,17 @@ contract PCSV3Executor01PancakeV3SwapForkTest is PCSV3Executor01ActionTest, BscF
     uint256 usdtBefore = usdt.balanceOf(address(executor));
     uint256 wbnbBefore = wbnb.balanceOf(address(executor));
 
-    vm.prank(address(executor));
+    vm.prank(mockVaultManager);
     executor.pancakeV3SwapExactInputSingle(true, 1 ether);
 
     assertEq(usdtBefore - usdt.balanceOf(address(executor)), 1 ether);
     assertEq(wbnb.balanceOf(address(executor)) - wbnbBefore, 3068419005692078);
+  }
+
+  function testRevert_Swap_NotVaultManagerCall() public {
+    vm.prank(address(1234));
+    vm.expectRevert(Executor.Executor_NotVaultManager.selector);
+    executor.pancakeV3SwapExactInputSingle(true, 1 ether);
   }
 
   function testRevert_Executor_PancakeV3SwapCallback_CallerIsNotPool() public {

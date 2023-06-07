@@ -18,21 +18,16 @@ import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
 // libraries
 import { LibTickMath } from "src/libraries/LibTickMath.sol";
 
+import "@forge-std/console.sol";
+
 contract PCSV3Executor01 is Executor {
   using SafeTransferLib for ERC20;
 
-  error PCSV3Executor01_NotSelf();
   error PCSV3Executor01_PositionAlreadyExist();
   error PCSV3Executor01_PositionNotExist();
   error PCSV3Executor01_NotPool();
 
   IBank public immutable bank;
-
-  // TODO: change to onlyVaultManager since delegatecall doesn't change msg.sender
-  modifier onlySelf() {
-    if (msg.sender != address(this)) revert PCSV3Executor01_NotSelf();
-    _;
-  }
 
   constructor(address _vaultManager, address _bank) Executor(_vaultManager) {
     bank = IBank(_bank);
@@ -165,47 +160,46 @@ contract PCSV3Executor01 is Executor {
     return abi.encode();
   }
 
-  /// @notice Increase existing position liquidity. Can provide arbitrary amount and worker will zap it in.
+  /// @notice Increase existing position liquidity using worker's undeployed funds.
   /// Worker will revert if it doesn't have position.
-  function increasePosition(uint256 _amountIn0, uint256 _amountIn1) external onlySelf {
-    PancakeV3Worker _worker = PancakeV3Worker(_getCurrentWorker());
-    _worker.token0().safeApprove(address(_worker), _amountIn0);
-    _worker.token1().safeApprove(address(_worker), _amountIn1);
-    _worker.increasePosition(_amountIn0, _amountIn1);
+  function increasePosition(uint256 _amountIn0, uint256 _amountIn1) external onlyVaultManager {
+    PancakeV3Worker(_getCurrentWorker()).increasePosition(_amountIn0, _amountIn1);
   }
 
-  /// @notice Open new position for worker (zap add liquidity and deposit nft to masterchef).
-  /// Worker will revert if position already exist.
-  function openPosition(int24 _tickLower, int24 _tickUpper, uint256 _amountIn0, uint256 _amountIn1) external onlySelf {
-    PancakeV3Worker _worker = PancakeV3Worker(_getCurrentWorker());
-    _worker.token0().safeApprove(address(_worker), _amountIn0);
-    _worker.token1().safeApprove(address(_worker), _amountIn1);
-    _worker.openPosition(_tickLower, _tickUpper, _amountIn0, _amountIn1);
+  /// @notice Open new position (zap, add liquidity and deposit nft to masterchef) for worker
+  /// using worker's undeployed funds. Worker will revert if position already exist.
+  /// Can't open position for pool that doesn't have CAKE reward in masterChef.
+  function openPosition(int24 _tickLower, int24 _tickUpper, uint256 _amountIn0, uint256 _amountIn1)
+    external
+    onlyVaultManager
+  {
+    PancakeV3Worker(_getCurrentWorker()).openPosition(_tickLower, _tickUpper, _amountIn0, _amountIn1);
   }
 
-  function decreasePosition(uint128 _liquidity) external onlySelf {
+  function decreasePosition(uint128 _liquidity) external onlyVaultManager {
     PancakeV3Worker(_getCurrentWorker()).decreasePosition(_liquidity);
   }
 
-  function closePosition() external onlySelf {
+  function closePosition() external onlyVaultManager {
     PancakeV3Worker(_getCurrentWorker()).closePosition();
   }
 
-  function transferFromWorker(address _token, address _to, uint256 _amount) external onlySelf {
+  function transferFromWorker(address _token, address _to, uint256 _amount) external onlyVaultManager {
     PancakeV3Worker(_getCurrentWorker()).transfer(_token, _to, _amount);
   }
 
   /// @notice Borrow token from Bank
-  function borrow(address _token, uint256 _amount) external onlySelf {
+  function borrow(address _token, uint256 _amount) external onlyVaultManager {
     bank.borrowOnBehalfOf(_getCurrentVaultToken(), _token, _amount);
+    ERC20(_token).safeTransfer(_getCurrentWorker(), _amount);
   }
 
   /// @notice Repay token back to Bank
-  function repay(address _token, uint256 _amount) external onlySelf {
+  function repay(address _token, uint256 _amount) external onlyVaultManager {
     bank.repayOnBehalfOf(_getCurrentVaultToken(), _token, _amount);
   }
 
-  function pancakeV3SwapExactInputSingle(bool _zeroForOne, uint256 _amountIn) external onlySelf {
+  function pancakeV3SwapExactInputSingle(bool _zeroForOne, uint256 _amountIn) external onlyVaultManager {
     ICommonV3Pool _pool = PancakeV3Worker(_getCurrentWorker()).pool();
     _pool.swap(
       address(this),
