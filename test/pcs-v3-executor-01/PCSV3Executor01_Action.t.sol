@@ -131,7 +131,7 @@ contract PCSV3Executor01ClosePositionTest is PCSV3Executor01ActionTest {
 }
 
 contract PCSV3Executor01TransferTest is PCSV3Executor01ActionTest {
-  function testCorrectness_Transfer_CallerIsVaultManager() public {
+  function testCorrectness_TransferFromWorker_CallerIsVaultManager() public {
     vm.mockCall(mockWorker, abi.encodeWithSignature("transfer(address,address,uint256)"), abi.encode());
     vm.prank(mockVaultManager);
     executor.setExecutionScope(mockWorker, mockVaultToken);
@@ -142,10 +142,29 @@ contract PCSV3Executor01TransferTest is PCSV3Executor01ActionTest {
     executor.transferFromWorker(address(mockToken0), address(1234), 1 ether);
   }
 
-  function testRevert_OpenPosition_CallerIsNotVaultManager() public {
+  function testCorrectness_TransferToWorker_CallerIsVaultManager() public {
+    vm.prank(mockVaultManager);
+    executor.setExecutionScope(mockWorker, mockVaultToken);
+
+    deal(address(mockToken0), address(executor), 1 ether);
+    uint256 balanceBefore = mockToken0.balanceOf(mockWorker);
+
+    vm.prank(mockVaultManager);
+    executor.transferToWorker(address(mockToken0), 1 ether);
+
+    assertEq(mockToken0.balanceOf(mockWorker) - balanceBefore, 1 ether);
+  }
+
+  function testRevert_TransferFromWorker_CallerIsNotVaultManager() public {
     vm.prank(address(1234));
     vm.expectRevert(Executor.Executor_NotVaultManager.selector);
     executor.transferFromWorker(address(mockToken0), address(1234), 1 ether);
+  }
+
+  function testRevert_TransferToWorker_CallerIsNotVaultManager() public {
+    vm.prank(address(1234));
+    vm.expectRevert(Executor.Executor_NotVaultManager.selector);
+    executor.transferToWorker(address(mockToken0), 1 ether);
   }
 }
 
@@ -156,16 +175,11 @@ contract PCSV3Executor01BorrowTest is PCSV3Executor01ActionTest {
       abi.encodeWithSignature("borrowOnBehalfOf(address,address,uint256)", mockVaultToken, address(mockToken0), 1e18),
       abi.encode()
     );
-    deal(address(mockToken0), address(executor), 1 ether);
-
-    uint256 balanceBefore = mockToken0.balanceOf(mockWorker);
 
     vm.expectCall(mockBank, abi.encodeWithSignature("borrowOnBehalfOf(address,address,uint256)"), 1);
     vm.startPrank(mockVaultManager);
     executor.setExecutionScope(mockWorker, mockVaultToken);
     executor.borrow(address(mockToken0), 1 ether);
-
-    assertEq(mockToken0.balanceOf(mockWorker) - balanceBefore, 1 ether);
   }
 
   function testRevert_Borrow_CallerIsNotVaultManager() public {

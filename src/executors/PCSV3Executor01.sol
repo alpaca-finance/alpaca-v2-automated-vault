@@ -188,10 +188,14 @@ contract PCSV3Executor01 is Executor {
     PancakeV3Worker(_getCurrentWorker()).transfer(_token, _to, _amount);
   }
 
-  /// @notice Borrow token from Bank
+  function transferToWorker(address _token, uint256 _amount) external onlyVaultManager {
+    ERC20(_token).safeTransfer(_getCurrentWorker(), _amount);
+  }
+
+  /// @notice Borrow token from Bank. Borrowed funds will be sent here to support borrow, swap, repay use case.
+  /// Have to transfer to worker manually.
   function borrow(address _token, uint256 _amount) external onlyVaultManager {
     bank.borrowOnBehalfOf(_getCurrentVaultToken(), _token, _amount);
-    ERC20(_token).safeTransfer(_getCurrentWorker(), _amount);
   }
 
   /// @notice Repay token back to Bank
