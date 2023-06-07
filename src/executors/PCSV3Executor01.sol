@@ -127,6 +127,7 @@ contract PCSV3Executor01 is Executor {
     uint256 _repayAmount;
     (, uint256 _debtAmount) = bank.getVaultDebt(_vaultToken, address(_repayToken));
     _repayAmount = _debtAmount * _sharesToWithdraw / _totalShares;
+    if (_repayAmount == 0) return;
 
     // Swap if not enough to repay
     if (_repayAmount > _repayTokenBalance) {
@@ -143,10 +144,8 @@ contract PCSV3Executor01 is Executor {
       );
     }
 
-    if (_repayAmount != 0) {
-      _repayToken.approve(address(bank), _repayAmount);
-      bank.repayOnBehalfOf(_vaultToken, address(_repayToken), _repayAmount);
-    }
+    _repayToken.approve(address(bank), _repayAmount);
+    bank.repayOnBehalfOf(_vaultToken, address(_repayToken), _repayAmount);
   }
 
   function onUpdate(address _vaultToken, PancakeV3Worker _worker)
@@ -194,6 +193,7 @@ contract PCSV3Executor01 is Executor {
 
   /// @notice Borrow token from Bank. Borrowed funds will be sent here to support borrow, swap, repay use case.
   /// Have to transfer to worker manually.
+  // TODO: how to handle fat fingering borrow more than equity?
   function borrow(address _token, uint256 _amount) external onlyVaultManager {
     bank.borrowOnBehalfOf(_getCurrentVaultToken(), _token, _amount);
   }
