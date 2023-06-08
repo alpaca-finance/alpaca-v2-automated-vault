@@ -18,8 +18,6 @@ import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
 // libraries
 import { LibTickMath } from "src/libraries/LibTickMath.sol";
 
-import "@forge-std/console.sol";
-
 contract PCSV3Executor01 is Executor {
   using SafeTransferLib for ERC20;
 
@@ -94,7 +92,7 @@ contract PCSV3Executor01 is Executor {
     }
 
     // Repay with amount withdrawn, swap other token to repay token if not enough
-    // NOTE: can't repay if vault has no equity (position value < debt value)
+    // NOTE: can't repay if vault has no equity (position value + undeployed funds < debt value)
     // due to amount withdrawn is not enough to repay and will revert
     _repay(_worker, _vaultToken, _sharesToWithdraw, _totalShares, _amount0Withdraw, _token0, _token1);
     _repay(_worker, _vaultToken, _sharesToWithdraw, _totalShares, _amount1Withdraw, _token1, _token0);
@@ -193,7 +191,6 @@ contract PCSV3Executor01 is Executor {
 
   /// @notice Borrow token from Bank. Borrowed funds will be sent here to support borrow, swap, repay use case.
   /// Have to transfer to worker manually.
-  // TODO: how to handle fat fingering borrow more than equity?
   function borrow(address _token, uint256 _amount) external onlyVaultManager {
     bank.borrowOnBehalfOf(_getCurrentVaultToken(), _token, _amount);
   }

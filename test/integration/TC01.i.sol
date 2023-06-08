@@ -51,7 +51,7 @@ contract TC01 is PancakeV3WorkerExecutorBankIntegrationFixture {
 
     // Assertions
     // - executor balance is 0 (transfer all deposited funds to worker)
-    // - executor balance is deposit amount (executor balance before)
+    // - worker balance is deposit amount (executor balance before)
     assertEq(usdt.balanceOf(address(executor)), 0);
     assertEq(wbnb.balanceOf(address(executor)), 0);
     assertEq(usdt.balanceOf(address(workerUSDTWBNB)), 1 ether);
@@ -82,17 +82,21 @@ contract TC01 is PancakeV3WorkerExecutorBankIntegrationFixture {
 
     // Assertions
     // - `worker.nftTokenId` is 0 (position is closed)
-    // - not nft staked with masterChef (position is closed)
+    // - no nft staked with masterChef (position is closed)
     // - no debt for both token
     // - worker has undeployed funds from closed position
+    // Check worker position id
     assertEq(workerUSDTWBNB.nftTokenId(), 0);
+    // Check staked nft
     IPancakeV3MasterChef.UserPositionInfo memory userInfo =
       pancakeV3MasterChef.userPositionInfos(workerUSDTWBNB.nftTokenId());
     assertEq(userInfo.user, address(0));
+    // Check vault debt
     (, uint256 usdtDebt) = bank.getVaultDebt(address(mockVaultUSDTWBNBToken), address(usdt));
     assertEq(usdtDebt, 0);
     (, uint256 wbnbDebt) = bank.getVaultDebt(address(mockVaultUSDTWBNBToken), address(wbnb));
     assertEq(wbnbDebt, 0);
+    // Check worker undeployed funds
     assertEq(usdt.balanceOf(address(workerUSDTWBNB)), 148215047846778138997);
     assertEq(wbnb.balanceOf(address(workerUSDTWBNB)), 547828663631556983);
 
@@ -144,10 +148,13 @@ contract TC01 is PancakeV3WorkerExecutorBankIntegrationFixture {
     // - executor balance is 0 (forward all to vault manager)
     // - worker balance is 0 (withdraw 100%)
     // - vault manager balance is all of undeployed funds as a result from manage (withdraw 100%)
+    // Check executor balance
     assertEq(usdt.balanceOf(address(executor)), 0);
     assertEq(wbnb.balanceOf(address(executor)), 0);
+    // Check worker balance
     assertEq(usdt.balanceOf(address(workerUSDTWBNB)), 0);
     assertEq(wbnb.balanceOf(address(workerUSDTWBNB)), 0);
+    // Check vault manager balance
     assertEq(usdt.balanceOf(address(mockVaultManager)), 148215047846778138997);
     assertEq(wbnb.balanceOf(address(mockVaultManager)), 547828663631556983);
   }
