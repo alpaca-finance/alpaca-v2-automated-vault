@@ -6,7 +6,7 @@ import { IERC20 } from "src/interfaces/IERC20.sol";
 contract MoneyMarketForTest {
   address internal immutable owner;
   address internal immutable bank;
-  uint256 internal constant INTEREST_RATE_PER_SEC = 2536783358; // 1e18 = 100% at 8% per year
+  uint256 internal interestRatePerSec;
 
   mapping(address => mapping(address => uint256)) public getNonCollatAccountDebt;
   mapping(address => uint256) public lastAccrualOf;
@@ -30,7 +30,7 @@ contract MoneyMarketForTest {
     uint256 timePassed = block.timestamp - lastAccrualOf[token];
     if (timePassed == 0) return;
     getNonCollatAccountDebt[bank][token] +=
-      getNonCollatAccountDebt[bank][token] * timePassed * INTEREST_RATE_PER_SEC / 1e18;
+      getNonCollatAccountDebt[bank][token] * timePassed * interestRatePerSec / 1e18;
     lastAccrualOf[token] = block.timestamp;
   }
 
@@ -56,5 +56,9 @@ contract MoneyMarketForTest {
         ++i;
       }
     }
+  }
+
+  function setInterestRatePerSec(uint256 newRate) external onlyOwner {
+    interestRatePerSec = newRate;
   }
 }

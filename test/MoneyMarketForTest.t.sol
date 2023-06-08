@@ -11,9 +11,11 @@ contract MoneyMarketForTestTest is Test {
   address mockBank = makeAddr("mockBank");
   MockERC20 mockToken0;
   MockERC20 mockToken1;
+  uint256 constant INTEREST_RATE_PER_SEC = 2536783358; // 8% per year
 
   function setUp() public {
     moneyMarket = new MoneyMarketForTest(mockBank);
+    moneyMarket.setInterestRatePerSec(INTEREST_RATE_PER_SEC);
     mockToken0 = new MockERC20("mock0", "mock0", 18);
     mockToken1 = new MockERC20("mock1", "mock1", 6);
   }
@@ -30,7 +32,7 @@ contract MoneyMarketForTestTest is Test {
     assertEq(moneyMarket.lastAccrualOf(address(mockToken0)), block.timestamp);
 
     skip(100);
-    uint256 interest = 100 * 2536783358;
+    uint256 interest = 100 * INTEREST_RATE_PER_SEC;
     deal(address(mockToken0), mockBank, mockToken0.balanceOf(mockBank) + interest);
 
     mockToken0.approve(address(moneyMarket), 1 ether + interest);
@@ -65,5 +67,8 @@ contract MoneyMarketForTestTest is Test {
 
     vm.expectRevert(bytes("NB"));
     moneyMarket.nonCollatBorrow(address(1234), 1);
+
+    vm.expectRevert(bytes("NO"));
+    moneyMarket.setInterestRatePerSec(1);
   }
 }
