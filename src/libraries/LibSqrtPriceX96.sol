@@ -19,7 +19,7 @@ library LibSqrtPriceX96 {
   /// @return _priceE18 decoded sqrtPriceX96 in 18 decimals.
   /// @dev priceE18 = (sqrtPriceX96 / 2**96)**2 * (10**token0Decimals) * 1e18 / (10**token1Decimals)
   /// return 1e18 as decoded price is to be used in calculations.
-  function decodeSqrtPriceX96(uint160 _sqrtPriceX96, uint8 _token0Decimals, uint8 _token1Decimals)
+  function decodeSqrtPriceX96(uint160 _sqrtPriceX96, uint256 _token0Decimals, uint256 _token1Decimals)
     internal
     pure
     returns (uint256 _priceE18)
@@ -35,7 +35,7 @@ library LibSqrtPriceX96 {
   /// @return _sqrtPriceX96 estimated sqrtPriceX96.
   /// @dev sqrtPriceX96 = sqrt(priceE18 * (10**token1Decimals) / (10**(token0Decimals + 18))) * (2**96)
   /// sqrt calculation use estimation so there is minor precision loss.
-  function encodeSqrtPriceX96(uint256 _priceE18, uint8 _token0Decimals, uint8 _token1Decimals)
+  function encodeSqrtPriceX96(uint256 _priceE18, uint256 _token0Decimals, uint256 _token1Decimals)
     internal
     pure
     returns (uint160 _sqrtPriceX96)
