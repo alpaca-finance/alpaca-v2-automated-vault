@@ -55,7 +55,7 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
         maxLeverage: maxLeverage
       })
     );
-    vaultManager.setVaultManagers(address(vaultToken), MANAGER, true);
+    vaultManager.setVaultManager(address(vaultToken), MANAGER, true);
     vaultManager.setAllowToken(address(vaultToken), address(mockToken0), true);
     vaultManager.setAllowToken(address(vaultToken), address(mockToken1), true);
     vm.stopPrank();

@@ -21,6 +21,8 @@ import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.so
 import { LibShareUtil } from "src/libraries/LibShareUtil.sol";
 import { MAX_BPS } from "src/libraries/Constants.sol";
 
+import "@forge-std/console.sol";
+
 contract AutomatedVaultManager is
   Initializable,
   Ownable2StepUpgradeable,
@@ -204,6 +206,8 @@ contract AutomatedVaultManager is
     (uint256 _totalEquityAfter, uint256 _debtAfter) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
 
+    console.log("_totalEquityBefore :", _totalEquityBefore);
+    console.log("_totalEquityAfter  :", _totalEquityAfter);
     // _totalEquityAfter  < _totalEquityBefore * _cachedVaultInfo.toleranceBps / MAX_BPS;
     if (_totalEquityAfter * MAX_BPS < _totalEquityBefore * _cachedVaultInfo.toleranceBps) {
       revert AutomatedVaultManager_TooMuchEquityLoss();
@@ -219,7 +223,7 @@ contract AutomatedVaultManager is
     }
   }
 
-  function setVaultManagers(address _vaultToken, address _manager, bool _isOk) external onlyOwner {
+  function setVaultManager(address _vaultToken, address _manager, bool _isOk) external onlyOwner {
     isManager[_vaultToken][_manager] = _isOk;
     emit LogSetVaultManager(_vaultToken, _manager, _isOk);
   }
@@ -263,14 +267,18 @@ contract AutomatedVaultManager is
     ///////////////////////////
 
     // Check equity changed shouldn't exceed shares withdrawn proportion
-    // e.g. equityBefore = 100 USD, withdraw 10% of shares, equity shouldn't loss more than 10 USD
+    // e.g. equityBefore = 100 USD, withdraw 10% of shares, equity shouldn't decrease more than 10 USD
     uint256 _equityChanged;
     {
       (uint256 _totalEquityAfter,) =
         IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
       _equityChanged = _totalEquityBefore - _totalEquityAfter;
     }
-    uint256 _maxEquityChange = _sharesToWithdraw * _totalEquityBefore / IAutomatedVaultERC20(_vaultToken).totalSupply();
+    // +1 to account for possible precision loss
+    uint256 _maxEquityChange =
+      _sharesToWithdraw * _totalEquityBefore / IAutomatedVaultERC20(_vaultToken).totalSupply() + 1;
+    console.log("_equityChanged   :", _equityChanged);
+    console.log("_maxEquityChange :", _maxEquityChange);
     if (_equityChanged > _maxEquityChange) {
       revert AutomatedVaultManager_TooMuchEquityLoss();
     }

@@ -18,5 +18,6 @@ contract ProtocolActorFixture is Test {
     vm.label(USER_ALICE, "USER_ALICE");
     vm.label(USER_BOB, "USER_BOB");
     vm.label(USER_EVE, "USER_EVE");
+    vm.label(MANAGER, "MANAGER");
   }
 }
