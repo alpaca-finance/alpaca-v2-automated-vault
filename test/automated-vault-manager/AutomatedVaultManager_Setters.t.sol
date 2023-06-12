@@ -14,6 +14,6 @@ contract AutomatedVaultManagerSettersTest is BaseAutomatedVaultUnitTest {
 
     vm.prank(USER_ALICE);
     vm.expectRevert("Ownable: caller is not the owner");
-    vaultManager.setVaultManagers(_vaultToken, _manager, true);
+    vaultManager.setVaultManager(_vaultToken, _manager, true);
   }
 }

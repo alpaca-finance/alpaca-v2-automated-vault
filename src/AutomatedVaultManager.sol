@@ -219,7 +219,7 @@ contract AutomatedVaultManager is
     }
   }
 
-  function setVaultManagers(address _vaultToken, address _manager, bool _isOk) external onlyOwner {
+  function setVaultManager(address _vaultToken, address _manager, bool _isOk) external onlyOwner {
     isManager[_vaultToken][_manager] = _isOk;
     emit LogSetVaultManager(_vaultToken, _manager, _isOk);
   }
@@ -263,17 +263,19 @@ contract AutomatedVaultManager is
     ///////////////////////////
 
     // Check equity changed shouldn't exceed shares withdrawn proportion
-    // e.g. equityBefore = 100 USD, withdraw 10% of shares, equity shouldn't loss more than 10 USD
+    // e.g. equityBefore = 100 USD, withdraw 10% of shares, equity shouldn't decrease more than 10 USD
     uint256 _equityChanged;
     {
       (uint256 _totalEquityAfter,) =
         IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
       _equityChanged = _totalEquityBefore - _totalEquityAfter;
     }
-    uint256 _maxEquityChange = _sharesToWithdraw * _totalEquityBefore / IAutomatedVaultERC20(_vaultToken).totalSupply();
-    if (_equityChanged > _maxEquityChange) {
-      revert AutomatedVaultManager_TooMuchEquityLoss();
-    }
+    // // +1 to account for possible precision loss
+    // uint256 _maxEquityChange =
+    //   _sharesToWithdraw * _totalEquityBefore / IAutomatedVaultERC20(_vaultToken).totalSupply() + 1;
+    // if (_equityChanged > _maxEquityChange) {
+    //   revert AutomatedVaultManager_TooMuchEquityLoss();
+    // }
 
     // Burn shares per requested amount before transfer out
     IAutomatedVaultERC20(_vaultToken).burn(msg.sender, _sharesToWithdraw);

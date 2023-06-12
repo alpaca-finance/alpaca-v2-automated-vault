@@ -25,27 +25,25 @@ import "test/fixtures/ProtocolActorFixture.f.sol";
 // helpers
 import { DeployHelper } from "test/helpers/DeployHelper.sol";
 
-contract CompleteFixture is Test, BscFixture, ProtocolActorFixture {
-  int24 internal constant TICK_LOWER = -58000;
-  int24 internal constant TICK_UPPER = -57750;
+contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
   uint16 internal constant PERFORMANCE_FEE_BPS = 1_000;
   uint16 internal constant MAX_PRICE_AGE = 60 * 60;
   uint16 internal constant MAX_PRICE_DIFF = 10_500;
-
+  uint256 internal constant MIN_DEPOSIT = 0.1 ether;
+  uint16 internal constant TOLERANCE_BPS = 9900; // tolerate up to 1% equity loss on manage
   uint8 internal constant MAX_LEVERAGE = 10;
-  uint16 internal constant TOLERANCE_BPS = 9900;
 
   AutomatedVaultManager public vaultManager;
   MockMoneyMarket public moneyMarket;
   Bank public bank;
   PancakeV3VaultOracle public pancakeV3VaultOracle;
-  PancakeV3Worker public pancakeV3Worker;
+  PancakeV3Worker public workerUSDTWBNB;
   IExecutor public pancakeV3Executor;
   IERC20 public vaultToken;
 
-  constructor() BscFixture() ProtocolActorFixture() { }
+  constructor() BscFixture() ProtocolActorFixture() {
+    vm.createSelectFork("bsc_mainnet", BscFixture.FORK_BLOCK_NUMBER_1);
 
-  function setUp() public virtual {
     vm.startPrank(DEPLOYER);
 
     vaultManager = AutomatedVaultManager(
@@ -55,9 +53,6 @@ contract CompleteFixture is Test, BscFixture, ProtocolActorFixture {
     );
 
     moneyMarket = new MockMoneyMarket();
-    deal(address(wbnb), address(moneyMarket), 100 ether);
-    deal(address(usdt), address(moneyMarket), 100 ether);
-    deal(address(doge), address(moneyMarket), 100 ether);
 
     bank = Bank(
       DeployHelper.deployUpgradeable(
@@ -79,9 +74,8 @@ contract CompleteFixture is Test, BscFixture, ProtocolActorFixture {
     );
     pancakeV3VaultOracle.setPriceFeedOf(address(wbnb), address(wbnbFeed));
     pancakeV3VaultOracle.setPriceFeedOf(address(usdt), address(usdtFeed));
-    pancakeV3VaultOracle.setPriceFeedOf(address(doge), address(dogeFeed));
 
-    pancakeV3Worker = PancakeV3Worker(
+    workerUSDTWBNB = PancakeV3Worker(
       DeployHelper.deployUpgradeable(
         "PancakeV3Worker",
         abi.encodeWithSelector(
@@ -107,15 +101,17 @@ contract CompleteFixture is Test, BscFixture, ProtocolActorFixture {
         "test vault",
         "TV",
         AutomatedVaultManager.VaultInfo({
-          worker: address(pancakeV3Worker),
+          worker: address(workerUSDTWBNB),
           vaultOracle: address(pancakeV3VaultOracle),
           executor: address(pancakeV3Executor),
-          minimumDeposit: 100 ether,
+          minimumDeposit: MIN_DEPOSIT,
           toleranceBps: TOLERANCE_BPS,
           maxLeverage: MAX_LEVERAGE
         })
       )
     );
+    vaultManager.setAllowToken(address(vaultToken), address(usdt), true);
+    vaultManager.setVaultManager(address(vaultToken), MANAGER, true);
 
     vm.stopPrank();
   }
