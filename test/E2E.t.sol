@@ -399,7 +399,7 @@ contract E2ETest is E2EFixture {
     _withdrawAndAssert(address(this), vaultToken.balanceOf(address(this)));
   }
 
-  function testCorrectness_Manage_ClosePosition_RepayOneSide_BorrowOtherAndIncreaseOutOfRange() public {
+  function testCorrectness_Manage_ClosePosition_RepayOneSide_BorrowOtherAndOpenOutOfRange() public {
     _depositUSDTAndAssert(address(this), 100 ether);
 
     // Borrow wbnb and open position
@@ -425,12 +425,15 @@ contract E2ETest is E2EFixture {
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), executorData);
 
-    // Borrow usdt and open position
+    // Borrow usdt and open position out-of-range (current tick = -57864)
     deal(address(usdt), address(moneyMarket), 100 ether);
     executorData = new bytes[](3);
     executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(usdt), 100 ether));
     executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(usdt), 100 ether));
-    executorData[2] = abi.encodeCall(PCSV3Executor01.openPosition, (-57900, -57800, 200 ether, 0));
+    executorData[2] = abi.encodeCall(
+      PCSV3Executor01.openPosition,
+      (-30000, -20000, usdt.balanceOf(address(workerUSDTWBNB)) + 100 ether, wbnb.balanceOf(address(workerUSDTWBNB)))
+    );
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), executorData);
 
@@ -445,9 +448,14 @@ contract E2ETest is E2EFixture {
     IPancakeV3MasterChef.UserPositionInfo memory userInfo =
       pancakeV3MasterChef.userPositionInfos(workerUSDTWBNB.nftTokenId());
     assertGt(userInfo.liquidity, 0);
-    assertEq(userInfo.tickLower, -57900);
-    assertEq(userInfo.tickUpper, -57800);
+    assertEq(userInfo.tickLower, -30000);
+    assertEq(userInfo.tickUpper, -20000);
 
     _withdrawAndAssert(address(this), vaultToken.balanceOf(address(this)));
+    // Assertions
+    // - usdt balance greater than 0
+    assertGt(usdt.balanceOf(address(this)), 0);
+    // - wbnb balance 0 due to out of range
+    assertEq(wbnb.balanceOf(address(this)), 0);
   }
 }
