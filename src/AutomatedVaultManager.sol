@@ -7,6 +7,7 @@ import { SafeTransferLib } from "@solmate/utils/SafeTransferLib.sol";
 import { Initializable } from "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
 import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/access/Ownable2StepUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { Clones } from "@openzeppelin/proxy/Clones.sol";
 
 // contracts
 import { AutomatedVaultERC20 } from "src/AutomatedVaultERC20.sol";
@@ -49,6 +50,8 @@ contract AutomatedVaultManager is
     uint8 maxLeverage;
   }
 
+  address public vaultTokenImplementation;
+
   // vault's ERC20 address => vault info
   mapping(address => VaultInfo) public vaultInfos;
 
@@ -66,6 +69,7 @@ contract AutomatedVaultManager is
   event LogWithdraw(address indexed _vaultToken, address indexed _user, uint256 _sharesWithdrawn);
   event LogSetVaultManager(address indexed _vaultToken, address _manager, bool _isOk);
   event LogSetAllowToken(address indexed _vaultToken, address _token, bool _isAllowed);
+  event LogSetVaultTokenImplementation(address prevImplementation, address newImplementation);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -83,13 +87,20 @@ contract AutomatedVaultManager is
     returns (address _vaultToken)
   {
     // TODO: use minimal proxy to deploy
-    _vaultToken = address(new AutomatedVaultERC20(_name, _symbol));
+    // _vaultToken = address(new AutomatedVaultERC20(_name, _symbol));
+    _vaultToken = Clones.clone(vaultTokenImplementation);
+    AutomatedVaultERC20(_vaultToken).initialize();
 
     // TODO: sanity check vaultInfo
 
     vaultInfos[_vaultToken] = _vaultInfo;
 
     emit LogOpenVault(_vaultToken, _vaultInfo);
+  }
+
+  function setVaultTokenImplementation(address _implementation) external onlyOwner {
+    emit LogSetVaultTokenImplementation(vaultTokenImplementation, _implementation);
+    vaultTokenImplementation = _implementation;
   }
 
   function setAllowToken(address _vaultToken, address _token, bool _isAllowed) external onlyOwner {

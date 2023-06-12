@@ -6,6 +6,7 @@ import "@forge-std/Test.sol";
 
 // contracts
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
+import { AutomatedVaultERC20 } from "src/AutomatedVaultERC20.sol";
 import { Bank } from "src/Bank.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 import { PancakeV3VaultOracle } from "src/oracles/PancakeV3VaultOracle.sol";
@@ -51,6 +52,7 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
         "AutomatedVaultManager", abi.encodeWithSelector(AutomatedVaultManager.initialize.selector)
       )
     );
+    vaultManager.setVaultTokenImplementation(address(new AutomatedVaultERC20()));
 
     moneyMarket = new MockMoneyMarket();
 
