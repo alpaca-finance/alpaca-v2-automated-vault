@@ -70,23 +70,29 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
     view
     returns (uint256 _valueUSD)
   {
-    // Load position data
-    (,, address _token0, address _token1,, int24 _tickLower, int24 _tickUpper, uint128 _liquidity,,,,) =
-      positionManager.positions(_tokenId);
-    // Tokens decimals
-    uint8 _token0Decimals = IERC20(_token0).decimals();
-    uint8 _token1Decimals = IERC20(_token1).decimals();
-
-    // Check deviation on priceE18
-    // Get pool sqrtPriceX96
-    (uint160 _poolSqrtPriceX96,,,,,,) = ICommonV3Pool(_pool).slot0();
-
-    // scope to avoid stack too deep
+    uint256 _token0Decimals;
+    uint256 _token1Decimals;
+    int24 _tickLower;
+    int24 _tickUpper;
+    uint128 _liquidity;
     {
+      // Load position data
+      address _token0;
+      address _token1;
+      (,, _token0, _token1,, _tickLower, _tickUpper, _liquidity,,,,) = positionManager.positions(_tokenId);
+      // Tokens decimals
+      _token0Decimals = IERC20(_token0).decimals();
+      _token1Decimals = IERC20(_token1).decimals();
+    }
+
+    uint256 _oraclePriceE18 = _token0OraclePrice * 1e18 / _token1OraclePrice;
+
+    // Check price deviation between oracle and pool
+    {
+      // Get pool sqrtPriceX96
+      (uint160 _poolSqrtPriceX96,,,,,,) = ICommonV3Pool(_pool).slot0();
       // Convert pool sqrt price to priceE18
       uint256 _poolPriceE18 = LibSqrtPriceX96.decodeSqrtPriceX96(_poolSqrtPriceX96, _token0Decimals, _token1Decimals);
-      uint256 _oraclePriceE18 = _token0OraclePrice * 1e18 / _token1OraclePrice;
-      // Cache to save gas
       uint16 _cachedMaxPriceDiff = maxPriceDiff;
       if (_poolPriceE18 * 10000 > _oraclePriceE18 * _cachedMaxPriceDiff) {
         revert PancakeV3VaultOracle_OraclePriceTooLow();
@@ -96,24 +102,71 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
       }
     }
 
-    // Get amount0, 1 according to pool state
-    // TODO: discuss whether to use pool or oracle price to get amounts
-    (uint256 _amount0, uint256 _amount1) = LibLiquidityAmounts.getAmountsForLiquidity(
-      _poolSqrtPriceX96,
-      LibTickMath.getSqrtRatioAtTick(_tickLower),
-      LibTickMath.getSqrtRatioAtTick(_tickUpper),
-      _liquidity
-    );
+    // Get amount based on converted oracle price
+    uint256 _oracleAmount0;
+    uint256 _oracleAmount1;
+    {
+      uint160 _oracleSqrtPriceX96 =
+        LibSqrtPriceX96.encodeSqrtPriceX96(_oraclePriceE18, _token0Decimals, _token1Decimals);
+      (_oracleAmount0, _oracleAmount1) = LibLiquidityAmounts.getAmountsForLiquidity(
+        _oracleSqrtPriceX96,
+        LibTickMath.getSqrtRatioAtTick(_tickLower),
+        LibTickMath.getSqrtRatioAtTick(_tickUpper),
+        _liquidity
+      );
+    }
 
     // Convert to usd according to oracle prices
-    if (_amount0 != 0) {
-      _valueUSD += LibFullMath.mulDiv(_amount0, _token0OraclePrice, (10 ** _token0Decimals));
+    if (_oracleAmount0 != 0) {
+      _valueUSD += LibFullMath.mulDiv(_oracleAmount0, _token0OraclePrice, (10 ** _token0Decimals));
     }
-    if (_amount1 != 0) {
-      _valueUSD += LibFullMath.mulDiv(_amount1, _token1OraclePrice, (10 ** _token1Decimals));
+    if (_oracleAmount1 != 0) {
+      _valueUSD += LibFullMath.mulDiv(_oracleAmount1, _token1OraclePrice, (10 ** _token1Decimals));
     }
 
     return _valueUSD;
+
+    //
+    // Pricing by pool price
+    //
+
+    // // Check deviation on priceE18
+    // // Get pool sqrtPriceX96
+    // (uint160 _poolSqrtPriceX96,,,,,,) = ICommonV3Pool(_pool).slot0();
+
+    // // scope to avoid stack too deep
+    // {
+    //   // Convert pool sqrt price to priceE18
+    //   uint256 _poolPriceE18 = LibSqrtPriceX96.decodeSqrtPriceX96(_poolSqrtPriceX96, _token0Decimals, _token1Decimals);
+    //   uint256 _oraclePriceE18 = _token0OraclePrice * 1e18 / _token1OraclePrice;
+    //   // Cache to save gas
+    //   uint16 _cachedMaxPriceDiff = maxPriceDiff;
+    //   if (_poolPriceE18 * 10000 > _oraclePriceE18 * _cachedMaxPriceDiff) {
+    //     revert PancakeV3VaultOracle_OraclePriceTooLow();
+    //   }
+    //   if (_poolPriceE18 * _cachedMaxPriceDiff < _oraclePriceE18 * 10000) {
+    //     revert PancakeV3VaultOracle_OraclePriceTooHigh();
+    //   }
+    // }
+
+    // // Get amount0, 1 according to pool state
+    // // TODO: discuss whether to use pool or oracle price to get amounts
+    // (uint256 _amount0, uint256 _amount1) = LibLiquidityAmounts.getAmountsForLiquidity(
+    //   _poolSqrtPriceX96,
+    //   LibTickMath.getSqrtRatioAtTick(_tickLower),
+    //   LibTickMath.getSqrtRatioAtTick(_tickUpper),
+    //   _liquidity
+    // );
+
+    // // Convert to usd according to oracle prices
+    // if (_amount0 != 0) {
+    //   _valueUSD += LibFullMath.mulDiv(_amount0, _token0OraclePrice, (10 ** _token0Decimals));
+    // }
+    // if (_amount1 != 0) {
+    //   _valueUSD += LibFullMath.mulDiv(_amount1, _token1OraclePrice, (10 ** _token1Decimals));
+    // }
+
+    // return _valueUSD;
 
     //
     // Pricing by convert oracle price to sqrtX96 to get amount
