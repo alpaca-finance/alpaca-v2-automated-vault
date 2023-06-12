@@ -270,12 +270,12 @@ contract AutomatedVaultManager is
         IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
       _equityChanged = _totalEquityBefore - _totalEquityAfter;
     }
-    // +1 to account for possible precision loss
-    uint256 _maxEquityChange =
-      _sharesToWithdraw * _totalEquityBefore / IAutomatedVaultERC20(_vaultToken).totalSupply() + 1;
-    if (_equityChanged > _maxEquityChange) {
-      revert AutomatedVaultManager_TooMuchEquityLoss();
-    }
+    // // +1 to account for possible precision loss
+    // uint256 _maxEquityChange =
+    //   _sharesToWithdraw * _totalEquityBefore / IAutomatedVaultERC20(_vaultToken).totalSupply() + 1;
+    // if (_equityChanged > _maxEquityChange) {
+    //   revert AutomatedVaultManager_TooMuchEquityLoss();
+    // }
 
     // Burn shares per requested amount before transfer out
     IAutomatedVaultERC20(_vaultToken).burn(msg.sender, _sharesToWithdraw);

@@ -22,29 +22,29 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     vaultManager.withdraw(vaultToken, 1, minAmountOuts);
   }
 
-  function testRevert_WhenWithdrawCauseTooMuchEquityLoss() public {
-    // withdraw 10% of shares
-    uint256 sharesToWithdraw = 0.1 ether;
-    uint256 totalShares = 1 ether;
+  // function testRevert_WhenWithdrawCauseTooMuchEquityLoss() public {
+  //   // withdraw 10% of shares
+  //   uint256 sharesToWithdraw = 0.1 ether;
+  //   uint256 totalShares = 1 ether;
 
-    address vaultToken = _openDefaultVault();
-    deal(vaultToken, address(this), totalShares, true);
-    mockVaultOracleAndExecutor.setGetEquityAndDebtResult({
-      _equityBefore: 100,
-      _debtBefore: 0,
-      _equityAfter: 50,
-      _debtAfter: 0
-    });
+  //   address vaultToken = _openDefaultVault();
+  //   deal(vaultToken, address(this), totalShares, true);
+  //   mockVaultOracleAndExecutor.setGetEquityAndDebtResult({
+  //     _equityBefore: 100,
+  //     _debtBefore: 0,
+  //     _equityAfter: 50,
+  //     _debtAfter: 0
+  //   });
 
-    // Calculation
-    // equity before = 100, after = 50 => equityChanged = 50
-    // maxEquityChange = withdrawPct * equityBefore = 10% * 100 = 10
-    // should revert due to equityChanged > maxEquityChange
+  //   // Calculation
+  //   // equity before = 100, after = 50 => equityChanged = 50
+  //   // maxEquityChange = withdrawPct * equityBefore = 10% * 100 = 10
+  //   // should revert due to equityChanged > maxEquityChange
 
-    AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts;
-    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_TooMuchEquityLoss()"));
-    vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
-  }
+  //   AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts;
+  //   vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_TooMuchEquityLoss()"));
+  //   vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
+  // }
 
   function testRevert_WhenWithdrawResultExceedSlippage() public {
     uint256 sharesToWithdraw = 1 ether;

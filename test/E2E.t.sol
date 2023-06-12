@@ -49,6 +49,7 @@ contract E2ETest is E2EFixture {
     uint256 totalSharesBefore = vaultToken.totalSupply();
 
     AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts;
+    vm.prank(withdrawFor);
     vaultManager.withdraw(address(vaultToken), withdrawAmount, minAmountOuts);
 
     uint256 totalSharesAfter = vaultToken.totalSupply();
