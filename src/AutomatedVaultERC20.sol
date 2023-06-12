@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: BUSL
 pragma solidity 0.8.19;
 
-// import { ERC20 } from "@solmate/tokens/ERC20.sol";
-import { ERC20 } from "@openzeppelin/token/ERC20/ERC20.sol";
+import { ERC20 } from "@solmate/tokens/ERC20.sol";
 import { Initializable } from "@openzeppelin/proxy/utils/Initializable.sol";
 
 contract AutomatedVaultERC20 is ERC20, Initializable {
@@ -15,11 +14,13 @@ contract AutomatedVaultERC20 is ERC20, Initializable {
     _;
   }
 
-  constructor() ERC20("", "") {
+  constructor() ERC20("", "", 18) {
     _disableInitializers();
   }
 
-  function initialize() external initializer {
+  function initialize(string calldata _name, string calldata _symbol) external initializer {
+    name = _name;
+    symbol = _symbol;
     vaultManager = msg.sender;
   }
 

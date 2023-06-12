@@ -86,10 +86,8 @@ contract AutomatedVaultManager is
     onlyOwner
     returns (address _vaultToken)
   {
-    // TODO: use minimal proxy to deploy
-    // _vaultToken = address(new AutomatedVaultERC20(_name, _symbol));
     _vaultToken = Clones.clone(vaultTokenImplementation);
-    AutomatedVaultERC20(_vaultToken).initialize();
+    AutomatedVaultERC20(_vaultToken).initialize(_name, _symbol);
 
     // TODO: sanity check vaultInfo
 

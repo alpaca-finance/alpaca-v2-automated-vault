@@ -10,16 +10,22 @@ contract AutomatedVaultERC20Test is Test {
 
   function setUp() public {
     vaultToken = AutomatedVaultERC20(Clones.clone(address(new AutomatedVaultERC20())));
-    vaultToken.initialize();
+    vaultToken.initialize("Test Vault Token", "TVT");
   }
 
-  function testRevert_AVToken_Mint_NonVaultManagerIsCaller() public {
+  function testCorrectness_VaultToken_Initialize() public {
+    assertEq(vaultToken.vaultManager(), address(this));
+    assertEq(vaultToken.name(), "Test Vault Token");
+    assertEq(vaultToken.symbol(), "TVT");
+  }
+
+  function testRevert_VaultToken_Mint_NonVaultManagerIsCaller() public {
     vm.prank(address(1234));
     vm.expectRevert(abi.encodeWithSignature("AutomatedVaultERC20_Unauthorized()"));
     vaultToken.mint(address(this), 1);
   }
 
-  function testRevert_AVToken_Burn_NonVaultManagerIsCaller() public {
+  function testRevert_VaultToken_Burn_NonVaultManagerIsCaller() public {
     vm.prank(address(1234));
     vm.expectRevert(abi.encodeWithSignature("AutomatedVaultERC20_Unauthorized()"));
     vaultToken.burn(address(this), 1);
