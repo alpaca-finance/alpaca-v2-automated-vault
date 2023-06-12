@@ -21,8 +21,6 @@ import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.so
 import { LibShareUtil } from "src/libraries/LibShareUtil.sol";
 import { MAX_BPS } from "src/libraries/Constants.sol";
 
-import "@forge-std/console.sol";
-
 contract AutomatedVaultManager is
   Initializable,
   Ownable2StepUpgradeable,
@@ -206,8 +204,6 @@ contract AutomatedVaultManager is
     (uint256 _totalEquityAfter, uint256 _debtAfter) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
 
-    console.log("_totalEquityBefore :", _totalEquityBefore);
-    console.log("_totalEquityAfter  :", _totalEquityAfter);
     // _totalEquityAfter  < _totalEquityBefore * _cachedVaultInfo.toleranceBps / MAX_BPS;
     if (_totalEquityAfter * MAX_BPS < _totalEquityBefore * _cachedVaultInfo.toleranceBps) {
       revert AutomatedVaultManager_TooMuchEquityLoss();
@@ -277,8 +273,6 @@ contract AutomatedVaultManager is
     // +1 to account for possible precision loss
     uint256 _maxEquityChange =
       _sharesToWithdraw * _totalEquityBefore / IAutomatedVaultERC20(_vaultToken).totalSupply() + 1;
-    console.log("_equityChanged   :", _equityChanged);
-    console.log("_maxEquityChange :", _maxEquityChange);
     if (_equityChanged > _maxEquityChange) {
       revert AutomatedVaultManager_TooMuchEquityLoss();
     }
