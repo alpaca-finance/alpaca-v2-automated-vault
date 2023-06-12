@@ -16,4 +16,17 @@ contract AutomatedVaultManagerSettersTest is BaseAutomatedVaultUnitTest {
     vm.expectRevert("Ownable: caller is not the owner");
     vaultManager.setVaultManager(_vaultToken, _manager, true);
   }
+
+  function testRevert_SetVaultTokenImplementation_NonOwnerIsCaller() public {
+    vm.prank(address(1234));
+    vm.expectRevert("Ownable: caller is not the owner");
+    vaultManager.setVaultTokenImplementation(address(1234));
+  }
+
+  function testCorrectness_SetVaultTokenImplementation() public {
+    address implementation = address(1234);
+    vm.prank(DEPLOYER);
+    vaultManager.setVaultTokenImplementation(implementation);
+    assertEq(vaultManager.vaultTokenImplementation(), implementation);
+  }
 }
