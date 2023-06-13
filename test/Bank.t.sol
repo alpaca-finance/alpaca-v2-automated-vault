@@ -28,7 +28,7 @@ contract BankTest is ProtocolActorFixture {
 
   Bank bank;
   MockMoneyMarket mockMoneyMarket;
-  address vaultManager = makeAddr("vaultManager");
+  address mockVaultManager = makeAddr("mockVaultManager");
   address IN_SCOPE_EXECUTOR = makeAddr("IN_SCOPE_EXECUTOR");
 
   IERC20 wbnb;
@@ -44,15 +44,18 @@ contract BankTest is ProtocolActorFixture {
     deal(address(wbnb), address(mockMoneyMarket), 100_000 ether);
     deal(address(usdt), address(mockMoneyMarket), 100_000 ether);
 
+    // Mock sanity check
+    vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
+    // Deploy bank
     vm.prank(DEPLOYER);
     bank = Bank(
       DeployHelper.deployUpgradeable(
-        "Bank", abi.encodeWithSelector(Bank.initialize.selector, address(mockMoneyMarket), vaultManager)
+        "Bank", abi.encodeWithSelector(Bank.initialize.selector, address(mockMoneyMarket), mockVaultManager)
       )
     );
 
     vm.mockCall(
-      address(vaultManager),
+      address(mockVaultManager),
       abi.encodeWithSelector(IAutomatedVaultManager.EXECUTOR_IN_SCOPE.selector),
       abi.encode(IN_SCOPE_EXECUTOR)
     );

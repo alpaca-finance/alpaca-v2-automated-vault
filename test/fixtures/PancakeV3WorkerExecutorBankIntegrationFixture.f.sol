@@ -47,6 +47,8 @@ contract PancakeV3WorkerExecutorBankIntegrationFixture is Test, BscFixture, Prot
     vm.startPrank(DEPLOYER);
 
     mockMoneyMarket = new MockMoneyMarket();
+    // Mock for sanity check
+    vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
     bank = Bank(
       DeployHelper.deployUpgradeable(
         "Bank", abi.encodeWithSelector(Bank.initialize.selector, address(mockMoneyMarket), mockVaultManager)
