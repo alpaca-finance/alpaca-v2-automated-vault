@@ -337,8 +337,7 @@ contract E2ETest is E2EFixture {
 
     // Repay
     executorData = new bytes[](2);
-    executorData[0] =
-      abi.encodeCall(PCSV3Executor01.transferFromWorker, (address(wbnb), address(pancakeV3Executor), 0.01 ether));
+    executorData[0] = abi.encodeCall(PCSV3Executor01.transferFromWorker, (address(wbnb), 0.01 ether));
     executorData[1] = abi.encodeCall(PCSV3Executor01.repay, (address(wbnb), 0.01 ether));
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), executorData);
@@ -383,8 +382,7 @@ contract E2ETest is E2EFixture {
 
     // Repay
     executorData = new bytes[](2);
-    executorData[0] =
-      abi.encodeCall(PCSV3Executor01.transferFromWorker, (address(usdt), address(pancakeV3Executor), 100 ether));
+    executorData[0] = abi.encodeCall(PCSV3Executor01.transferFromWorker, (address(usdt), 100 ether));
     executorData[1] = abi.encodeCall(PCSV3Executor01.repay, (address(usdt), 100 ether));
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), executorData);
@@ -420,8 +418,7 @@ contract E2ETest is E2EFixture {
 
     // Repay wbnb
     executorData = new bytes[](2);
-    executorData[0] =
-      abi.encodeCall(PCSV3Executor01.transferFromWorker, (address(wbnb), address(pancakeV3Executor), 0.1 ether));
+    executorData[0] = abi.encodeCall(PCSV3Executor01.transferFromWorker, (address(wbnb), 0.1 ether));
     executorData[1] = abi.encodeCall(PCSV3Executor01.repay, (address(wbnb), 0.1 ether));
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), executorData);

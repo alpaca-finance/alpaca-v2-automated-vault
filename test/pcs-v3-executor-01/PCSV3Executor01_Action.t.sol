@@ -132,14 +132,15 @@ contract PCSV3Executor01ClosePositionTest is PCSV3Executor01ActionTest {
 
 contract PCSV3Executor01TransferTest is PCSV3Executor01ActionTest {
   function testCorrectness_TransferFromWorker_CallerIsVaultManager() public {
-    vm.mockCall(mockWorker, abi.encodeWithSignature("transfer(address,address,uint256)"), abi.encode());
+    vm.mockCall(mockWorker, abi.encodeWithSignature("transfer(address,uint256)"), abi.encode());
+    vm.mockCall(mockVaultManager, abi.encodeWithSignature("EXECUTOR_IN_SCOPE()"), abi.encode(address(executor)));
     vm.prank(mockVaultManager);
     executor.setExecutionScope(mockWorker, mockVaultToken);
 
-    vm.expectCall(mockWorker, abi.encodeWithSignature("transfer(address,address,uint256)"), 1);
+    vm.expectCall(mockWorker, abi.encodeWithSignature("transfer(address,uint256)"), 1);
 
     vm.prank(mockVaultManager);
-    executor.transferFromWorker(address(mockToken0), address(1234), 1 ether);
+    executor.transferFromWorker(address(mockToken0), 1 ether);
   }
 
   function testCorrectness_TransferToWorker_CallerIsVaultManager() public {
@@ -158,7 +159,7 @@ contract PCSV3Executor01TransferTest is PCSV3Executor01ActionTest {
   function testRevert_TransferFromWorker_CallerIsNotVaultManager() public {
     vm.prank(address(1234));
     vm.expectRevert(Executor.Executor_NotVaultManager.selector);
-    executor.transferFromWorker(address(mockToken0), address(1234), 1 ether);
+    executor.transferFromWorker(address(mockToken0), 1 ether);
   }
 
   function testRevert_TransferToWorker_CallerIsNotVaultManager() public {
