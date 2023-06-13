@@ -157,6 +157,18 @@ contract PCSV3Executor01 is Executor {
     return abi.encode();
   }
 
+  function sweepToWorker() external override onlyVaultManager {
+    address _worker = _getCurrentWorker();
+    ICommonV3Pool _pool = PancakeV3Worker(_worker).pool();
+    _sweepTo(ERC20(_pool.token0()), _worker);
+    _sweepTo(ERC20(_pool.token1()), _worker);
+  }
+
+  function _sweepTo(ERC20 _token, address _to) internal {
+    uint256 _balance = _token.balanceOf(address(this));
+    if (_balance != 0) _token.transfer(_to, _balance);
+  }
+
   /// @notice Increase existing position liquidity using worker's undeployed funds.
   /// Worker will revert if it doesn't have position.
   function increasePosition(uint256 _amountIn0, uint256 _amountIn1) external onlyVaultManager {

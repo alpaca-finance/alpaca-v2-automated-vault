@@ -46,6 +46,8 @@ abstract contract Executor is Multicall {
     }
   }
 
+  function sweepToWorker() external virtual { }
+
   function onDeposit(PancakeV3Worker _worker, address _vaultToken) external virtual returns (bytes memory _result) { }
 
   function onWithdraw(PancakeV3Worker _worker, address _vaultToken, uint256 _sharesToWithdraw)
