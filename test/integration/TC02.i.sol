@@ -79,7 +79,7 @@ contract TC02 is PancakeV3WorkerExecutorBankIntegrationFixture {
     //
     uint256 usdtBefore = usdt.balanceOf(address(workerUSDTWBNB));
     uint256 wbnbBefore = wbnb.balanceOf(address(workerUSDTWBNB));
-    executor.onUpdate(address(mockVaultUSDTWBNBToken), address(workerUSDTWBNB));
+    executor.onUpdate(address(workerUSDTWBNB), address(mockVaultUSDTWBNBToken));
     // Assertions
     // - trading fees should be collected
     // - worker balance should increase by trading fees
@@ -97,7 +97,7 @@ contract TC02 is PancakeV3WorkerExecutorBankIntegrationFixture {
     // Step 3: vault manager call onUpdate
     //
     usdtBefore = usdt.balanceOf(address(workerUSDTWBNB));
-    executor.onUpdate(address(mockVaultUSDTWBNBToken), address(workerUSDTWBNB));
+    executor.onUpdate(address(workerUSDTWBNB), address(mockVaultUSDTWBNBToken));
     // Assertions
     // - CAKE reward should be harvested
     // - worker usdt should increase due to harvested reward being swapped to usdt (current tick is closer to tick lower)
@@ -112,7 +112,7 @@ contract TC02 is PancakeV3WorkerExecutorBankIntegrationFixture {
     //
     // Step 4: vault manager call onUpdate
     //
-    executor.onUpdate(address(mockVaultUSDTWBNBToken), address(workerUSDTWBNB));
+    executor.onUpdate(address(workerUSDTWBNB), address(mockVaultUSDTWBNBToken));
 
     //
     // Step 5: vault manager withdraw

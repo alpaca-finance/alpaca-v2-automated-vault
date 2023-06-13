@@ -55,5 +55,5 @@ abstract contract Executor is Multicall {
     virtual
     returns (AutomatedVaultManager.WithdrawResult[] memory);
 
-  function onUpdate(address _vaultToken, address _worker) external virtual returns (bytes memory _result) { }
+  function onUpdate(address _worker, address _vaultToken) external virtual returns (bytes memory _result) { }
 }

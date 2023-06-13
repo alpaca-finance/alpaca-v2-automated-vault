@@ -126,7 +126,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     ///////////////////////////
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
-    IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, _cachedVaultInfo.worker);
+    IExecutor(_cachedVaultInfo.executor).onUpdate(_cachedVaultInfo.worker, _vaultToken);
 
     (uint256 _totalEquityBefore,) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
@@ -176,7 +176,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
     // 1. Update the vault
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
-    IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, _cachedVaultInfo.worker);
+    IExecutor(_cachedVaultInfo.executor).onUpdate(_cachedVaultInfo.worker, _vaultToken);
 
     // 2. execute manage
     (uint256 _totalEquityBefore,) =
@@ -241,7 +241,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
 
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
-    IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, _cachedVaultInfo.worker);
+    IExecutor(_cachedVaultInfo.executor).onUpdate(_cachedVaultInfo.worker, _vaultToken);
 
     (uint256 _totalEquityBefore,) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);

@@ -146,7 +146,7 @@ contract PCSV3Executor01 is Executor {
     bank.repayOnBehalfOf(_vaultToken, address(_repayToken), _repayAmount);
   }
 
-  function onUpdate(address _vaultToken, address _worker)
+  function onUpdate(address _worker, address _vaultToken)
     external
     override
     onlyVaultManager
