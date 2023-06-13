@@ -9,7 +9,7 @@ import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/access/Ownabl
 import { ReentrancyGuardUpgradeable } from "@openzeppelin-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 // interfaces
-import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { IZapV3 } from "src/interfaces/IZapV3.sol";
 import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
 import { ICommonV3PositionManager } from "src/interfaces/ICommonV3PositionManager.sol";
@@ -54,7 +54,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   uint256 public nftTokenId;
 
   /// Authorization
-  IAutomatedVaultManager public vaultManager;
+  AutomatedVaultManager public vaultManager;
 
   /// Modifier
   modifier onlyExecutorInScope() {
@@ -90,7 +90,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   }
 
   struct ConstructorParams {
-    IAutomatedVaultManager vaultManager;
+    AutomatedVaultManager vaultManager;
     ICommonV3PositionManager positionManager;
     ICommonV3Pool pool;
     IPancakeV3Router router;

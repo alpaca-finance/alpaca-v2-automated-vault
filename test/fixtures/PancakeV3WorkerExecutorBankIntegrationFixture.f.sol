@@ -11,7 +11,7 @@ import { PCSV3Executor01 } from "src/executors/PCSV3Executor01.sol";
 
 // interfaces
 import { IERC20 } from "src/interfaces/IERC20.sol";
-import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 
 // mocks
 import { MockMoneyMarket } from "test/mocks/MockMoneyMarket.sol";
@@ -62,7 +62,7 @@ contract PancakeV3WorkerExecutorBankIntegrationFixture is Test, BscFixture, Prot
         abi.encodeWithSelector(
           PancakeV3Worker.initialize.selector,
           PancakeV3Worker.ConstructorParams({
-            vaultManager: IAutomatedVaultManager(mockVaultManager),
+            vaultManager: AutomatedVaultManager(mockVaultManager),
             positionManager: pancakeV3PositionManager,
             pool: pancakeV3USDTWBNBPool,
             router: pancakeV3Router,
@@ -80,7 +80,7 @@ contract PancakeV3WorkerExecutorBankIntegrationFixture is Test, BscFixture, Prot
         abi.encodeWithSelector(
           PancakeV3Worker.initialize.selector,
           PancakeV3Worker.ConstructorParams({
-            vaultManager: IAutomatedVaultManager(mockVaultManager),
+            vaultManager: AutomatedVaultManager(mockVaultManager),
             positionManager: pancakeV3PositionManager,
             pool: pancakeV3DOGEWBNBPool,
             router: pancakeV3Router,

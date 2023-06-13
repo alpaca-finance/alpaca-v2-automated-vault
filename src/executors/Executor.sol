@@ -7,7 +7,7 @@ import { Multicall } from "@openzeppelin/utils/Multicall.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 
 // interfaces
-import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 
 abstract contract Executor is Multicall {
   error Executor_NotVaultManager();
@@ -53,7 +53,7 @@ abstract contract Executor is Multicall {
   function onWithdraw(PancakeV3Worker _worker, address _vaultToken, uint256 _sharesToWithdraw)
     external
     virtual
-    returns (IAutomatedVaultManager.WithdrawResult[] memory);
+    returns (AutomatedVaultManager.WithdrawResult[] memory);
 
   function onUpdate(address _vaultToken, PancakeV3Worker _worker) external virtual returns (bytes memory _result) { }
 }

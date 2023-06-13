@@ -17,18 +17,12 @@ import { BaseOracle } from "src/oracles/BaseOracle.sol";
 import { IExecutor } from "src/interfaces/IExecutor.sol";
 import { IVaultOracle } from "src/interfaces/IVaultOracle.sol";
 import { IAutomatedVaultERC20 } from "src/interfaces/IAutomatedVaultERC20.sol";
-import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
 
 // libraries
 import { LibShareUtil } from "src/libraries/LibShareUtil.sol";
 import { MAX_BPS } from "src/libraries/Constants.sol";
 
-contract AutomatedVaultManager is
-  Initializable,
-  Ownable2StepUpgradeable,
-  ReentrancyGuardUpgradeable,
-  IAutomatedVaultManager
-{
+contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradeable {
   using SafeTransferLib for ERC20;
   using LibShareUtil for uint256;
 
@@ -42,6 +36,17 @@ contract AutomatedVaultManager is
   error AutomatedVaultManager_TooLittleReceived();
   error AutomatedVaultManager_TokenNotAllowed();
   error AutomatedVaultManager_InvalidParams();
+
+  struct DepositTokenParams {
+    address token;
+    uint256 amount;
+  }
+
+  // TODO: maybe merge with DepositTokenParams?
+  struct WithdrawResult {
+    address token;
+    uint256 amount;
+  }
 
   struct VaultInfo {
     address worker;
@@ -221,7 +226,7 @@ contract AutomatedVaultManager is
   function withdraw(address _vaultToken, uint256 _sharesToWithdraw, WithdrawSlippage[] calldata _minAmountOuts)
     external
     nonReentrant
-    returns (IAutomatedVaultManager.WithdrawResult[] memory _results)
+    returns (AutomatedVaultManager.WithdrawResult[] memory _results)
   {
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
 

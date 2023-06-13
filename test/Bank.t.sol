@@ -9,7 +9,7 @@ import { Bank } from "src/Bank.sol";
 
 // interfaces
 import { IERC20 } from "src/interfaces/IERC20.sol";
-import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 
 // libraries
 import { LibShareUtil } from "src/libraries/LibShareUtil.sol";
@@ -55,9 +55,7 @@ contract BankTest is ProtocolActorFixture {
     );
 
     vm.mockCall(
-      address(mockVaultManager),
-      abi.encodeWithSelector(IAutomatedVaultManager.EXECUTOR_IN_SCOPE.selector),
-      abi.encode(IN_SCOPE_EXECUTOR)
+      address(mockVaultManager), abi.encodeWithSignature("EXECUTOR_IN_SCOPE()"), abi.encode(IN_SCOPE_EXECUTOR)
     );
 
     deal(address(wbnb), IN_SCOPE_EXECUTOR, 100_000 ether);

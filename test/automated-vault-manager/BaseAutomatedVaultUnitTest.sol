@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { AutomatedVaultERC20 } from "src/AutomatedVaultERC20.sol";
-import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 
 // fixtures
 import "test/fixtures/ProtocolActorFixture.f.sol";
