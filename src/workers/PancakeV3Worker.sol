@@ -82,7 +82,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   event LogDecreasePosition(
     uint256 indexed _tokenId, address _caller, uint256 _amount0Out, uint256 _amount1Out, uint128 _liquidityOut
   );
-  event LogTransfer(address indexed _token, address _to, uint256 _amount);
+  event LogTransferToExecutor(address indexed _token, address _to, uint256 _amount);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -500,8 +500,8 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     if (_amount == 0) {
       revert PancakeV3Worker_InvalidParams();
     }
-    // msg.sender is vault
+    // msg.sender is executor in scope
     ERC20(_token).safeTransfer(msg.sender, _amount);
-    emit LogTransfer(_token, msg.sender, _amount);
+    emit LogTransferToExecutor(_token, msg.sender, _amount);
   }
 }
