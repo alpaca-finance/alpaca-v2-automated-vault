@@ -76,7 +76,7 @@ contract TC01 is PancakeV3WorkerExecutorBankIntegrationFixture {
     multicallData[3] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(usdt), 1 ether));
     multicallData[4] = abi.encodeCall(PCSV3Executor01.increasePosition, (1 ether, 0));
     multicallData[5] = abi.encodeCall(PCSV3Executor01.closePosition, ());
-    multicallData[6] = abi.encodeCall(PCSV3Executor01.transferFromWorker, (address(usdt), address(executor), 1 ether));
+    multicallData[6] = abi.encodeCall(PCSV3Executor01.transferFromWorker, (address(usdt), 1 ether));
     multicallData[7] = abi.encodeCall(PCSV3Executor01.repay, (address(usdt), 1 ether));
     executor.multicall(multicallData);
 

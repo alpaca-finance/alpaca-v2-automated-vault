@@ -122,7 +122,8 @@ contract PCSV3Executor01OnWithdrawTest is Test {
     emit log_named_uint("debtToken1       ", debtToken1);
 
     // Prepare
-    address mockWorker = address(new MockPancakeV3Worker(address(mockToken0), address(mockToken1), 1));
+    address mockWorker =
+      address(new MockPancakeV3Worker(address(mockToken0), address(mockToken1), 1, address(executor)));
     MockPancakeV3Worker(mockWorker).setDecreasedTokens(decreasedToken0, decreasedToken1);
     // Deal undeployed funds
     deal(address(mockToken0), mockWorker, undeployedToken0);
@@ -179,7 +180,7 @@ contract PCSV3Executor01OnWithdrawForkTest is BscFixture {
     uint256 debtToken1 = 1 ether;
 
     // Prepare
-    address mockWorker = address(new MockPancakeV3Worker(address(doge), address(wbnb), 0));
+    address mockWorker = address(new MockPancakeV3Worker( address(doge), address(wbnb), 0, address(executor)));
     // Deal undeployed funds
     deal(address(doge), mockWorker, undeployedToken0);
     deal(address(wbnb), mockWorker, undeployedToken1);
