@@ -48,17 +48,20 @@ contract AutomatedVaultManager is
     address vaultOracle;
     address executor;
     uint256 minimumDeposit;
+    uint256 feePerSec;
     uint16 toleranceBps; // acceptable bps of equity deceased after it was manipulated
     uint8 maxLeverage;
   }
 
   address public vaultTokenImplementation;
+  address public managementFeeTreasury;
 
   // vault's ERC20 address => vault info
   mapping(address => VaultInfo) public vaultInfos;
   mapping(address => mapping(address => bool)) isManager;
   mapping(address => mapping(address => bool)) allowTokens;
   mapping(address => bool) public workerExisted;
+  mapping(address => uint256) vaultFeeLastCollectedAt;
   /// @dev execution scope to tell downstream contracts (Bank, Worker, etc.)
   /// that current executor is acting on behalf of vault and can be trusted
   address public EXECUTOR_IN_SCOPE;
@@ -74,17 +77,36 @@ contract AutomatedVaultManager is
   event LogSetToleranceBps(address _vaultToken, uint16 _toleranceBps);
   event LogSetMaxLeverage(address _vaultToken, uint8 _maxLeverage);
   event LogSetMinimumDeposit(address _vaultToken, uint256 _minimumDeposit);
+  event LogSetMangementFeeTreasury(address _managementFeeTreasury);
+
+  modifier collectManagementFee(address _vaultToken) {
+    IAutomatedVaultERC20(_vaultToken).mint(managementFeeTreasury, pendingManagementFee(_vaultToken));
+    vaultFeeLastCollectedAt[_vaultToken] = block.timestamp;
+    _;
+  }
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
     _disableInitializers();
   }
 
-  function initialize(address _vaultTokenImplementation) external initializer {
+  function initialize(address _vaultTokenImplementation, address _managementFeeTreasury) external initializer {
     Ownable2StepUpgradeable.__Ownable2Step_init();
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
 
     vaultTokenImplementation = _vaultTokenImplementation;
+    managementFeeTreasury = _managementFeeTreasury;
+  }
+
+  function pendingManagementFee(address _vaultToken) public view returns (uint256 _pendingFee) {
+    uint256 _lastCollectedFee = vaultFeeLastCollectedAt[_vaultToken];
+
+    if (block.timestamp > _lastCollectedFee) {
+      VaultInfo memory _vaultInfo = _getVaultInfo(_vaultToken);
+      _pendingFee = (
+        IAutomatedVaultERC20(_vaultToken).totalSupply() * _vaultInfo.feePerSec * (block.timestamp - _lastCollectedFee)
+      ) / 1e18;
+    }
   }
 
   function _getVaultInfo(address _vaultToken) internal view returns (VaultInfo memory _vaultInfo) {
@@ -109,6 +131,7 @@ contract AutomatedVaultManager is
 
   function deposit(address _vaultToken, DepositTokenParams[] calldata _depositParams, uint256 _minReceive)
     external
+    collectManagementFee(_vaultToken)
     nonReentrant
     returns (bytes memory _result)
   {
@@ -155,6 +178,7 @@ contract AutomatedVaultManager is
 
   function manage(address _vaultToken, bytes[] calldata _executorParams)
     external
+    collectManagementFee(_vaultToken)
     nonReentrant
     returns (bytes[] memory _result)
   {
@@ -220,6 +244,7 @@ contract AutomatedVaultManager is
   // TODO: withdrawal fee
   function withdraw(address _vaultToken, uint256 _sharesToWithdraw, WithdrawSlippage[] calldata _minAmountOuts)
     external
+    collectManagementFee(_vaultToken)
     nonReentrant
     returns (IAutomatedVaultManager.WithdrawResult[] memory _results)
   {
@@ -365,6 +390,12 @@ contract AutomatedVaultManager is
     vaultInfos[_vaultToken].minimumDeposit = _minimumDeposit;
 
     emit LogSetMinimumDeposit(_vaultToken, _minimumDeposit);
+  }
+
+  function setManagementFeeTreasury(address _managementFeeTreasury) external onlyOwner {
+    managementFeeTreasury = _managementFeeTreasury;
+
+    emit LogSetMangementFeeTreasury(_managementFeeTreasury);
   }
 
   /// @dev Valid value range: 9500 <= toleranceBps <= 10000

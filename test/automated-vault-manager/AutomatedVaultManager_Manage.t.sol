@@ -23,7 +23,8 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
     equityAfter = bound(equityAfter, 0, equityBefore * tolerance / 10000);
     if (equityAfter > 0) equityAfter -= 1; // prevent equal case
 
-    address vaultToken = _openVault(mockWorker, DEFAULT_MINIMUM_DEPOSIT, tolerance, DEFAULT_MAX_LEVERAGE);
+    address vaultToken =
+      _openVault(mockWorker, DEFAULT_MINIMUM_DEPOSIT, DEFAULT_FEE_PER_SEC, tolerance, DEFAULT_MAX_LEVERAGE);
 
     mockVaultOracleAndExecutor.setGetEquityAndDebtResult({
       _equityBefore: equityBefore,
@@ -39,7 +40,7 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
 
   function testRevert_WhenManageCauseTooMuchLeverage() public {
     // max 10x leverage
-    address vaultToken = _openVault(mockWorker, DEFAULT_MINIMUM_DEPOSIT, DEFAULT_TOLERANCE_BPS, 10);
+    address vaultToken = _openVault(mockWorker, DEFAULT_MINIMUM_DEPOSIT, DEFAULT_FEE_PER_SEC, DEFAULT_TOLERANCE_BPS, 10);
 
     // 10x leverage with 100 equity allow up to 900 debt
     // 901 should revert

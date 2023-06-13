@@ -23,6 +23,7 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
   MockERC20 mockToken1;
 
   uint256 internal constant DEFAULT_MINIMUM_DEPOSIT = 1 ether;
+  uint256 internal constant DEFAULT_FEE_PER_SEC = 0;
   uint8 internal constant DEFAULT_MAX_LEVERAGE = 10;
   uint16 internal constant DEFAULT_TOLERANCE_BPS = 9900;
 
@@ -41,7 +42,7 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
     mockVaultOracleAndExecutor = new MockVaultOracleAndExecutor(address(vaultManager));
   }
 
-  function _openVault(address worker, uint256 minimumDeposit, uint16 toleranceBps, uint8 maxLeverage)
+  function _openVault(address worker, uint256 minimumDeposit, uint256 feePerSec, uint16 toleranceBps, uint8 maxLeverage)
     internal
     returns (address vaultToken)
   {
@@ -54,6 +55,7 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
         vaultOracle: address(mockVaultOracleAndExecutor),
         executor: address(mockVaultOracleAndExecutor),
         minimumDeposit: minimumDeposit,
+        feePerSec: feePerSec,
         toleranceBps: toleranceBps,
         maxLeverage: maxLeverage
       })
@@ -65,6 +67,7 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
   }
 
   function _openDefaultVault() internal returns (address) {
-    return _openVault(mockWorker, DEFAULT_MINIMUM_DEPOSIT, DEFAULT_TOLERANCE_BPS, DEFAULT_MAX_LEVERAGE);
+    return
+      _openVault(mockWorker, DEFAULT_MINIMUM_DEPOSIT, DEFAULT_FEE_PER_SEC, DEFAULT_TOLERANCE_BPS, DEFAULT_MAX_LEVERAGE);
   }
 }
