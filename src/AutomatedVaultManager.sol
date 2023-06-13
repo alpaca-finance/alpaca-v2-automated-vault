@@ -11,6 +11,7 @@ import { Clones } from "@openzeppelin/proxy/Clones.sol";
 
 // contracts
 import { AutomatedVaultERC20 } from "src/AutomatedVaultERC20.sol";
+import { BaseOracle } from "src/oracles/BaseOracle.sol";
 
 // interfaces
 import { IExecutor } from "src/interfaces/IExecutor.sol";
@@ -40,6 +41,7 @@ contract AutomatedVaultManager is
   error AutomatedVaultManager_BelowMinimumDeposit();
   error AutomatedVaultManager_TooLittleReceived();
   error AutomatedVaultManager_TokenNotAllowed();
+  error AutomatedVaultManager_InvalidParams();
 
   struct VaultInfo {
     address worker;
@@ -54,10 +56,9 @@ contract AutomatedVaultManager is
 
   // vault's ERC20 address => vault info
   mapping(address => VaultInfo) public vaultInfos;
-
   mapping(address => mapping(address => bool)) isManager;
-
   mapping(address => mapping(address => bool)) allowTokens;
+  mapping(address => bool) public workerExisted;
   /// @dev execution scope to tell downstream contracts (Bank, Worker, etc.)
   /// that current executor is acting on behalf of vault and can be trusted
   address public EXECUTOR_IN_SCOPE;
@@ -70,6 +71,9 @@ contract AutomatedVaultManager is
   event LogSetVaultManager(address indexed _vaultToken, address _manager, bool _isOk);
   event LogSetAllowToken(address indexed _vaultToken, address _token, bool _isAllowed);
   event LogSetVaultTokenImplementation(address prevImplementation, address newImplementation);
+  event LogSetToleranceBps(address _vaultToken, uint16 _toleranceBps);
+  event LogSetMaxLeverage(address _vaultToken, uint8 _maxLeverage);
+  event LogSetMinimumDeposit(address _vaultToken, uint256 _minimumDeposit);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -79,34 +83,6 @@ contract AutomatedVaultManager is
   function initialize() external initializer {
     Ownable2StepUpgradeable.__Ownable2Step_init();
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
-  }
-
-  function openVault(string calldata _name, string calldata _symbol, VaultInfo calldata _vaultInfo)
-    external
-    onlyOwner
-    returns (address _vaultToken)
-  {
-    _vaultToken = Clones.clone(vaultTokenImplementation);
-    AutomatedVaultERC20(_vaultToken).initialize(_name, _symbol);
-
-    // TODO: sanity check vaultInfo
-
-    vaultInfos[_vaultToken] = _vaultInfo;
-
-    emit LogOpenVault(_vaultToken, _vaultInfo);
-  }
-
-  function setVaultTokenImplementation(address _implementation) external onlyOwner {
-    emit LogSetVaultTokenImplementation(vaultTokenImplementation, _implementation);
-    vaultTokenImplementation = _implementation;
-  }
-
-  function setAllowToken(address _vaultToken, address _token, bool _isAllowed) external onlyOwner {
-    // sanity check, should revert if vault not opened
-    _getVaultInfo(_vaultToken);
-    allowTokens[_vaultToken][_token] = _isAllowed;
-
-    emit LogSetAllowToken(_vaultToken, _token, _isAllowed);
   }
 
   function _getVaultInfo(address _vaultToken) internal view returns (VaultInfo memory _vaultInfo) {
@@ -316,5 +292,95 @@ contract AutomatedVaultManager is
     }
 
     emit LogWithdraw(_vaultToken, msg.sender, _sharesToWithdraw);
+  }
+
+  /// =========================
+  /// Admin functions
+  /// =========================
+
+  function openVault(string calldata _name, string calldata _symbol, VaultInfo calldata _vaultInfo)
+    external
+    onlyOwner
+    returns (address _vaultToken)
+  {
+    // Prevent duplicate worker between vaults
+    if (workerExisted[_vaultInfo.worker]) {
+      revert AutomatedVaultManager_InvalidParams();
+    }
+    _validateToleranceBps(_vaultInfo.toleranceBps);
+    _validateMaxLeverage(_vaultInfo.maxLeverage);
+    _validateMinimumDeposit(_vaultInfo.minimumDeposit);
+    // Sanity check oracle
+    BaseOracle(_vaultInfo.vaultOracle).maxPriceAge();
+    // Sanity check executor
+    if (IExecutor(_vaultInfo.executor).vaultManager() != address(this)) {
+      revert AutomatedVaultManager_InvalidParams();
+    }
+
+    // Deploy vault token with ERC-1167 minimal proxy
+    _vaultToken = Clones.clone(vaultTokenImplementation);
+    AutomatedVaultERC20(_vaultToken).initialize(_name, _symbol);
+
+    // Update states
+    vaultInfos[_vaultToken] = _vaultInfo;
+    workerExisted[_vaultInfo.worker] = true;
+
+    emit LogOpenVault(_vaultToken, _vaultInfo);
+  }
+
+  function setVaultTokenImplementation(address _implementation) external onlyOwner {
+    emit LogSetVaultTokenImplementation(vaultTokenImplementation, _implementation);
+    vaultTokenImplementation = _implementation;
+  }
+
+  function setAllowToken(address _vaultToken, address _token, bool _isAllowed) external onlyOwner {
+    // sanity check, should revert if vault not opened
+    if (vaultInfos[_vaultToken].worker == address(0)) {
+      revert AutomatedVaultManager_VaultNotExist(_vaultToken);
+    }
+    allowTokens[_vaultToken][_token] = _isAllowed;
+
+    emit LogSetAllowToken(_vaultToken, _token, _isAllowed);
+  }
+
+  function setToleranceBps(address _vaultToken, uint16 _toleranceBps) external onlyOwner {
+    _validateToleranceBps(_toleranceBps);
+    vaultInfos[_vaultToken].toleranceBps = _toleranceBps;
+
+    emit LogSetToleranceBps(_vaultToken, _toleranceBps);
+  }
+
+  function setMaxLeverage(address _vaultToken, uint8 _maxLeverage) external onlyOwner {
+    _validateMaxLeverage(_maxLeverage);
+    vaultInfos[_vaultToken].maxLeverage = _maxLeverage;
+
+    emit LogSetMaxLeverage(_vaultToken, _maxLeverage);
+  }
+
+  function setMinimumDeposit(address _vaultToken, uint256 _minimumDeposit) external onlyOwner {
+    _validateMinimumDeposit(_minimumDeposit);
+    vaultInfos[_vaultToken].minimumDeposit = _minimumDeposit;
+
+    emit LogSetMinimumDeposit(_vaultToken, _minimumDeposit);
+  }
+
+  /// @dev Valid value range: 9500 <= toleranceBps <= 10000
+  function _validateToleranceBps(uint16 _toleranceBps) internal pure {
+    if (_toleranceBps > MAX_BPS || _toleranceBps < 9500) {
+      revert AutomatedVaultManager_InvalidParams();
+    }
+  }
+
+  /// @dev Valid value range: 1 <= maxLeverage <= 10
+  function _validateMaxLeverage(uint8 _maxLeverage) internal pure {
+    if (_maxLeverage > 10 || _maxLeverage < 1) {
+      revert AutomatedVaultManager_InvalidParams();
+    }
+  }
+
+  function _validateMinimumDeposit(uint256 _minimumDeposit) internal pure {
+    if (_minimumDeposit < 1e18) {
+      revert AutomatedVaultManager_InvalidParams();
+    }
   }
 }

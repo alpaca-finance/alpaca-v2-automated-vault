@@ -190,29 +190,29 @@ contract E2ETest is E2EFixture {
   }
 
   function testRevert_Withdraw_MoreThanSharesOwned() public {
-    // Deposit 0.1 USDT should get ~0.1 share
-    // Withdraw 1 share should revert
+    // Deposit 1 USDT should get ~1 share
+    // Withdraw 2 share should revert
 
-    _depositUSDTAndAssert(address(this), 0.1 ether);
+    _depositUSDTAndAssert(address(this), 1 ether);
 
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_WithdrawExceedBalance.selector);
     AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts;
-    vaultManager.withdraw(address(vaultToken), 1 ether, minAmountOuts);
+    vaultManager.withdraw(address(vaultToken), 2 ether, minAmountOuts);
   }
 
   function testRevert_Manage_TooMuchEquityLoss() public {
-    // Deposit 0.1 USDT
+    // Deposit 1 USDT
     // Borrow 0.1 WBNB
     // Open in-range position
     // Should fail due to zap in swap fee eat into equity too much
 
-    _depositUSDTAndAssert(address(this), 0.1 ether);
+    _depositUSDTAndAssert(address(this), 1 ether);
 
     deal(address(wbnb), address(moneyMarket), 0.1 ether);
     bytes[] memory executorData = new bytes[](3);
     executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(wbnb), 0.1 ether));
     executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(wbnb), 0.1 ether));
-    executorData[2] = abi.encodeCall(PCSV3Executor01.openPosition, (-58000, -57750, 0.1 ether, 0.1 ether));
+    executorData[2] = abi.encodeCall(PCSV3Executor01.openPosition, (-58000, -57750, 1 ether, 0.1 ether));
     vm.prank(MANAGER);
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_TooMuchEquityLoss.selector);
     vaultManager.manage(address(vaultToken), executorData);

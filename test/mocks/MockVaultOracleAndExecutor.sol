@@ -12,6 +12,12 @@ contract MockVaultOracleAndExecutor {
   bool private isAfter;
   IAutomatedVaultManager.WithdrawResult[] private results;
 
+  address public vaultManager;
+
+  constructor(address _vaultManager) {
+    vaultManager = _vaultManager;
+  }
+
   function onUpdate(address, address) external returns (bytes memory) {
     // placeholder
   }
@@ -56,5 +62,10 @@ contract MockVaultOracleAndExecutor {
   function getEquityAndDebt(address, address) external view returns (uint256, uint256) {
     if (isAfter) return (equityAfter, debtAfter);
     return (equityBefore, debtBefore);
+  }
+
+  function maxPriceAge() external pure returns (uint256) {
+    // placeholder
+    return 1;
   }
 }

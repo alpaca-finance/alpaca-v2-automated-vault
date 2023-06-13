@@ -30,7 +30,7 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
   uint16 internal constant PERFORMANCE_FEE_BPS = 1_000;
   uint16 internal constant MAX_PRICE_AGE = 60 * 60;
   uint16 internal constant MAX_PRICE_DIFF = 10_500;
-  uint256 internal constant MIN_DEPOSIT = 0.1 ether;
+  uint256 internal constant MIN_DEPOSIT = 1 ether;
   uint16 internal constant TOLERANCE_BPS = 9900; // tolerate up to 1% equity loss on manage
   uint8 internal constant MAX_LEVERAGE = 10;
 
