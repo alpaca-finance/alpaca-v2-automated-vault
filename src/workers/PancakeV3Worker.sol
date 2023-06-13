@@ -487,12 +487,12 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   /// @notice Transfer undeployed token out
   /// @param _token Token to be transfered
   /// @param _amount The amount to transfer
-  function transfer(address _token, uint256 _amount) external nonReentrant onlyExecutorInScope {
+  function transferToExecutor(address _token, uint256 _amount) external nonReentrant onlyExecutorInScope {
     if (_amount == 0) {
       revert PancakeV3Worker_InvalidParams();
     }
-    address _to = vaultManager.EXECUTOR_IN_SCOPE();
-    ERC20(_token).safeTransfer(_to, _amount);
-    emit LogTransfer(_token, _to, _amount);
+    // msg.sender is vault
+    ERC20(_token).safeTransfer(msg.sender, _amount);
+    emit LogTransfer(_token, msg.sender, _amount);
   }
 }

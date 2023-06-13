@@ -84,10 +84,10 @@ contract PCSV3Executor01 is Executor {
       }
       // Withdraw undeployed funds and decreased liquidity if any
       if (_amount0Withdraw != 0) {
-        _worker.transfer(address(_token0), _amount0Withdraw);
+        _worker.transferToExecutor(address(_token0), _amount0Withdraw);
       }
       if (_amount1Withdraw != 0) {
-        _worker.transfer(address(_token1), _amount1Withdraw);
+        _worker.transferToExecutor(address(_token1), _amount1Withdraw);
       }
     }
 
@@ -194,7 +194,7 @@ contract PCSV3Executor01 is Executor {
   }
 
   function transferFromWorker(address _token, uint256 _amount) external onlyVaultManager {
-    PancakeV3Worker(_getCurrentWorker()).transfer(_token, _amount);
+    PancakeV3Worker(_getCurrentWorker()).transferToExecutor(_token, _amount);
   }
 
   function transferToWorker(address _token, uint256 _amount) external onlyVaultManager {

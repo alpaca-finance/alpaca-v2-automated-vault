@@ -15,7 +15,7 @@ contract PancakeV3WorkerTransferTest is PancakeV3WorkerFixture {
     uint256 _workerToken1AmountBefore = token1.balanceOf(address(worker));
     uint256 _executorToken1AmountBefore = token1.balanceOf(IN_SCOPE_EXECUTOR);
     vm.prank(IN_SCOPE_EXECUTOR);
-    worker.transfer(address(token1), _amount);
+    worker.transferToExecutor(address(token1), _amount);
 
     assertEq(token1.balanceOf(address(worker)), _workerToken1AmountBefore - _amount);
     assertEq(token1.balanceOf(address(IN_SCOPE_EXECUTOR)), _executorToken1AmountBefore + _amount);
@@ -23,12 +23,12 @@ contract PancakeV3WorkerTransferTest is PancakeV3WorkerFixture {
 
   function testRevert_WhenCallerIsNotExecutorInScope() external {
     vm.expectRevert(PancakeV3Worker.PancakeV3Worker_Unauthorized.selector);
-    worker.transfer(address(token1), 1 ether);
+    worker.transferToExecutor(address(token1), 1 ether);
   }
 
   function testRevert_WhenTransferAmountIsZero() external {
     vm.prank(IN_SCOPE_EXECUTOR);
     vm.expectRevert(PancakeV3Worker.PancakeV3Worker_InvalidParams.selector);
-    worker.transfer(address(token1), 0);
+    worker.transferToExecutor(address(token1), 0);
   }
 }
