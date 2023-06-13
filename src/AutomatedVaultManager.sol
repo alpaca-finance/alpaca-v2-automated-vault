@@ -180,6 +180,7 @@ contract AutomatedVaultManager is
     // Set executor execution scope (worker, vault token) so that we don't have to pass them through multicall
     IExecutor(_cachedVaultInfo.executor).setExecutionScope(_cachedVaultInfo.worker, _vaultToken);
     _result = IExecutor(_cachedVaultInfo.executor).multicall(_executorParams);
+    IExecutor(_cachedVaultInfo.executor).sweepToWorker();
     IExecutor(_cachedVaultInfo.executor).setExecutionScope(address(0), address(0));
 
     EXECUTOR_IN_SCOPE = address(0);

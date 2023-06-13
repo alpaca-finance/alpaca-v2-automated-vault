@@ -16,4 +16,6 @@ interface IExecutor is IMulticall {
     returns (IAutomatedVaultManager.WithdrawResult[] memory);
 
   function onUpdate(address _vaultToken, address _worker) external returns (bytes memory _result);
+
+  function sweepToWorker() external;
 }

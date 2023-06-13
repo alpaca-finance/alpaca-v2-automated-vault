@@ -43,6 +43,10 @@ contract MockVaultOracleAndExecutor {
     return new bytes[](0);
   }
 
+  function sweepToWorker() external {
+    // placeholder
+  }
+
   function setExecutionScope(address, address) external {
     // placeholder
   }
