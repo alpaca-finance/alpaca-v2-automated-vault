@@ -31,6 +31,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
       })
     );
 
+    // Assert vault manager
     (
       address vaultWorker,
       address vaultWorkerOracle,
@@ -39,13 +40,15 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
       uint16 vaultToleranceBps,
       uint8 vaultMaxLeverage
     ) = vaultManager.vaultInfos(vaultToken);
-
     assertEq(vaultWorker, worker);
     assertEq(vaultWorkerOracle, vaultOracle);
     assertEq(vaultExecutor, executor);
     assertEq(vaultToleranceBps, toleranceBps);
     assertEq(vaultMaxLeverage, maxLeverage);
     assertEq(vaultMinimumDeposit, minimumDeposit);
+
+    // Assert vault token
+    assertEq(AutomatedVaultERC20(vaultToken).vaultManager(), address(vaultManager));
   }
 
   function testRevert_OpenVault_NonOwnerIsCaller() public {

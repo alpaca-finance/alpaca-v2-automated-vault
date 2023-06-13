@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
+import { AutomatedVaultERC20 } from "src/AutomatedVaultERC20.sol";
 import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
 
 // fixtures
@@ -33,7 +34,9 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
 
     vm.startPrank(DEPLOYER);
     vaultManager = AutomatedVaultManager(
-      DeployHelper.deployUpgradeable("AutomatedVaultManager", abi.encodeWithSignature("initialize()"))
+      DeployHelper.deployUpgradeable(
+        "AutomatedVaultManager", abi.encodeWithSignature("initialize(address)", address(new AutomatedVaultERC20()))
+      )
     );
     vm.stopPrank();
   }
