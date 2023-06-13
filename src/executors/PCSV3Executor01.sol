@@ -112,8 +112,8 @@ contract PCSV3Executor01 is Executor {
     // Repay with amount withdrawn, swap other token to repay token if not enough
     // NOTE: can't repay if vault has no equity (position value + undeployed funds < debt value)
     // due to amount withdrawn is not enough to repay and will revert
-    _repay(_worker, _vaultToken, _sharesToWithdraw, _totalShares, _amount0Withdraw, _token0, _token1);
-    _repay(_worker, _vaultToken, _sharesToWithdraw, _totalShares, _amount1Withdraw, _token1, _token0);
+    _repayOnWithdraw(_worker, _vaultToken, _sharesToWithdraw, _totalShares, _amount0Withdraw, _token0, _token1);
+    _repayOnWithdraw(_worker, _vaultToken, _sharesToWithdraw, _totalShares, _amount1Withdraw, _token1, _token0);
 
     // What is left after repayment belongs to user
     uint256 _amount0AfterRepay = _token0.balanceOf(address(this));
@@ -142,7 +142,7 @@ contract PCSV3Executor01 is Executor {
     return _results;
   }
 
-  function _repay(
+  function _repayOnWithdraw(
     address _worker,
     address _vaultToken,
     uint256 _sharesToWithdraw,
