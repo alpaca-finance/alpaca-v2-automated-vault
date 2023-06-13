@@ -41,7 +41,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   // packed slot for reinvest
   address public performanceFeeBucket;
   uint16 public performanceFeeBps;
-  uint40 public lastReinvest;
+  uint40 public lastHarvest;
 
   IZapV3 public zapV3;
 
@@ -415,64 +415,73 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
    */
   // TODO: handle when either token0 or token1 is reward(cake) token
   function _harvest() internal {
-    // Skip reinvest if already done before in same block
-    if (block.timestamp == lastReinvest) return;
-    lastReinvest = uint40(block.timestamp);
+    // Skip harvest if already done before in same block
+    if (block.timestamp == lastHarvest) return;
+    lastHarvest = uint40(block.timestamp);
 
-    // If tokenId is 0, then nothing to reinvest
-    if (nftTokenId == 0) return;
+    uint256 _nftTokenId = nftTokenId;
+    // If tokenId is 0, then nothing to harvest
+    if (_nftTokenId == 0) return;
 
-    // Claim all trading fee
-    (uint256 _fee0, uint256 _fee1) = masterChef.collect(
-      IPancakeV3MasterChef.CollectParams({
-        tokenId: nftTokenId,
-        recipient: address(this),
-        amount0Max: type(uint128).max,
-        amount1Max: type(uint128).max
-      })
-    );
-
-    // Harvest CAKE rewards
-    uint256 _cakeRewards = masterChef.harvest(nftTokenId, address(this));
-    // Collect performance fee
-    // SLOAD performanceFeeBucket and performanceFeeBps to save gas
+    // SLOADs
     address _performanceFeeBucket = performanceFeeBucket;
     uint16 _performanceFeeBps = performanceFeeBps;
+    ERC20 _token0 = token0;
+    ERC20 _token1 = token1;
+    ERC20 _cake = cake;
+    IPancakeV3MasterChef _masterChef = masterChef;
+
     // _cachedFee is for emitting the event. So we don't have to calc fee * performanceFeeBps / MAX_BPS twice
     uint256 _cachedFee = 0;
-    // Handling performance fees
 
-    if (_fee0 > 0) {
-      // Collect token0 performance fee
-      token0.safeTransfer(_performanceFeeBucket, _cachedFee = _fee0 * _performanceFeeBps / MAX_BPS);
-      emit LogCollectPerformanceFee(address(token0), _fee0, _performanceFeeBps, _cachedFee);
+    // Handle trading fee
+    {
+      // Claim all trading fee
+      (uint256 _fee0, uint256 _fee1) = _masterChef.collect(
+        IPancakeV3MasterChef.CollectParams({
+          tokenId: _nftTokenId,
+          recipient: address(this),
+          amount0Max: type(uint128).max,
+          amount1Max: type(uint128).max
+        })
+      );
+      // Collect performance fee on collected trading fee
+      if (_fee0 > 0) {
+        // Collect token0 performance fee
+        _token0.safeTransfer(_performanceFeeBucket, _cachedFee = _fee0 * _performanceFeeBps / MAX_BPS);
+        emit LogCollectPerformanceFee(address(_token0), _fee0, _performanceFeeBps, _cachedFee);
+      }
+      if (_fee1 > 0) {
+        // Collect token1 performance fee
+        _token1.safeTransfer(_performanceFeeBucket, _cachedFee = _fee1 * _performanceFeeBps / MAX_BPS);
+        emit LogCollectPerformanceFee(address(_token1), _fee1, _performanceFeeBps, _cachedFee);
+      }
     }
-    if (_fee1 > 0) {
-      // Collect token1 performance fee
-      token1.safeTransfer(_performanceFeeBucket, _cachedFee = _fee1 * _performanceFeeBps / MAX_BPS);
-      emit LogCollectPerformanceFee(address(token1), _fee1, _performanceFeeBps, _cachedFee);
-    }
+
+    // Harvest CAKE rewards
+    uint256 _cakeRewards = _masterChef.harvest(_nftTokenId, address(this));
     if (_cakeRewards > 0) {
       // Handing CAKE rewards
       // Collect CAKE performance fee
-      cake.safeTransfer(_performanceFeeBucket, _cachedFee = _cakeRewards * _performanceFeeBps / MAX_BPS);
-      emit LogCollectPerformanceFee(address(cake), _cakeRewards, _performanceFeeBps, _cachedFee);
+      _cake.safeTransfer(_performanceFeeBucket, _cachedFee = _cakeRewards * _performanceFeeBps / MAX_BPS);
+      emit LogCollectPerformanceFee(address(_cake), _cakeRewards, _performanceFeeBps, _cachedFee);
       // Sell CAKE for token0 or token1, if any
       // Find out need to sell CAKE to which side by checking currTick
       (, int24 _currTick,,,,,) = pool.slot0();
-      address _tokenOut = address(token0);
+      address _tokenOut = address(_token0);
       if (_currTick - posTickLower > posTickUpper - _currTick) {
         // If currTick is closer to tickUpper, then we will sell CAKE for token1
-        _tokenOut = address(token1);
+        _tokenOut = address(_token1);
       }
 
-      uint256 _swapAmount = cake.balanceOf(address(this));
-      cake.safeApprove(address(router), _swapAmount);
+      IPancakeV3Router _router = router;
+      uint256 _swapAmount = _cake.balanceOf(address(this));
+      _cake.safeApprove(address(_router), _swapAmount);
       // TODO: multi-hop swap
       // Swap CAKE for token0 or token1
-      router.exactInputSingle(
+      _router.exactInputSingle(
         IPancakeV3Router.ExactInputSingleParams({
-          tokenIn: address(cake),
+          tokenIn: address(_cake),
           tokenOut: _tokenOut,
           fee: poolFee,
           recipient: address(this),
