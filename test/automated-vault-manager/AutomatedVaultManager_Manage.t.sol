@@ -57,6 +57,10 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
 
   function testCorrectness_ManagingVaultResultInHealthyState_ShouldWork() external {
     address vaultToken = _openDefaultVault();
+
+    vm.expectCall(address(mockVaultOracleAndExecutor), abi.encodeWithSignature("multicall(bytes[])"), 1);
+    vm.expectCall(address(mockVaultOracleAndExecutor), abi.encodeWithSignature("sweepToWorker()"), 1);
+
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), new bytes[](0));
 
