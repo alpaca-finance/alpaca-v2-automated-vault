@@ -10,6 +10,7 @@ import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
 
 import "test/fixtures/BscFixture.f.sol";
+import { DeployHelper } from "test/helpers/DeployHelper.sol";
 
 contract PCSV3Executor01ActionTest is Test {
   PCSV3Executor01 executor;
@@ -21,7 +22,11 @@ contract PCSV3Executor01ActionTest is Test {
   MockERC20 mockToken1;
 
   function setUp() public virtual {
-    executor = new PCSV3Executor01(mockVaultManager,mockBank);
+    executor = PCSV3Executor01(
+      DeployHelper.deployUpgradeable(
+        "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, mockBank)
+      )
+    );
 
     mockToken0 = new MockERC20("Mock Token0", "MTKN0", 18);
     mockToken1 = new MockERC20("Mock Token1", "MTKN1", 6);
@@ -219,7 +224,11 @@ contract PCSV3Executor01PancakeV3SwapForkTest is PCSV3Executor01ActionTest, BscF
   function setUp() public override {
     super.setUp();
 
-    executor = new PCSV3Executor01(mockVaultManager, address(0));
+    executor = PCSV3Executor01(
+      DeployHelper.deployUpgradeable(
+        "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, address(0))
+      )
+    );
   }
 
   function testCorrectness_Executor_SwapExactInputSingle() public {

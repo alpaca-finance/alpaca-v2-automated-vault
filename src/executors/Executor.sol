@@ -3,18 +3,22 @@ pragma solidity 0.8.19;
 
 // dependencies
 import { Multicall } from "@openzeppelin/utils/Multicall.sol";
+import { Initializable } from "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 
 // interfaces
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
+import { IBank } from "src/interfaces/IBank.sol";
 
-abstract contract Executor is Multicall {
+abstract contract Executor is Multicall, Initializable, Ownable2StepUpgradeable {
   error Executor_NotVaultManager();
   error Executor_NoCurrentWorker();
   error Executor_NoCurrentVaultToken();
 
-  address public immutable vaultManager;
+  address public vaultManager;
+  IBank public bank;
   address private CURRENT_WORKER;
   address private CURRENT_VAULT_TOKEN;
 
@@ -23,8 +27,14 @@ abstract contract Executor is Multicall {
     _;
   }
 
-  constructor(address _vaultManager) {
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor() {
+    _disableInitializers();
+  }
+
+  function initialize(address _vaultManager, address _bank) external initializer {
     vaultManager = _vaultManager;
+    bank = IBank(_bank);
   }
 
   function setExecutionScope(address _worker, address _vaultToken) external onlyVaultManager {

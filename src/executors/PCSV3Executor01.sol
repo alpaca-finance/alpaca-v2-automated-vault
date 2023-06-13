@@ -11,7 +11,6 @@ import { Executor } from "src/executors/Executor.sol";
 
 // interfaces
 import { IExecutor } from "src/interfaces/IExecutor.sol";
-import { IBank } from "src/interfaces/IBank.sol";
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
 
@@ -24,12 +23,6 @@ contract PCSV3Executor01 is Executor {
   error PCSV3Executor01_PositionAlreadyExist();
   error PCSV3Executor01_PositionNotExist();
   error PCSV3Executor01_NotPool();
-
-  IBank public immutable bank;
-
-  constructor(address _vaultManager, address _bank) Executor(_vaultManager) {
-    bank = IBank(_bank);
-  }
 
   function onDeposit(address _worker, address /* _vaultToken */ )
     external
