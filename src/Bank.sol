@@ -81,6 +81,8 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
   function borrowOnBehalfOf(address _vaultToken, address _token, uint256 _amount) external onlyExecutorWithinScope {
     // Cache to save gas
     IMoneyMarket _moneyMarket = moneyMarket;
+    // Accure interest
+    _moneyMarket.accrueInterest(_token);
 
     // Effects
     // Safe to use unchecked since overflow amount would revert on borrow or transfer anyway
@@ -111,6 +113,8 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
 
     // Cache to save gas
     IMoneyMarket _moneyMarket = moneyMarket;
+    // Accure interest
+    _moneyMarket.accrueInterest(_token);
 
     // Effects
     // Cache to save gas
