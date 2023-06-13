@@ -57,7 +57,7 @@ contract PCSV3Executor01 is Executor {
     external
     override
     onlyVaultManager
-    returns (AutomatedVaultManager.WithdrawResult[] memory _results)
+    returns (AutomatedVaultManager.TokenAmount[] memory _results)
   {
     uint256 _totalShares = ERC20(_vaultToken).totalSupply();
     ERC20 _token0 = PancakeV3Worker(_worker).token0();
@@ -107,9 +107,9 @@ contract PCSV3Executor01 is Executor {
       _token1.safeTransfer(msg.sender, _amount1AfterRepay);
     }
 
-    _results = new AutomatedVaultManager.WithdrawResult[](2);
-    _results[0] = AutomatedVaultManager.WithdrawResult({ token: address(_token0), amount: _amount0AfterRepay });
-    _results[1] = AutomatedVaultManager.WithdrawResult({ token: address(_token1), amount: _amount1AfterRepay });
+    _results = new AutomatedVaultManager.TokenAmount[](2);
+    _results[0] = AutomatedVaultManager.TokenAmount({ token: address(_token0), amount: _amount0AfterRepay });
+    _results[1] = AutomatedVaultManager.TokenAmount({ token: address(_token1), amount: _amount1AfterRepay });
     return _results;
   }
 

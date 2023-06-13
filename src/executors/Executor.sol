@@ -53,7 +53,7 @@ abstract contract Executor is Multicall {
   function onWithdraw(address _worker, address _vaultToken, uint256 _sharesToWithdraw)
     external
     virtual
-    returns (AutomatedVaultManager.WithdrawResult[] memory);
+    returns (AutomatedVaultManager.TokenAmount[] memory);
 
   function onUpdate(address _worker, address _vaultToken) external virtual returns (bytes memory _result) { }
 }

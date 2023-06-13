@@ -10,7 +10,7 @@ contract MockVaultOracleAndExecutor {
   uint256 private equityAfter;
   uint256 private debtAfter;
   bool private isAfter;
-  AutomatedVaultManager.WithdrawResult[] private results;
+  AutomatedVaultManager.TokenAmount[] private results;
 
   address public vaultManager;
 
@@ -27,13 +27,13 @@ contract MockVaultOracleAndExecutor {
     return "";
   }
 
-  function setOnWithdrawResult(AutomatedVaultManager.WithdrawResult[] calldata _results) external {
+  function setOnTokenAmount(AutomatedVaultManager.TokenAmount[] calldata _results) external {
     for (uint256 i; i < _results.length; ++i) {
       results.push(_results[i]);
     }
   }
 
-  function onWithdraw(address, address, uint256) external returns (AutomatedVaultManager.WithdrawResult[] memory) {
+  function onWithdraw(address, address, uint256) external returns (AutomatedVaultManager.TokenAmount[] memory) {
     isAfter = true;
     return results;
   }

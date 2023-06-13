@@ -52,7 +52,7 @@ contract PCSV3Executor01OnWithdrawTest is Test {
     uint256 bankToken1Before = mockToken1.balanceOf(mockBank);
 
     vm.prank(mockVaultManager);
-    AutomatedVaultManager.WithdrawResult[] memory withdrawResults =
+    AutomatedVaultManager.TokenAmount[] memory withdrawResults =
       executor.onWithdraw(mockWorker, mockVaultToken, sharesToWithdraw);
 
     // Assertions

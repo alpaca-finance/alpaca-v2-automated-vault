@@ -9,7 +9,7 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
   constructor() BaseAutomatedVaultUnitTest() { }
 
   function testRevert_WhenDepositToUnopenedVault() public {
-    AutomatedVaultManager.DepositTokenParams[] memory _depositParams = new AutomatedVaultManager.DepositTokenParams[](0);
+    AutomatedVaultManager.TokenAmount[] memory _depositParams = new AutomatedVaultManager.TokenAmount[](0);
     vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_VaultNotExist(address)", address(0)));
     vaultManager.deposit(address(0), _depositParams, 0);
   }
@@ -20,8 +20,8 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
     vaultManager.setAllowToken(address(vaultToken), address(mockToken0), false);
     deal(address(mockToken0), address(this), 1 ether);
 
-    AutomatedVaultManager.DepositTokenParams[] memory params = new AutomatedVaultManager.DepositTokenParams[](1);
-    params[0] = AutomatedVaultManager.DepositTokenParams({ token: address(mockToken0), amount: 1 ether });
+    AutomatedVaultManager.TokenAmount[] memory params = new AutomatedVaultManager.TokenAmount[](1);
+    params[0] = AutomatedVaultManager.TokenAmount({ token: address(mockToken0), amount: 1 ether });
     vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_TokenNotAllowed()"));
     vaultManager.deposit(address(vaultToken), params, 0);
   }
@@ -37,7 +37,7 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
       _debtAfter: 0
     });
 
-    AutomatedVaultManager.DepositTokenParams[] memory params;
+    AutomatedVaultManager.TokenAmount[] memory params;
     vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_BelowMinimumDeposit()"));
     vaultManager.deposit(vaultToken, params, 0);
   }
@@ -53,7 +53,7 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
       _debtAfter: 0
     });
 
-    AutomatedVaultManager.DepositTokenParams[] memory params;
+    AutomatedVaultManager.TokenAmount[] memory params;
     vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_TooLittleReceived()"));
     vaultManager.deposit(vaultToken, params, sharesOut + 1);
   }
@@ -72,7 +72,7 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
 
     uint256 balanceBefore = mockToken0.balanceOf(address(this));
 
-    AutomatedVaultManager.DepositTokenParams[] memory params = new AutomatedVaultManager.DepositTokenParams[](1);
+    AutomatedVaultManager.TokenAmount[] memory params = new AutomatedVaultManager.TokenAmount[](1);
     params[0].token = address(mockToken0);
     params[0].amount = depositAmount;
     mockToken0.approve(address(vaultManager), depositAmount);

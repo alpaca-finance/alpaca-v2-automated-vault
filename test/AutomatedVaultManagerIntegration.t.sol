@@ -39,9 +39,9 @@
 //     uint256 usdtBefore = usdt.balanceOf(address(this));
 
 //     // Deposit
-//     AutomatedVaultManager.DepositTokenParams[] memory params = new AutomatedVaultManager.DepositTokenParams[](2);
-//     params[0] = AutomatedVaultManager.DepositTokenParams({ token: address(wbnb), amount: wbnbIn });
-//     params[1] = AutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: usdtIn });
+//     AutomatedVaultManager.TokenAmount[] memory params = new AutomatedVaultManager.TokenAmount[](2);
+//     params[0] = AutomatedVaultManager.TokenAmount({ token: address(wbnb), amount: wbnbIn });
+//     params[1] = AutomatedVaultManager.TokenAmount({ token: address(usdt), amount: usdtIn });
 
 //     // Fail case
 //     // Vault manager assertions
@@ -75,8 +75,8 @@
 //     // Fail case
 //     // Vault manager assertions
 //     // Should fail because of slippage
-//     // AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts = new AutomatedVaultManager.WithdrawSlippage[](1);
-//     // minAmountOuts[0] = AutomatedVaultManager.WithdrawSlippage({ token: address(wbnb), minAmountOut: 10000 ether });
+//     // AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](1);
+//     // minAmountOuts[0] = AutomatedVaultManager.TokenAmount({ token: address(wbnb), amount: 10000 ether });
 //     // vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_ExceedSlippage.selector);
 //     // vaultManager.withdraw(address(vaultToken), vaultToken.balanceOf(address(this)), minAmountOuts);
 //   }
@@ -153,9 +153,9 @@
 //   //   vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onDeposit.selector), 1);
 //   //   vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onWithdraw.selector), 1);
 
-//   //   AutomatedVaultManager.DepositTokenParams[] memory params = new AutomatedVaultManager.DepositTokenParams[](2);
-//   //   params[0] = AutomatedVaultManager.DepositTokenParams({ token: address(wbnb), amount: wbnbIn });
-//   //   params[1] = AutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: usdtIn });
+//   //   AutomatedVaultManager.TokenAmount[] memory params = new AutomatedVaultManager.TokenAmount[](2);
+//   //   params[0] = AutomatedVaultManager.TokenAmount({ token: address(wbnb), amount: wbnbIn });
+//   //   params[1] = AutomatedVaultManager.TokenAmount({ token: address(usdt), amount: usdtIn });
 //   //   vaultManager.deposit(address(vaultToken), params);
 
 //   //   assertEq(wbnbBefore - wbnb.balanceOf(address(this)), wbnbIn, "wbnb pulled");
@@ -166,7 +166,7 @@
 //   //   usdtBefore = usdt.balanceOf(address(this));
 
 //   //   // Withdraw without slippage check
-//   //   AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts = new AutomatedVaultManager.WithdrawSlippage[](0);
+//   //   AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](0);
 //   //   vaultManager.withdraw(address(vaultToken), vaultToken.balanceOf(address(this)), minAmountOuts);
 
 //   //   assertApproxEqRel(
@@ -251,9 +251,9 @@
 //   //   vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onDeposit.selector), 1);
 //   //   vm.expectCall(address(pancakeV3Executor), abi.encodeWithSelector(IExecutor.onWithdraw.selector), 1);
 
-//   //   AutomatedVaultManager.DepositTokenParams[] memory params = new AutomatedVaultManager.DepositTokenParams[](2);
-//   //   params[0] = AutomatedVaultManager.DepositTokenParams({ token: address(wbnb), amount: wbnbIn });
-//   //   params[1] = AutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: usdtIn });
+//   //   AutomatedVaultManager.TokenAmount[] memory params = new AutomatedVaultManager.TokenAmount[](2);
+//   //   params[0] = AutomatedVaultManager.TokenAmount({ token: address(wbnb), amount: wbnbIn });
+//   //   params[1] = AutomatedVaultManager.TokenAmount({ token: address(usdt), amount: usdtIn });
 //   //   vaultManager.deposit(address(vaultToken), params);
 
 //   //   assertEq(wbnbBefore - wbnb.balanceOf(address(this)), wbnbIn, "wbnb pulled");
@@ -365,9 +365,9 @@
 
 // //   // TODO: revise this case after done with debt pricing
 // //   // function testCorrectness_VaultManager_DepositToEmptyVault_ShouldGetSharesEqualToEquity() public {
-// //   //   AutomatedVaultManager.DepositTokenParams[] memory deposits = new AutomatedVaultManager.DepositTokenParams[](2);
-// //   //   deposits[0] = AutomatedVaultManager.DepositTokenParams({ token: address(wbnb), amount: 1 ether });
-// //   //   deposits[1] = AutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: 2 ether });
+// //   //   AutomatedVaultManager.TokenAmount[] memory deposits = new AutomatedVaultManager.TokenAmount[](2);
+// //   //   deposits[0] = AutomatedVaultManager.TokenAmount({ token: address(wbnb), amount: 1 ether });
+// //   //   deposits[1] = AutomatedVaultManager.TokenAmount({ token: address(usdt), amount: 2 ether });
 
 // //   //   uint256 _balanceWBNBBefore = wbnb.balanceOf(ALICE);
 // //   //   uint256 _balanceUSDTBefore = usdt.balanceOf(ALICE);
