@@ -186,7 +186,6 @@ contract PCSV3Executor01 is Executor {
     bank.accrueInterest(_vaultToken);
     PancakeV3Worker(_worker).harvest();
     emit LogOnUpdate(_worker, _vaultToken);
-    return abi.encode();
   }
 
   function sweepToWorker() external override onlyVaultManager {
