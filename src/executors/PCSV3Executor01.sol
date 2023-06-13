@@ -31,51 +31,51 @@ contract PCSV3Executor01 is Executor {
     bank = IBank(_bank);
   }
 
-  function onDeposit(PancakeV3Worker _worker, address /* _vaultToken */ )
+  function onDeposit(address _worker, address /* _vaultToken */ )
     external
     override
     onlyVaultManager
     returns (bytes memory _result)
   {
-    ERC20 _token0 = _worker.token0();
-    ERC20 _token1 = _worker.token1();
+    ERC20 _token0 = PancakeV3Worker(_worker).token0();
+    ERC20 _token1 = PancakeV3Worker(_worker).token1();
     uint256 _amountIn0 = _token0.balanceOf(address(this));
     uint256 _amountIn1 = _token1.balanceOf(address(this));
 
     if (_amountIn0 != 0) {
-      _token0.safeTransfer(address(_worker), _amountIn0);
+      _token0.safeTransfer(_worker, _amountIn0);
     }
     if (_amountIn1 != 0) {
-      _token1.safeTransfer(address(_worker), _amountIn1);
+      _token1.safeTransfer(_worker, _amountIn1);
     }
 
     return abi.encode(_amountIn0, _amountIn1);
   }
 
   /// @notice Decrease liquidity, transfer undeployed funds from worker and repay debt
-  function onWithdraw(PancakeV3Worker _worker, address _vaultToken, uint256 _sharesToWithdraw)
+  function onWithdraw(address _worker, address _vaultToken, uint256 _sharesToWithdraw)
     external
     override
     onlyVaultManager
     returns (AutomatedVaultManager.WithdrawResult[] memory _results)
   {
     uint256 _totalShares = ERC20(_vaultToken).totalSupply();
-    ERC20 _token0 = _worker.token0();
-    ERC20 _token1 = _worker.token1();
+    ERC20 _token0 = PancakeV3Worker(_worker).token0();
+    ERC20 _token1 = PancakeV3Worker(_worker).token1();
 
     // Withdraw from nft liquidity (if applicable) and undeployed funds
     uint256 _amount0Withdraw;
     uint256 _amount1Withdraw;
     {
-      _amount0Withdraw = _token0.balanceOf(address(_worker)) * _sharesToWithdraw / _totalShares;
-      _amount1Withdraw = _token1.balanceOf(address(_worker)) * _sharesToWithdraw / _totalShares;
+      _amount0Withdraw = _token0.balanceOf(_worker) * _sharesToWithdraw / _totalShares;
+      _amount1Withdraw = _token1.balanceOf(_worker) * _sharesToWithdraw / _totalShares;
       {
-        uint256 _tokenId = _worker.nftTokenId();
+        uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
         if (_tokenId != 0) {
-          (,,,,,,, uint128 _liquidity,,,,) = _worker.nftPositionManager().positions(_tokenId);
+          (,,,,,,, uint128 _liquidity,,,,) = PancakeV3Worker(_worker).nftPositionManager().positions(_tokenId);
           if (_liquidity != 0) {
             (uint256 _amount0Decreased, uint256 _amount1Decreased) =
-              _worker.decreasePosition(uint128(_liquidity * _sharesToWithdraw / _totalShares));
+              PancakeV3Worker(_worker).decreasePosition(uint128(_liquidity * _sharesToWithdraw / _totalShares));
             // Tokens still with worker after `decreasePosition` so we need to add to withdrawal
             _amount0Withdraw += _amount0Decreased;
             _amount1Withdraw += _amount1Decreased;
@@ -84,10 +84,10 @@ contract PCSV3Executor01 is Executor {
       }
       // Withdraw undeployed funds and decreased liquidity if any
       if (_amount0Withdraw != 0) {
-        _worker.transferToExecutor(address(_token0), _amount0Withdraw);
+        PancakeV3Worker(_worker).transferToExecutor(address(_token0), _amount0Withdraw);
       }
       if (_amount1Withdraw != 0) {
-        _worker.transferToExecutor(address(_token1), _amount1Withdraw);
+        PancakeV3Worker(_worker).transferToExecutor(address(_token1), _amount1Withdraw);
       }
     }
 
@@ -114,7 +114,7 @@ contract PCSV3Executor01 is Executor {
   }
 
   function _repay(
-    PancakeV3Worker _worker,
+    address _worker,
     address _vaultToken,
     uint256 _sharesToWithdraw,
     uint256 _totalShares,
@@ -132,7 +132,7 @@ contract PCSV3Executor01 is Executor {
       uint256 _diffAmount = _repayAmount - _repayTokenBalance;
       bool _zeroForOne = address(_otherToken) < address(_repayToken);
 
-      ICommonV3Pool _pool = _worker.pool();
+      ICommonV3Pool _pool = PancakeV3Worker(_worker).pool();
       _pool.swap(
         address(this),
         _zeroForOne,
@@ -146,14 +146,14 @@ contract PCSV3Executor01 is Executor {
     bank.repayOnBehalfOf(_vaultToken, address(_repayToken), _repayAmount);
   }
 
-  function onUpdate(address _vaultToken, PancakeV3Worker _worker)
+  function onUpdate(address _vaultToken, address _worker)
     external
     override
     onlyVaultManager
     returns (bytes memory _result)
   {
     bank.accrueInterest(_vaultToken);
-    _worker.harvest();
+    PancakeV3Worker(_worker).harvest();
     return abi.encode();
   }
 

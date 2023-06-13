@@ -53,7 +53,7 @@ contract PCSV3Executor01OnWithdrawTest is Test {
 
     vm.prank(mockVaultManager);
     AutomatedVaultManager.WithdrawResult[] memory withdrawResults =
-      executor.onWithdraw(PancakeV3Worker(mockWorker), mockVaultToken, sharesToWithdraw);
+      executor.onWithdraw(mockWorker, mockVaultToken, sharesToWithdraw);
 
     // Assertions
     // - worker balance decrease
@@ -198,7 +198,7 @@ contract PCSV3Executor01OnWithdrawForkTest is BscFixture {
     );
 
     vm.prank(mockVaultManager);
-    executor.onWithdraw(PancakeV3Worker(mockWorker), mockVaultToken, totalShares);
+    executor.onWithdraw(mockWorker, mockVaultToken, totalShares);
 
     // Assertions
     // - executor balance is 0 since undeployed funds = debt (no equity)
