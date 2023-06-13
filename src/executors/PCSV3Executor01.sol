@@ -157,7 +157,7 @@ contract PCSV3Executor01 is Executor {
     return abi.encode();
   }
 
-  function sweepToWorker() external onlyVaultManager {
+  function sweepToWorker() external override onlyVaultManager {
     address _worker = _getCurrentWorker();
     ICommonV3Pool _pool = PancakeV3Worker(_worker).pool();
     _sweepTo(ERC20(_pool.token0()), _worker);
