@@ -17,20 +17,18 @@ import { MockVaultOracleAndExecutor } from "test/mocks/MockVaultOracleAndExecuto
 
 contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
   AutomatedVaultManager vaultManager;
-  address mockWorker = makeAddr("mockWorker");
   MockVaultOracleAndExecutor mockVaultOracleAndExecutor;
+  address mockWorker = makeAddr("mockWorker");
   MockERC20 mockToken0;
   MockERC20 mockToken1;
 
-  uint256 internal constant DEFAULT_MINIMUM_DEPOSIT = 0.1 ether;
+  uint256 internal constant DEFAULT_MINIMUM_DEPOSIT = 1 ether;
   uint8 internal constant DEFAULT_MAX_LEVERAGE = 10;
   uint16 internal constant DEFAULT_TOLERANCE_BPS = 9900;
 
   constructor() ProtocolActorFixture() {
     mockToken0 = new MockERC20("Mock Token0", "MTKN0", 18);
     mockToken1 = new MockERC20("Mock Token1", "MTKN1", 6);
-
-    mockVaultOracleAndExecutor = new MockVaultOracleAndExecutor();
 
     vm.startPrank(DEPLOYER);
     vaultManager = AutomatedVaultManager(
@@ -39,9 +37,11 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
       )
     );
     vm.stopPrank();
+
+    mockVaultOracleAndExecutor = new MockVaultOracleAndExecutor(address(vaultManager));
   }
 
-  function _openVault(uint256 minimumDeposit, uint16 toleranceBps, uint8 maxLeverage)
+  function _openVault(address worker, uint256 minimumDeposit, uint16 toleranceBps, uint8 maxLeverage)
     internal
     returns (address vaultToken)
   {
@@ -50,7 +50,7 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
       "test vault",
       "TV",
       AutomatedVaultManager.VaultInfo({
-        worker: address(mockWorker),
+        worker: worker,
         vaultOracle: address(mockVaultOracleAndExecutor),
         executor: address(mockVaultOracleAndExecutor),
         minimumDeposit: minimumDeposit,
@@ -65,6 +65,6 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
   }
 
   function _openDefaultVault() internal returns (address) {
-    return _openVault(DEFAULT_MINIMUM_DEPOSIT, DEFAULT_TOLERANCE_BPS, DEFAULT_MAX_LEVERAGE);
+    return _openVault(mockWorker, DEFAULT_MINIMUM_DEPOSIT, DEFAULT_TOLERANCE_BPS, DEFAULT_MAX_LEVERAGE);
   }
 }

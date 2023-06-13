@@ -27,7 +27,7 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
   }
 
   function testRevert_WhenDepositBelowMinimumDepositSize() public {
-    address vaultToken = _openVault(1 ether, DEFAULT_TOLERANCE_BPS, DEFAULT_MAX_LEVERAGE);
+    address vaultToken = _openVault(mockWorker, 1 ether, DEFAULT_TOLERANCE_BPS, DEFAULT_MAX_LEVERAGE);
     uint256 equityAfter = 0.1 ether;
 
     mockVaultOracleAndExecutor.setGetEquityAndDebtResult({

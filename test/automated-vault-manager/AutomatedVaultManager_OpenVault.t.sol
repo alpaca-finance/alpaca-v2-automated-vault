@@ -7,12 +7,17 @@ import { IERC20 } from "src/interfaces/IERC20.sol";
 
 // TODO: open vault sanity check test
 contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
-  constructor() BaseAutomatedVaultUnitTest() { }
+  address worker = makeAddr("worker");
+  address vaultOracle = makeAddr("vaultOracle");
+  address executor = makeAddr("executor");
+
+  constructor() BaseAutomatedVaultUnitTest() {
+    // Mock for sanity check
+    vm.mockCall(vaultOracle, abi.encodeWithSignature("maxPriceAge()"), abi.encode(1));
+    vm.mockCall(executor, abi.encodeWithSignature("vaultManager()"), abi.encode(address(vaultManager)));
+  }
 
   function testCorrectness_OpenVault() public {
-    address worker = makeAddr("worker");
-    address vaultOracle = makeAddr("vaultOracle");
-    address executor = makeAddr("executor");
     uint256 minimumDeposit = 100 ether;
     uint16 toleranceBps = 9900;
     uint8 maxLeverage = 10;
@@ -46,26 +51,148 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
     assertEq(vaultToleranceBps, toleranceBps);
     assertEq(vaultMaxLeverage, maxLeverage);
     assertEq(vaultMinimumDeposit, minimumDeposit);
+    assertEq(vaultManager.workerExisted(worker), true);
 
     // Assert vault token
     assertEq(AutomatedVaultERC20(vaultToken).vaultManager(), address(vaultManager));
   }
 
   function testRevert_OpenVault_NonOwnerIsCaller() public {
-    address _worker = makeAddr("worker");
-    address _vaultOracle = makeAddr("vaultOracle");
-    address _executor = makeAddr("executor");
-
     vm.prank(USER_ALICE);
     vm.expectRevert("Ownable: caller is not the owner");
     vaultManager.openVault(
       "test vault",
       "TV",
       AutomatedVaultManager.VaultInfo({
-        worker: _worker,
-        vaultOracle: _vaultOracle,
-        executor: _executor,
+        worker: worker,
+        vaultOracle: vaultOracle,
+        executor: executor,
         minimumDeposit: 100 ether,
+        toleranceBps: 9900,
+        maxLeverage: 10
+      })
+    );
+  }
+
+  function testRevert_OpenVault_InvalidParams() public {
+    vm.startPrank(DEPLOYER);
+    // Invalid minumumDeposit
+    vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_InvalidParams.selector);
+    vaultManager.openVault(
+      "test vault",
+      "TV",
+      AutomatedVaultManager.VaultInfo({
+        worker: worker,
+        vaultOracle: vaultOracle,
+        executor: executor,
+        minimumDeposit: 0.1 ether,
+        toleranceBps: 9900,
+        maxLeverage: 10
+      })
+    );
+    // Invalid toleranceBps
+    vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_InvalidParams.selector);
+    vaultManager.openVault(
+      "test vault",
+      "TV",
+      AutomatedVaultManager.VaultInfo({
+        worker: worker,
+        vaultOracle: vaultOracle,
+        executor: executor,
+        minimumDeposit: 1 ether,
+        toleranceBps: 1,
+        maxLeverage: 10
+      })
+    );
+    // Invalid maxLeverage
+    vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_InvalidParams.selector);
+    vaultManager.openVault(
+      "test vault",
+      "TV",
+      AutomatedVaultManager.VaultInfo({
+        worker: worker,
+        vaultOracle: vaultOracle,
+        executor: executor,
+        minimumDeposit: 1 ether,
+        toleranceBps: 9900,
+        maxLeverage: 11
+      })
+    );
+    // Invalid vaultOracle
+    vm.clearMockedCalls();
+    vm.mockCall(executor, abi.encodeWithSignature("vaultManager()"), abi.encode(address(vaultManager)));
+    vm.expectRevert();
+    vaultManager.openVault(
+      "test vault",
+      "TV",
+      AutomatedVaultManager.VaultInfo({
+        worker: worker,
+        vaultOracle: vaultOracle,
+        executor: executor,
+        minimumDeposit: 1 ether,
+        toleranceBps: 9900,
+        maxLeverage: 10
+      })
+    );
+    // Executor mismatch
+    vm.clearMockedCalls();
+    vm.mockCall(vaultOracle, abi.encodeWithSignature("maxPriceAge()"), abi.encode(1));
+    vm.mockCall(executor, abi.encodeWithSignature("vaultManager()"), abi.encode(address(1234)));
+    vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_InvalidParams.selector);
+    vaultManager.openVault(
+      "test vault",
+      "TV",
+      AutomatedVaultManager.VaultInfo({
+        worker: worker,
+        vaultOracle: vaultOracle,
+        executor: executor,
+        minimumDeposit: 1 ether,
+        toleranceBps: 9900,
+        maxLeverage: 10
+      })
+    );
+    // Invalid executor
+    vm.clearMockedCalls();
+    vm.mockCall(vaultOracle, abi.encodeWithSignature("maxPriceAge()"), abi.encode(1));
+    vm.expectRevert();
+    vaultManager.openVault(
+      "test vault",
+      "TV",
+      AutomatedVaultManager.VaultInfo({
+        worker: worker,
+        vaultOracle: vaultOracle,
+        executor: executor,
+        minimumDeposit: 1 ether,
+        toleranceBps: 9900,
+        maxLeverage: 10
+      })
+    );
+
+    vm.mockCall(vaultOracle, abi.encodeWithSignature("maxPriceAge()"), abi.encode(1));
+    vm.mockCall(executor, abi.encodeWithSignature("vaultManager()"), abi.encode(address(vaultManager)));
+    // Open valid vault
+    vaultManager.openVault(
+      "test vault",
+      "TV",
+      AutomatedVaultManager.VaultInfo({
+        worker: worker,
+        vaultOracle: vaultOracle,
+        executor: executor,
+        minimumDeposit: 1 ether,
+        toleranceBps: 9900,
+        maxLeverage: 10
+      })
+    );
+    // Worker already exist
+    vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_InvalidParams.selector);
+    vaultManager.openVault(
+      "test vault",
+      "TV",
+      AutomatedVaultManager.VaultInfo({
+        worker: worker,
+        vaultOracle: vaultOracle,
+        executor: executor,
+        minimumDeposit: 1 ether,
         toleranceBps: 9900,
         maxLeverage: 10
       })

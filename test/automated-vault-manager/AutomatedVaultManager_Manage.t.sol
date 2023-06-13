@@ -6,13 +6,10 @@ import "./BaseAutomatedVaultUnitTest.sol";
 import { IERC20 } from "src/interfaces/IERC20.sol";
 
 contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
-  address vaultToken;
-
-  constructor() BaseAutomatedVaultUnitTest() {
-    vaultToken = _openDefaultVault();
-  }
+  constructor() BaseAutomatedVaultUnitTest() { }
 
   function testRevert_WhenNonManagerCallManage_ShouldRevert() external {
+    address vaultToken = _openDefaultVault();
     vm.prank(address(1234));
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_Unauthorized.selector);
     vaultManager.manage(address(vaultToken), new bytes[](1));
@@ -21,13 +18,12 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
   function testFuzzRevert_WhenManageCauseTooMuchEquityLoss(uint16 tolerance, uint256 equityBefore, uint256 equityAfter)
     public
   {
-    tolerance = uint16(bound(tolerance, 1, 10000)); // can't allow 100% loss
+    tolerance = uint16(bound(tolerance, 9501, 10000));
     equityBefore = bound(equityBefore, 1, 1e30);
     equityAfter = bound(equityAfter, 0, equityBefore * tolerance / 10000);
     if (equityAfter > 0) equityAfter -= 1; // prevent equal case
 
-    // tolerate up to 1% equity loss
-    vaultToken = _openVault(DEFAULT_MINIMUM_DEPOSIT, tolerance, DEFAULT_MAX_LEVERAGE);
+    address vaultToken = _openVault(mockWorker, DEFAULT_MINIMUM_DEPOSIT, tolerance, DEFAULT_MAX_LEVERAGE);
 
     mockVaultOracleAndExecutor.setGetEquityAndDebtResult({
       _equityBefore: equityBefore,
@@ -43,7 +39,7 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
 
   function testRevert_WhenManageCauseTooMuchLeverage() public {
     // max 10x leverage
-    vaultToken = _openVault(DEFAULT_MINIMUM_DEPOSIT, DEFAULT_TOLERANCE_BPS, 10);
+    address vaultToken = _openVault(mockWorker, DEFAULT_MINIMUM_DEPOSIT, DEFAULT_TOLERANCE_BPS, 10);
 
     // 10x leverage with 100 equity allow up to 900 debt
     // 901 should revert
@@ -60,6 +56,7 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
   }
 
   function testCorrectness_ManagingVaultResultInHealthyState_ShouldWork() external {
+    address vaultToken = _openDefaultVault();
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), new bytes[](0));
 
