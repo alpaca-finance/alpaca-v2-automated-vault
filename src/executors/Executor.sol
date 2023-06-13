@@ -16,6 +16,7 @@ abstract contract Executor is Multicall, Initializable, Ownable2StepUpgradeable 
   error Executor_NotVaultManager();
   error Executor_NoCurrentWorker();
   error Executor_NoCurrentVaultToken();
+  error Executor_InvalidParams();
 
   address public vaultManager;
   IBank public bank;
@@ -33,6 +34,12 @@ abstract contract Executor is Multicall, Initializable, Ownable2StepUpgradeable 
   }
 
   function initialize(address _vaultManager, address _bank) external initializer {
+    // Sanity check
+    AutomatedVaultManager(_vaultManager).vaultTokenImplementation();
+    if (_vaultManager != IBank(_bank).vaultManager()) {
+      revert Executor_InvalidParams();
+    }
+
     vaultManager = _vaultManager;
     bank = IBank(_bank);
   }

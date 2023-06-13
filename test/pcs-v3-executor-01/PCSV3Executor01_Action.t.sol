@@ -22,6 +22,9 @@ contract PCSV3Executor01ActionTest is Test {
   MockERC20 mockToken1;
 
   function setUp() public virtual {
+    // Mock for sanity check
+    vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
+    vm.mockCall(mockBank, abi.encodeWithSignature("vaultManager()"), abi.encode(mockVaultManager));
     executor = PCSV3Executor01(
       DeployHelper.deployUpgradeable(
         "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, mockBank)
@@ -224,9 +227,12 @@ contract PCSV3Executor01PancakeV3SwapForkTest is PCSV3Executor01ActionTest, BscF
   function setUp() public override {
     super.setUp();
 
+    // Mock for sanity check
+    vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
+    vm.mockCall(mockBank, abi.encodeWithSignature("vaultManager()"), abi.encode(mockVaultManager));
     executor = PCSV3Executor01(
       DeployHelper.deployUpgradeable(
-        "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, address(0))
+        "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, mockBank)
       )
     );
   }

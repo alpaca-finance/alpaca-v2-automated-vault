@@ -18,6 +18,9 @@ contract PCSV3Executor01SweepToWorkerTest is Test {
   MockERC20 mockToken1;
 
   function setUp() public virtual {
+    // Mock for sanity check
+    vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
+    vm.mockCall(mockBank, abi.encodeWithSignature("vaultManager()"), abi.encode(mockVaultManager));
     executor = PCSV3Executor01(
       DeployHelper.deployUpgradeable(
         "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, mockBank)

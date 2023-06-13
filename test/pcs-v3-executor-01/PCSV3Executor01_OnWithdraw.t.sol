@@ -27,6 +27,9 @@ contract PCSV3Executor01OnWithdrawTest is Test {
 
   function setUp() public {
     mockBank = address(new MockBank());
+    // Mock for sanity check
+    vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
+    vm.mockCall(mockBank, abi.encodeWithSignature("vaultManager()"), abi.encode(mockVaultManager));
     executor = PCSV3Executor01(
       DeployHelper.deployUpgradeable(
         "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, mockBank)
@@ -174,6 +177,9 @@ contract PCSV3Executor01OnWithdrawForkTest is BscFixture {
     vm.createSelectFork("bsc_mainnet", BscFixture.FORK_BLOCK_NUMBER_1);
 
     mockBank = address(new MockBank());
+    // Mock for sanity check
+    vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
+    vm.mockCall(mockBank, abi.encodeWithSignature("vaultManager()"), abi.encode(mockVaultManager));
     executor = PCSV3Executor01(
       DeployHelper.deployUpgradeable(
         "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, mockBank)
