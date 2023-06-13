@@ -34,9 +34,10 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
 
     vm.startPrank(DEPLOYER);
     vaultManager = AutomatedVaultManager(
-      DeployHelper.deployUpgradeable("AutomatedVaultManager", abi.encodeWithSignature("initialize()"))
+      DeployHelper.deployUpgradeable(
+        "AutomatedVaultManager", abi.encodeWithSignature("initialize(address)", address(new AutomatedVaultERC20()))
+      )
     );
-    vaultManager.setVaultTokenImplementation(address(new AutomatedVaultERC20()));
     vm.stopPrank();
   }
 

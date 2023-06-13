@@ -49,10 +49,10 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
 
     vaultManager = AutomatedVaultManager(
       DeployHelper.deployUpgradeable(
-        "AutomatedVaultManager", abi.encodeWithSelector(AutomatedVaultManager.initialize.selector)
+        "AutomatedVaultManager",
+        abi.encodeWithSelector(AutomatedVaultManager.initialize.selector, address(new AutomatedVaultERC20()))
       )
     );
-    vaultManager.setVaultTokenImplementation(address(new AutomatedVaultERC20()));
 
     moneyMarket = new MockMoneyMarket();
 

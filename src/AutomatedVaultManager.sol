@@ -76,9 +76,11 @@ contract AutomatedVaultManager is
     _disableInitializers();
   }
 
-  function initialize() external initializer {
+  function initialize(address _vaultTokenImplementation) external initializer {
     Ownable2StepUpgradeable.__Ownable2Step_init();
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
+
+    vaultTokenImplementation = _vaultTokenImplementation;
   }
 
   function openVault(string calldata _name, string calldata _symbol, VaultInfo calldata _vaultInfo)
