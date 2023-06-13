@@ -199,7 +199,7 @@ contract PCSV3Executor01 is Executor {
   function _sweepTo(ERC20 _token, address _to) internal {
     uint256 _balance = _token.balanceOf(address(this));
     if (_balance != 0) {
-      _token.transfer(_to, _balance);
+      _token.safeTransfer(_to, _balance);
       emit LogSweepToWorker(address(_token), _balance);
     }
   }
