@@ -7,7 +7,7 @@ import { Executor } from "src/executors/Executor.sol";
 import { PCSV3Executor01 } from "src/executors/PCSV3Executor01.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 
-import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 
 import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { MockPancakeV3Worker } from "test/mocks/MockPancakeV3Worker.sol";
@@ -52,8 +52,8 @@ contract PCSV3Executor01OnWithdrawTest is Test {
     uint256 bankToken1Before = mockToken1.balanceOf(mockBank);
 
     vm.prank(mockVaultManager);
-    IAutomatedVaultManager.WithdrawResult[] memory withdrawResults =
-      executor.onWithdraw(PancakeV3Worker(mockWorker), mockVaultToken, sharesToWithdraw);
+    AutomatedVaultManager.TokenAmount[] memory withdrawResults =
+      executor.onWithdraw(mockWorker, mockVaultToken, sharesToWithdraw);
 
     // Assertions
     // - worker balance decrease
@@ -198,7 +198,7 @@ contract PCSV3Executor01OnWithdrawForkTest is BscFixture {
     );
 
     vm.prank(mockVaultManager);
-    executor.onWithdraw(PancakeV3Worker(mockWorker), mockVaultToken, totalShares);
+    executor.onWithdraw(mockWorker, mockVaultToken, totalShares);
 
     // Assertions
     // - executor balance is 0 since undeployed funds = debt (no equity)

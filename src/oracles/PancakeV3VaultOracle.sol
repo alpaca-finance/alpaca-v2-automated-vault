@@ -19,6 +19,7 @@ import { LibFullMath } from "src/libraries/LibFullMath.sol";
 import { LibTickMath } from "src/libraries/LibTickMath.sol";
 import { LibLiquidityAmounts } from "src/libraries/LibLiquidityAmounts.sol";
 import { LibSqrtPriceX96 } from "src/libraries/LibSqrtPriceX96.sol";
+import { MAX_BPS } from "src/libraries/Constants.sol";
 
 contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
   /// States
@@ -29,6 +30,7 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
   /// Errors
   error PancakeV3VaultOracle_OraclePriceTooLow();
   error PancakeV3VaultOracle_OraclePriceTooHigh();
+  error PancakeV3VaultOracle_InvalidParams();
 
   /// Events
   event LogSetMaxPriceDiff(uint16 prevMaxPriceDiff, uint16 maxPriceDiff);
@@ -53,6 +55,9 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
   /// @notice Set max price diff.
   /// @param _newMaxPriceDiff Max price diff in bps.
   function setMaxPriceDiff(uint16 _newMaxPriceDiff) external onlyOwner {
+    if (_newMaxPriceDiff < MAX_BPS) {
+      revert PancakeV3VaultOracle_InvalidParams();
+    }
     emit LogSetMaxPriceDiff(maxPriceDiff, _newMaxPriceDiff);
     maxPriceDiff = _newMaxPriceDiff;
   }

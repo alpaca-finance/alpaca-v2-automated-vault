@@ -10,8 +10,8 @@ import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/access/Ownabl
 import { ReentrancyGuardUpgradeable } from "@openzeppelin-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { IMoneyMarket } from "@alpaca-mm/money-market/interfaces/IMoneyMarket.sol";
 
-// interfaces
-import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+// contracts
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 
 // libraries
 import { LibShareUtil } from "src/libraries/LibShareUtil.sol";
@@ -29,7 +29,7 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
   mapping(address => LibVaultDebt.VaultDebtList) public vaultDebtLists;
 
   IMoneyMarket public moneyMarket;
-  IAutomatedVaultManager public vaultManager;
+  AutomatedVaultManager public vaultManager;
 
   // token => total debt shares
   mapping(address => uint256) public tokenDebtShares;
@@ -51,8 +51,12 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     Ownable2StepUpgradeable.__Ownable2Step_init();
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
 
+    // Sanity check
+    IMoneyMarket(_moneyMarket).getMinDebtSize();
+    AutomatedVaultManager(_vaultManager).vaultTokenImplementation();
+
     moneyMarket = IMoneyMarket(_moneyMarket);
-    vaultManager = IAutomatedVaultManager(_vaultManager);
+    vaultManager = AutomatedVaultManager(_vaultManager);
   }
 
   function accrueInterest(address _vaultToken) external {
@@ -81,6 +85,8 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
   function borrowOnBehalfOf(address _vaultToken, address _token, uint256 _amount) external onlyExecutorWithinScope {
     // Cache to save gas
     IMoneyMarket _moneyMarket = moneyMarket;
+    // Accure interest
+    _moneyMarket.accrueInterest(_token);
 
     // Effects
     // Safe to use unchecked since overflow amount would revert on borrow or transfer anyway
@@ -111,6 +117,8 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
 
     // Cache to save gas
     IMoneyMarket _moneyMarket = moneyMarket;
+    // Accure interest
+    _moneyMarket.accrueInterest(_token);
 
     // Effects
     // Cache to save gas

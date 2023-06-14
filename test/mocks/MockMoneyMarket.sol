@@ -22,4 +22,9 @@ contract MockMoneyMarket {
 
   // placeholder
   function accrueInterest(address) external { }
+
+  // placeholder for sanity check
+  function getMinDebtSize() external pure returns (uint256) {
+    return 1;
+  }
 }
