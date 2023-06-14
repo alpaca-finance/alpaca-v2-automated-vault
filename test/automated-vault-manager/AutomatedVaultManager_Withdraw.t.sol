@@ -97,4 +97,41 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     // Invariant: EXECUTOR_IN_SCOPE == address(0)
     assertEq(vaultManager.EXECUTOR_IN_SCOPE(), address(0));
   }
+
+  function testCorrectness_WhenWithdraw_ManagementFee_ShouldBeCollected() public {
+    uint256 sharesToWithdraw = 1 ether;
+
+    address vaultToken = _openDefaultVault();
+    deal(vaultToken, address(this), sharesToWithdraw, true);
+
+    IAutomatedVaultManager.WithdrawResult[] memory withdrawResults = new IAutomatedVaultManager.WithdrawResult[](2);
+    withdrawResults[0].token = address(mockToken0);
+    withdrawResults[0].amount = 1 ether;
+    withdrawResults[1].token = address(mockToken1);
+    withdrawResults[1].amount = 2 ether;
+    mockVaultOracleAndExecutor.setOnWithdrawResult(withdrawResults);
+    deal(withdrawResults[0].token, address(vaultManager), withdrawResults[0].amount);
+    deal(withdrawResults[1].token, address(vaultManager), withdrawResults[1].amount);
+
+    uint256 _vaultSupplyBefore = IERC20(vaultToken).totalSupply();
+    uint256 _timePassed = 100;
+    uint256 _managementFeePerSec = 1;
+    uint256 _expectedFee = (_vaultSupplyBefore * _timePassed * _managementFeePerSec) / 1e18;
+
+    // set fee
+    vm.startPrank(DEPLOYER);
+    vaultManager.setManagementFeePerSec(vaultToken, _managementFeePerSec);
+    vm.stopPrank();
+    // warp
+    vm.warp(block.timestamp + _timePassed);
+
+    AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts = new AutomatedVaultManager.WithdrawSlippage[](1);
+    vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
+
+    // Assertions
+    // - management fee is minted
+    // - [Cannot test] user share must be smaller since some the shares is increased
+
+    assertEq(IERC20(vaultToken).balanceOf(managementFeeTreasury), _expectedFee, "Management fee treasury balance");
+  }
 }

@@ -19,6 +19,7 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
   AutomatedVaultManager vaultManager;
   MockVaultOracleAndExecutor mockVaultOracleAndExecutor;
   address mockWorker = makeAddr("mockWorker");
+  address managementFeeTreasury = makeAddr("managementFeeTreasury");
   MockERC20 mockToken0;
   MockERC20 mockToken1;
 
@@ -34,7 +35,10 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
     vm.startPrank(DEPLOYER);
     vaultManager = AutomatedVaultManager(
       DeployHelper.deployUpgradeable(
-        "AutomatedVaultManager", abi.encodeWithSignature("initialize(address)", address(new AutomatedVaultERC20()))
+        "AutomatedVaultManager",
+        abi.encodeWithSignature(
+          "initialize(address,address)", address(new AutomatedVaultERC20()), managementFeeTreasury
+        )
       )
     );
     vm.stopPrank();
@@ -42,10 +46,13 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
     mockVaultOracleAndExecutor = new MockVaultOracleAndExecutor(address(vaultManager));
   }
 
-  function _openVault(address worker, uint256 minimumDeposit, uint256 feePerSec, uint16 toleranceBps, uint8 maxLeverage)
-    internal
-    returns (address vaultToken)
-  {
+  function _openVault(
+    address worker,
+    uint256 minimumDeposit,
+    uint256 managementFeePerSec,
+    uint16 toleranceBps,
+    uint8 maxLeverage
+  ) internal returns (address vaultToken) {
     vm.startPrank(DEPLOYER);
     vaultToken = vaultManager.openVault(
       "test vault",
@@ -55,7 +62,7 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
         vaultOracle: address(mockVaultOracleAndExecutor),
         executor: address(mockVaultOracleAndExecutor),
         minimumDeposit: minimumDeposit,
-        feePerSec: feePerSec,
+        managementFeePerSec: managementFeePerSec,
         toleranceBps: toleranceBps,
         maxLeverage: maxLeverage
       })

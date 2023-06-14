@@ -132,3 +132,21 @@ contract AutomatedVaultManagerSetMinimumDepositTest is BaseAutomatedVaultUnitTes
     assertEq(minimumDeposit, 1e27);
   }
 }
+
+contract AutomatedVaultManagerSetFeePerSecTest is BaseAutomatedVaultUnitTest {
+  function testRevert_SetFeePerSec_NonOwnerIsCaller() public {
+    vm.prank(address(1234));
+    vm.expectRevert("Ownable: caller is not the owner");
+    vaultManager.setManagementFeePerSec(address(1), 1);
+  }
+
+  function testCorrectness_SetFeePerSec() public {
+    vm.startPrank(DEPLOYER);
+    vaultManager.setManagementFeePerSec(address(1), 10);
+    (,,,, uint256 managementFeePerSec,,) = vaultManager.vaultInfos(address(1));
+    assertEq(managementFeePerSec, 10);
+    vaultManager.setManagementFeePerSec(address(1), 12);
+    (,,,, managementFeePerSec,,) = vaultManager.vaultInfos(address(1));
+    assertEq(managementFeePerSec, 12);
+  }
+}

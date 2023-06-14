@@ -48,7 +48,7 @@ contract AutomatedVaultManager is
     address vaultOracle;
     address executor;
     uint256 minimumDeposit;
-    uint256 feePerSec;
+    uint256 managementFeePerSec;
     uint16 toleranceBps; // acceptable bps of equity deceased after it was manipulated
     uint8 maxLeverage;
   }
@@ -77,6 +77,7 @@ contract AutomatedVaultManager is
   event LogSetToleranceBps(address _vaultToken, uint16 _toleranceBps);
   event LogSetMaxLeverage(address _vaultToken, uint8 _maxLeverage);
   event LogSetMinimumDeposit(address _vaultToken, uint256 _minimumDeposit);
+  event LogSetManagementFeePerSec(address _vaultToken, uint256 _managementFeePerSec);
   event LogSetMangementFeeTreasury(address _managementFeeTreasury);
 
   modifier collectManagementFee(address _vaultToken) {
@@ -104,7 +105,8 @@ contract AutomatedVaultManager is
     if (block.timestamp > _lastCollectedFee) {
       VaultInfo memory _vaultInfo = _getVaultInfo(_vaultToken);
       _pendingFee = (
-        IAutomatedVaultERC20(_vaultToken).totalSupply() * _vaultInfo.feePerSec * (block.timestamp - _lastCollectedFee)
+        IAutomatedVaultERC20(_vaultToken).totalSupply() * _vaultInfo.managementFeePerSec
+          * (block.timestamp - _lastCollectedFee)
       ) / 1e18;
     }
   }
@@ -350,6 +352,7 @@ contract AutomatedVaultManager is
     AutomatedVaultERC20(_vaultToken).initialize(_name, _symbol);
 
     // Update states
+    vaultFeeLastCollectedAt[_vaultToken] = block.timestamp;
     vaultInfos[_vaultToken] = _vaultInfo;
     workerExisted[_vaultInfo.worker] = true;
 
@@ -390,6 +393,12 @@ contract AutomatedVaultManager is
     vaultInfos[_vaultToken].minimumDeposit = _minimumDeposit;
 
     emit LogSetMinimumDeposit(_vaultToken, _minimumDeposit);
+  }
+
+  function setManagementFeePerSec(address _vaultToken, uint256 _managementFeePerSec) external onlyOwner {
+    vaultInfos[_vaultToken].managementFeePerSec = _managementFeePerSec;
+
+    emit LogSetManagementFeePerSec(_vaultToken, _managementFeePerSec);
   }
 
   function setManagementFeeTreasury(address _managementFeeTreasury) external onlyOwner {

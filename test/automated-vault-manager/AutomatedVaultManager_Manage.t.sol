@@ -68,4 +68,29 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
     // Invariant: EXECUTOR_IN_SCOPE == address(0)
     assertEq(vaultManager.EXECUTOR_IN_SCOPE(), address(0));
   }
+
+  function testCorrectness_WhenManage_ManagementFee_ShouldBeCollected() external {
+    address vaultToken = _openDefaultVault();
+
+    vm.prank(address(vaultManager));
+    AutomatedVaultERC20(vaultToken).mint(address(1), 1 ether);
+    // state before
+    uint256 _vaultSupplyBefore = IERC20(vaultToken).totalSupply();
+
+    uint256 _timePassed = 100;
+    uint256 _managementFeePerSec = 1;
+    uint256 _expectedFee = (_vaultSupplyBefore * _timePassed * _managementFeePerSec) / 1e18;
+
+    // set fee
+    vm.startPrank(DEPLOYER);
+    vaultManager.setManagementFeePerSec(vaultToken, _managementFeePerSec);
+    vm.stopPrank();
+    // warp
+    vm.warp(block.timestamp + _timePassed);
+
+    vm.prank(MANAGER);
+    vaultManager.manage(address(vaultToken), new bytes[](0));
+
+    assertEq(IERC20(vaultToken).balanceOf(managementFeeTreasury), _expectedFee, "Management fee treasury balance");
+  }
 }

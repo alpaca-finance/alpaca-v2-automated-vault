@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import "./BaseAutomatedVaultUnitTest.sol";
 
 import { IERC20 } from "src/interfaces/IERC20.sol";
+import { AutomatedVaultERC20 } from "src/AutomatedVaultERC20.sol";
 
 contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
   constructor() BaseAutomatedVaultUnitTest() { }
@@ -87,5 +88,54 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
 
     // Invariant: EXECUTOR_IN_SCOPE == address(0)
     assertEq(vaultManager.EXECUTOR_IN_SCOPE(), address(0));
+  }
+
+  function testCorrectness_WhenDeposit_ManagementFee_ShouldBeCollected() public {
+    address vaultToken = _openDefaultVault();
+
+    vm.prank(address(vaultManager));
+    AutomatedVaultERC20(vaultToken).mint(address(1), 1 ether);
+
+    // state before
+    uint256 _vaultSupplyBefore = IERC20(vaultToken).totalSupply();
+
+    uint256 _timePassed = 100;
+    uint256 _managementFeePerSec = 1;
+    uint256 _expectedFee = (_vaultSupplyBefore * _timePassed * _managementFeePerSec) / 1e18;
+
+    // set fee
+    vm.startPrank(DEPLOYER);
+    vaultManager.setManagementFeePerSec(vaultToken, _managementFeePerSec);
+    vm.stopPrank();
+    // warp
+    vm.warp(block.timestamp + _timePassed);
+
+    uint256 equityBefore = 1 ether;
+    uint256 equityAfter = 2 ether;
+    uint256 depositAmount = 1 ether;
+    deal(address(mockToken0), address(this), depositAmount);
+    mockVaultOracleAndExecutor.setGetEquityAndDebtResult({
+      _equityBefore: equityBefore,
+      _debtBefore: 0,
+      _equityAfter: equityAfter,
+      _debtAfter: 0
+    });
+
+    IAutomatedVaultManager.DepositTokenParams[] memory params = new IAutomatedVaultManager.DepositTokenParams[](1);
+    params[0].token = address(mockToken0);
+    params[0].amount = depositAmount;
+    mockToken0.approve(address(vaultManager), depositAmount);
+    vaultManager.deposit(vaultToken, params, 0);
+
+    // Assertions
+    // 1. user's receive share amount = (deposit amount * (current share amount) / equity before deposit)
+    // 2. management fee = (vault's total supply * time passed * fee/sec) / 1e18
+
+    assertEq(
+      IERC20(vaultToken).balanceOf(address(this)),
+      depositAmount * (_vaultSupplyBefore + _expectedFee) / equityBefore,
+      "User share amount"
+    );
+    assertEq(IERC20(vaultToken).balanceOf(managementFeeTreasury), _expectedFee, "Management fee treasury balance");
   }
 }
