@@ -97,4 +97,40 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     // Invariant: EXECUTOR_IN_SCOPE == address(0)
     assertEq(vaultManager.EXECUTOR_IN_SCOPE(), address(0));
   }
+
+  function testCorrectness_WhenWithdraw_WithdrawalFee_ShouldBeCollected() public {
+    uint256 sharesToWithdraw = 1 ether;
+
+    address vaultToken = _openDefaultVault();
+    deal(vaultToken, address(this), sharesToWithdraw, true);
+
+    vm.prank(DEPLOYER);
+    vaultManager.setWithdrawalFeeBps(vaultToken, 1500);
+
+    IAutomatedVaultManager.WithdrawResult[] memory withdrawResults = new IAutomatedVaultManager.WithdrawResult[](2);
+    withdrawResults[0].token = address(mockToken0);
+    withdrawResults[0].amount = 1 ether;
+    withdrawResults[1].token = address(mockToken1);
+    withdrawResults[1].amount = 2 ether;
+    mockVaultOracleAndExecutor.setOnWithdrawResult(withdrawResults);
+    deal(withdrawResults[0].token, address(vaultManager), withdrawResults[0].amount);
+    deal(withdrawResults[1].token, address(vaultManager), withdrawResults[1].amount);
+
+    uint256 sharesBefore = IERC20(vaultToken).balanceOf(address(this));
+    uint256 token0Before = mockToken0.balanceOf(address(this));
+    uint256 token1Before = mockToken1.balanceOf(address(this));
+
+    AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts = new AutomatedVaultManager.WithdrawSlippage[](1);
+    vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
+
+    // Assertions
+    // - user shares burned by sharesToWithdraw
+    // - user receive tokens sent from executor
+    assertEq(sharesBefore - IERC20(vaultToken).balanceOf(address(this)), sharesToWithdraw);
+    assertEq(mockToken0.balanceOf(address(this)) - token0Before, withdrawResults[0].amount);
+    assertEq(mockToken1.balanceOf(address(this)) - token1Before, withdrawResults[1].amount);
+
+    // Invariant: EXECUTOR_IN_SCOPE == address(0)
+    assertEq(vaultManager.EXECUTOR_IN_SCOPE(), address(0));
+  }
 }

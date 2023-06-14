@@ -48,11 +48,13 @@ contract AutomatedVaultManager is
     address vaultOracle;
     address executor;
     uint256 minimumDeposit;
+    uint16 withdrawalFeeBps;
     uint16 toleranceBps; // acceptable bps of equity deceased after it was manipulated
     uint8 maxLeverage;
   }
 
   address public vaultTokenImplementation;
+  address withdrawalFeeTreasury;
 
   // vault's ERC20 address => vault info
   mapping(address => VaultInfo) public vaultInfos;
@@ -74,6 +76,8 @@ contract AutomatedVaultManager is
   event LogSetToleranceBps(address _vaultToken, uint16 _toleranceBps);
   event LogSetMaxLeverage(address _vaultToken, uint8 _maxLeverage);
   event LogSetMinimumDeposit(address _vaultToken, uint256 _minimumDeposit);
+  event LogSetWithdrawalFeeTreasury(address _withdrawalFeeTreasury);
+  event LogSetWithdrawalFeeBps(uint16 _withdrawalFeeBps);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -217,6 +221,11 @@ contract AutomatedVaultManager is
     uint256 minAmountOut;
   }
 
+  function setWithdrawalFeeTreasury(address _withdrawalFeeTreasury) external onlyOwner {
+    withdrawalFeeTreasury = _withdrawalFeeTreasury;
+    emit LogSetWithdrawalFeeTreasury(_withdrawalFeeTreasury);
+  }
+
   // TODO: withdrawal fee
   function withdraw(address _vaultToken, uint256 _sharesToWithdraw, WithdrawSlippage[] calldata _minAmountOuts)
     external
@@ -229,6 +238,8 @@ contract AutomatedVaultManager is
     if (_sharesToWithdraw > IAutomatedVaultERC20(_vaultToken).balanceOf(msg.sender)) {
       revert AutomatedVaultManager_WithdrawExceedBalance();
     }
+
+    uint256 _actualWithdrawAmount = (_sharesToWithdraw * (MAX_BPS - _cachedVaultInfo.withdrawalFeeBps)) / MAX_BPS;
 
     ///////////////////////////
     // Executor scope opened //
@@ -243,7 +254,8 @@ contract AutomatedVaultManager is
 
     // Execute withdraw
     // Executor should send withdrawn funds back here to check slippage
-    _results = IExecutor(_cachedVaultInfo.executor).onWithdraw(_cachedVaultInfo.worker, _vaultToken, _sharesToWithdraw);
+    _results =
+      IExecutor(_cachedVaultInfo.executor).onWithdraw(_cachedVaultInfo.worker, _vaultToken, _actualWithdrawAmount);
 
     EXECUTOR_IN_SCOPE = address(0);
     ///////////////////////////
@@ -267,6 +279,13 @@ contract AutomatedVaultManager is
 
     // Burn shares per requested amount before transfer out
     IAutomatedVaultERC20(_vaultToken).burn(msg.sender, _sharesToWithdraw);
+    // Mint withdrawal fee to withdrawal treasury
+    IAutomatedVaultERC20(_vaultToken).mint(withdrawalFeeTreasury, _sharesToWithdraw - _actualWithdrawAmount);
+
+    // TODO: use transfer instead
+    // IAutomatedVaultERC20(_vaultToken).transferFrom(
+    //   msg.sender, withdrawalFeeTreasury, _sharesToWithdraw - _actualWithdrawAmount
+    // );
 
     // Transfer withdrawn funds to user
     // Tokens should be transferred from executor to here during `onWithdraw`
@@ -365,6 +384,20 @@ contract AutomatedVaultManager is
     vaultInfos[_vaultToken].minimumDeposit = _minimumDeposit;
 
     emit LogSetMinimumDeposit(_vaultToken, _minimumDeposit);
+  }
+
+  function setWithdrawalFeeBps(address _vaultToken, uint16 _withdrawalFeeBps) external onlyOwner {
+    _validateWithdrawalFeeBps(_withdrawalFeeBps);
+    vaultInfos[_vaultToken].withdrawalFeeBps = _withdrawalFeeBps;
+
+    emit LogSetWithdrawalFeeBps(_withdrawalFeeBps);
+  }
+
+  /// @dev Valid value: withdrawalFeeBps <= 10000
+  function _validateWithdrawalFeeBps(uint16 _withdrawalFeeBps) internal pure {
+    if (_withdrawalFeeBps > MAX_BPS) {
+      revert AutomatedVaultManager_InvalidParams();
+    }
   }
 
   /// @dev Valid value range: 9500 <= toleranceBps <= 10000

@@ -487,4 +487,15 @@ contract E2ETest is E2EFixture {
 
     _withdrawAndAssert(address(this), vaultToken.balanceOf(address(this)));
   }
+
+  function testCorrectness_ManagementFee() public {
+    // set fee
+    // vm.prank(DEPLOYER);
+    // vaultManager.setWithdrawalFeeBps(address(vaultToken), 100);
+
+    // deposit
+    _depositUSDTAndAssert(address(this), 100 ether);
+    // withdraw
+    _withdrawAndAssert(address(this), 100 ether);
+  }
 }
