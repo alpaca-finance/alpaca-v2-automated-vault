@@ -9,7 +9,7 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
   constructor() BaseAutomatedVaultUnitTest() { }
 
   function testRevert_WhenWithdrawFromUnopenedVault() public {
-    AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts;
+    AutomatedVaultManager.TokenAmount[] memory minAmountOuts;
     vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_VaultNotExist(address)", address(0)));
     vaultManager.withdraw(address(0), 0, minAmountOuts);
   }
@@ -17,7 +17,7 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
   function testRevert_WhenWithdrawSharesExceedBalance() public {
     address vaultToken = _openDefaultVault();
 
-    AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts;
+    AutomatedVaultManager.TokenAmount[] memory minAmountOuts;
     vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_WithdrawExceedBalance()"));
     vaultManager.withdraw(vaultToken, 1, minAmountOuts);
   }
@@ -41,26 +41,26 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
   //   // maxEquityChange = withdrawPct * equityBefore = 10% * 100 = 10
   //   // should revert due to equityChanged > maxEquityChange
 
-  //   AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts;
+  //   AutomatedVaultManager.TokenAmount[] memory minAmountOuts;
   //   vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_TooMuchEquityLoss()"));
   //   vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
   // }
 
-  function testRevert_WhenWithdrawResultExceedSlippage() public {
+  function testRevert_WhenTokenAmountExceedSlippage() public {
     uint256 sharesToWithdraw = 1 ether;
 
     address vaultToken = _openDefaultVault();
     deal(vaultToken, address(this), sharesToWithdraw, true);
 
-    AutomatedVaultManager.WithdrawResult[] memory withdrawResults = new AutomatedVaultManager.WithdrawResult[](1);
+    AutomatedVaultManager.TokenAmount[] memory withdrawResults = new AutomatedVaultManager.TokenAmount[](1);
     withdrawResults[0].token = address(mockToken0);
     withdrawResults[0].amount = 0.9 ether;
-    mockVaultOracleAndExecutor.setOnWithdrawResult(withdrawResults);
+    mockVaultOracleAndExecutor.setOnTokenAmount(withdrawResults);
 
-    AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts = new AutomatedVaultManager.WithdrawSlippage[](1);
+    AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](1);
     minAmountOuts[0].token = address(mockToken0);
-    minAmountOuts[0].minAmountOut = 1 ether;
-    // should revert: minAmountOut = 1 ether, actualAmount = 0.9 ether
+    minAmountOuts[0].amount = 1 ether;
+    // should revert: amount = 1 ether, actualAmount = 0.9 ether
     vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_ExceedSlippage()"));
     vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
   }
@@ -71,12 +71,12 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     address vaultToken = _openDefaultVault();
     deal(vaultToken, address(this), sharesToWithdraw, true);
 
-    AutomatedVaultManager.WithdrawResult[] memory withdrawResults = new AutomatedVaultManager.WithdrawResult[](2);
+    AutomatedVaultManager.TokenAmount[] memory withdrawResults = new AutomatedVaultManager.TokenAmount[](2);
     withdrawResults[0].token = address(mockToken0);
     withdrawResults[0].amount = 1 ether;
     withdrawResults[1].token = address(mockToken1);
     withdrawResults[1].amount = 2 ether;
-    mockVaultOracleAndExecutor.setOnWithdrawResult(withdrawResults);
+    mockVaultOracleAndExecutor.setOnTokenAmount(withdrawResults);
     deal(withdrawResults[0].token, address(vaultManager), withdrawResults[0].amount);
     deal(withdrawResults[1].token, address(vaultManager), withdrawResults[1].amount);
 
@@ -84,7 +84,7 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     uint256 token0Before = mockToken0.balanceOf(address(this));
     uint256 token1Before = mockToken1.balanceOf(address(this));
 
-    AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts = new AutomatedVaultManager.WithdrawSlippage[](1);
+    AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](1);
     vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
 
     // Assertions

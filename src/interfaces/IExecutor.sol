@@ -13,7 +13,7 @@ interface IExecutor is IMulticall {
 
   function onWithdraw(address _worker, address _vaultToken, uint256 _sharesToWithdraw)
     external
-    returns (AutomatedVaultManager.WithdrawResult[] memory);
+    returns (AutomatedVaultManager.TokenAmount[] memory);
 
   function onUpdate(address _worker, address _vaultToken) external returns (bytes memory _result);
 
