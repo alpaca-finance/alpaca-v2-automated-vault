@@ -75,7 +75,8 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   event LogSetMaxLeverage(address _vaultToken, uint8 _maxLeverage);
   event LogSetMinimumDeposit(address _vaultToken, uint256 _minimumDeposit);
   event LogSetWithdrawalFeeTreasury(address _withdrawalFeeTreasury);
-  event LogSetWithdrawalFeeBps(uint16 _withdrawalFeeBps);
+  event LogSetWithdrawalFeeBps(address _vaultToken, uint16 _withdrawalFeeBps);
+  event LogWithdrawalFee(address _vaultToken, uint256 _withdrawalFee);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -221,7 +222,6 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     emit LogSetWithdrawalFeeTreasury(_withdrawalFeeTreasury);
   }
 
-  // TODO: withdrawal fee
   function withdraw(address _vaultToken, uint256 _sharesToWithdraw, TokenAmount[] calldata _minAmountOuts)
     external
     nonReentrant
@@ -272,15 +272,17 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     //   revert AutomatedVaultManager_TooMuchEquityLoss();
     // }
 
+    uint256 _withdrawalFee;
+    unchecked {
+      _withdrawalFee = _sharesToWithdraw - _actualWithdrawAmount;
+    }
+
     // Burn shares per requested amount before transfer out
     IAutomatedVaultERC20(_vaultToken).burn(msg.sender, _sharesToWithdraw);
     // Mint withdrawal fee to withdrawal treasury
-    IAutomatedVaultERC20(_vaultToken).mint(withdrawalFeeTreasury, _sharesToWithdraw - _actualWithdrawAmount);
+    IAutomatedVaultERC20(_vaultToken).mint(withdrawalFeeTreasury, _withdrawalFee);
 
-    // TODO: use transfer instead
-    // IAutomatedVaultERC20(_vaultToken).transferFrom(
-    //   msg.sender, withdrawalFeeTreasury, _sharesToWithdraw - _actualWithdrawAmount
-    // );
+    emit LogWithdrawalFee(_vaultToken, _withdrawalFee);
 
     // Transfer withdrawn funds to user
     // Tokens should be transferred from executor to here during `onWithdraw`
@@ -327,6 +329,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     _validateToleranceBps(_vaultInfo.toleranceBps);
     _validateMaxLeverage(_vaultInfo.maxLeverage);
     _validateMinimumDeposit(_vaultInfo.minimumDeposit);
+    _validateWithdrawalFeeBps(_vaultInfo.withdrawalFeeBps);
     // Sanity check oracle
     BaseOracle(_vaultInfo.vaultOracle).maxPriceAge();
     // Sanity check executor
@@ -385,7 +388,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     _validateWithdrawalFeeBps(_withdrawalFeeBps);
     vaultInfos[_vaultToken].withdrawalFeeBps = _withdrawalFeeBps;
 
-    emit LogSetWithdrawalFeeBps(_withdrawalFeeBps);
+    emit LogSetWithdrawalFeeBps(_vaultToken, _withdrawalFeeBps);
   }
 
   /// @dev Valid value: withdrawalFeeBps <= 10000
