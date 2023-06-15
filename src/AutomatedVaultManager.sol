@@ -68,6 +68,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   event LogOpenVault(address indexed _vaultToken, VaultInfo _vaultInfo);
   event LogDeposit(address indexed _vaultToken, address indexed _user, TokenAmount[] _deposits, uint256 _shareReceived);
   event LogWithdraw(address indexed _vaultToken, address indexed _user, uint256 _sharesWithdrawn);
+  event LogManage(address _vaultToken, bytes[] _executorParams, uint256 _equityBefore, uint256 _equityAfter);
   event LogSetVaultManager(address indexed _vaultToken, address _manager, bool _isOk);
   event LogSetAllowToken(address indexed _vaultToken, address _token, bool _isAllowed);
   event LogSetVaultTokenImplementation(address prevImplementation, address newImplementation);
@@ -231,6 +232,8 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     if (_debtAfter > (_cachedVaultInfo.maxLeverage - 1) * _totalEquityAfter) {
       revert AutomatedVaultManager_TooMuchLeverage();
     }
+
+    emit LogManage(_vaultToken, _executorParams, _totalEquityBefore, _totalEquityAfter);
   }
 
   function setVaultManager(address _vaultToken, address _manager, bool _isOk) external onlyOwner {

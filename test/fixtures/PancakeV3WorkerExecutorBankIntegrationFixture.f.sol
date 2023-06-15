@@ -54,7 +54,11 @@ contract PancakeV3WorkerExecutorBankIntegrationFixture is Test, BscFixture, Prot
         "Bank", abi.encodeWithSelector(Bank.initialize.selector, address(mockMoneyMarket), mockVaultManager)
       )
     );
-    executor = new PCSV3Executor01(mockVaultManager, address(bank));
+    executor = PCSV3Executor01(
+      DeployHelper.deployUpgradeable(
+        "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, address(bank))
+      )
+    );
 
     workerUSDTWBNB = PancakeV3Worker(
       DeployHelper.deployUpgradeable(
