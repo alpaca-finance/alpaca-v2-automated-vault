@@ -18,14 +18,14 @@ contract E2ETest is E2EFixture {
     uint256 workerUSDTBefore = usdt.balanceOf(address(workerUSDTWBNB));
     uint256 totalShareBefore = vaultToken.totalSupply();
     (uint256 equityBefore,) = pancakeV3VaultOracle.getEquityAndDebt(address(vaultToken), address(workerUSDTWBNB));
-    vm.startPrank(depositor);
-    usdt.approve(address(vaultManager), amount);
-
     (, int256 usdtAnswer,,,) = usdtFeed.latestRoundData();
     uint256 equityIncrease = amount * uint256(usdtAnswer) / (10 ** usdtFeed.decimals());
     uint256 shareIncrease = equityBefore == 0
       ? equityIncrease
       : equityIncrease * (totalShareBefore + vaultManager.pendingManagementFee(address(vaultToken))) / equityBefore;
+
+    vm.startPrank(depositor);
+    usdt.approve(address(vaultManager), amount);
 
     AutomatedVaultManager.TokenAmount[] memory deposits = new AutomatedVaultManager.TokenAmount[](1);
     deposits[0] = AutomatedVaultManager.TokenAmount({ token: address(usdt), amount: amount });
