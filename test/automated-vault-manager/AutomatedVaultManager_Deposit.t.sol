@@ -122,7 +122,7 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
       _debtAfter: 0
     });
 
-    IAutomatedVaultManager.DepositTokenParams[] memory params = new IAutomatedVaultManager.DepositTokenParams[](1);
+    AutomatedVaultManager.TokenAmount[] memory params = new AutomatedVaultManager.TokenAmount[](1);
     params[0].token = address(mockToken0);
     params[0].amount = depositAmount;
     mockToken0.approve(address(vaultManager), depositAmount);

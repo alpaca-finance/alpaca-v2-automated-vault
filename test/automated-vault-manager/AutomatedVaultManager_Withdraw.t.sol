@@ -104,12 +104,12 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     address vaultToken = _openDefaultVault();
     deal(vaultToken, address(this), sharesToWithdraw, true);
 
-    IAutomatedVaultManager.WithdrawResult[] memory withdrawResults = new IAutomatedVaultManager.WithdrawResult[](2);
+    AutomatedVaultManager.TokenAmount[] memory withdrawResults = new AutomatedVaultManager.TokenAmount[](2);
     withdrawResults[0].token = address(mockToken0);
     withdrawResults[0].amount = 1 ether;
     withdrawResults[1].token = address(mockToken1);
     withdrawResults[1].amount = 2 ether;
-    mockVaultOracleAndExecutor.setOnWithdrawResult(withdrawResults);
+    mockVaultOracleAndExecutor.setOnTokenAmount(withdrawResults);
     deal(withdrawResults[0].token, address(vaultManager), withdrawResults[0].amount);
     deal(withdrawResults[1].token, address(vaultManager), withdrawResults[1].amount);
 
@@ -128,7 +128,7 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     // warp
     vm.warp(block.timestamp + _timePassed);
 
-    AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts = new AutomatedVaultManager.WithdrawSlippage[](1);
+    AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](1);
     vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
 
     // state after
