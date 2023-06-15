@@ -52,7 +52,7 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
       DeployHelper.deployUpgradeable(
         "AutomatedVaultManager",
         abi.encodeWithSelector(
-          AutomatedVaultManager.initialize.selector, address(new AutomatedVaultERC20()), address(0)
+          AutomatedVaultManager.initialize.selector, address(new AutomatedVaultERC20()), MANAGEMENT_FEE_TREASURY
         )
       )
     );

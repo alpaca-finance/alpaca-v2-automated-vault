@@ -16,9 +16,16 @@ contract E2ETest is E2EFixture {
 
     uint256 sharesBefore = vaultToken.balanceOf(depositor);
     uint256 workerUSDTBefore = usdt.balanceOf(address(workerUSDTWBNB));
-
+    uint256 totalShareBefore = vaultToken.totalSupply();
+    (uint256 equityBefore,) = pancakeV3VaultOracle.getEquityAndDebt(address(vaultToken), address(workerUSDTWBNB));
     vm.startPrank(depositor);
     usdt.approve(address(vaultManager), amount);
+
+    (, int256 usdtAnswer,,,) = usdtFeed.latestRoundData();
+    uint256 equityIncrease = amount * uint256(usdtAnswer) / (10 ** usdtFeed.decimals());
+    uint256 shareIncrease = equityBefore == 0
+      ? equityIncrease
+      : equityIncrease * (totalShareBefore + vaultManager.pendingManagementFee(address(vaultToken))) / equityBefore;
 
     AutomatedVaultManager.TokenAmount[] memory deposits = new AutomatedVaultManager.TokenAmount[](1);
     deposits[0] = AutomatedVaultManager.TokenAmount({ token: address(usdt), amount: amount });
@@ -29,12 +36,7 @@ contract E2ETest is E2EFixture {
     // - undeployed usdt increase by deposited amount
     assertEq(usdt.balanceOf(address(workerUSDTWBNB)) - workerUSDTBefore, amount, "undeployed usdt increase");
     // - shares minted to depositor equal to usd value of 1 usdt (equity)
-    (, int256 usdtAnswer,,,) = usdtFeed.latestRoundData();
-    assertEq(
-      vaultToken.balanceOf(depositor) - sharesBefore,
-      amount * uint256(usdtAnswer) / (10 ** usdtFeed.decimals()),
-      "shares received"
-    );
+    assertEq(vaultToken.balanceOf(depositor) - sharesBefore, shareIncrease, "shares received");
   }
 
   function _withdrawAndAssert(address withdrawFor, uint256 withdrawAmount) internal {
@@ -46,7 +48,7 @@ contract E2ETest is E2EFixture {
     uint256 workerUSDTBefore = usdt.balanceOf(address(workerUSDTWBNB));
     uint256 workerWBNBBefore = wbnb.balanceOf(address(workerUSDTWBNB));
     (uint256 equityBefore,) = pancakeV3VaultOracle.getEquityAndDebt(address(vaultToken), address(workerUSDTWBNB));
-    uint256 totalSharesBefore = vaultToken.totalSupply();
+    uint256 totalSharesBefore = vaultToken.totalSupply() + vaultManager.pendingManagementFee(address(vaultToken));
 
     AutomatedVaultManager.TokenAmount[] memory minAmountOuts;
     vm.prank(withdrawFor);
@@ -69,20 +71,21 @@ contract E2ETest is E2EFixture {
     assertEq(usdtDebtBefore * totalSharesAfter / totalSharesBefore, usdtDebtAfter, "usdt repaid");
     (, uint256 wbnbDebtAfter) = bank.getVaultDebt(address(vaultToken), address(wbnb));
     assertEq(wbnbDebtBefore * totalSharesAfter / totalSharesBefore, wbnbDebtAfter, "wbnb repaid");
-    // - undeployed funds decreased by withdrawn%
-    assertEq(
-      workerUSDTBefore * totalSharesAfter / totalSharesBefore,
+    // - undeployed funds decreased by withdrawn% (management fee will occur precision loss)
+    assertApproxEqRel(
       usdt.balanceOf(address(workerUSDTWBNB)),
+      workerUSDTBefore * totalSharesAfter / totalSharesBefore,
+      2e14, // 2bps
       "undeployed usdt withdrawn"
     );
     assertEq(
-      workerWBNBBefore * totalSharesAfter / totalSharesBefore,
       wbnb.balanceOf(address(workerUSDTWBNB)),
+      workerWBNBBefore * totalSharesAfter / totalSharesBefore,
       "undeployed wbnb withdrawn"
     );
     // - equity reduced by approx withdrawn%
     (uint256 equityAfter,) = pancakeV3VaultOracle.getEquityAndDebt(address(vaultToken), address(workerUSDTWBNB));
-    assertApproxEqRel(equityBefore * totalSharesAfter / totalSharesBefore, equityAfter, 2, "equity decreased");
+    assertApproxEqRel(equityBefore * totalSharesAfter / totalSharesBefore, equityAfter, 2e14, "equity decreased");
   }
 
   /// -------------------------------
@@ -486,5 +489,76 @@ contract E2ETest is E2EFixture {
     assertEq(wbnbDebt, 0);
 
     _withdrawAndAssert(address(this), vaultToken.balanceOf(address(this)));
+  }
+
+  function testCorrectness_ManagementFee_InTheSameBlock_ShouldSkip() public {
+    uint256 _lastTimeCollectedBefore = vaultManager.vaultFeeLastCollectedAt(address(vaultToken));
+    bytes[] memory _data = new bytes[](0);
+
+    // all interaction in same block.
+    // deposit
+    _depositUSDTAndAssert(address(this), 1 ether);
+    // manage
+    vm.prank(MANAGER);
+    vaultManager.manage(address(vaultToken), _data);
+    // withdraw
+    _withdrawAndAssert(address(this), 1 ether);
+
+    assertEq(vaultManager.vaultFeeLastCollectedAt(address(vaultToken)), _lastTimeCollectedBefore);
+  }
+
+  function testCorrectness_ManagementFee_MustCollect_WhenDeposit() public {
+    uint256 depositAmount = 100 ether;
+
+    // set management fee
+    vm.prank(DEPLOYER);
+    vaultManager.setManagementFeePerSec(address(vaultToken), 2);
+
+    // deposit
+    _depositUSDTAndAssert(address(this), depositAmount);
+    // time pass
+    vm.warp(block.timestamp + 100);
+    // withdraw
+    _depositUSDTAndAssert(address(this), depositAmount);
+
+    assertNotEq(vaultToken.balanceOf(address(this)), depositAmount * 2);
+  }
+
+  function testCorrectness_ManagementFee_MustCollect_WhenManage() public {
+    _depositUSDTAndAssert(address(this), 100 ether);
+    uint256 totalSupplyBefore = vaultToken.totalSupply();
+
+    // set management fee
+    vm.prank(DEPLOYER);
+    vaultManager.setManagementFeePerSec(address(vaultToken), 2);
+
+    // warp
+    vm.warp(block.timestamp + 100);
+
+    bytes[] memory _data = new bytes[](0);
+    vm.prank(MANAGER);
+    vaultManager.manage(address(vaultToken), _data);
+
+    uint256 totalSupplyAfter = vaultToken.totalSupply();
+
+    assertGt(totalSupplyAfter, totalSupplyBefore);
+  }
+
+  function testCorrectness_ManagementFee_MustCollect_WhenWithdraw() public {
+    uint256 depositAmount = 100 ether;
+
+    // set management fee
+    vm.prank(DEPLOYER);
+    vaultManager.setManagementFeePerSec(address(vaultToken), 1);
+
+    // deposit
+    _depositUSDTAndAssert(address(this), depositAmount);
+    uint256 userShare = IERC20(vaultToken).balanceOf(address(this));
+    // time pass
+    vm.warp(block.timestamp + 100);
+    // withdraw
+    _withdrawAndAssert(address(this), userShare);
+    // assert amount in != amount out
+    assertNotEq(depositAmount, IERC20(usdt).balanceOf(address(this)));
   }
 }

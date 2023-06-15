@@ -126,7 +126,8 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     vaultManager.setManagementFeePerSec(vaultToken, _managementFeePerSec);
     vm.stopPrank();
     // warp
-    vm.warp(block.timestamp + _timePassed);
+    uint256 _time = block.timestamp + _timePassed;
+    vm.warp(_time);
 
     AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](1);
     vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
@@ -139,6 +140,7 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     // - [Cannot test] user share must be smaller since some the shares is increased
 
     assertEq(IERC20(vaultToken).balanceOf(managementFeeTreasury), _expectedFee, "Management fee treasury balance");
-    assertGt(_lastTimeCollecteAfter, _lastTimeCollecteBefore, "Update last collected time");
+    assertGt(_lastTimeCollecteAfter, _lastTimeCollecteBefore, "Last collected time must be updated");
+    assertEq(_lastTimeCollecteAfter, _time, "Update last collected time correctly");
   }
 }

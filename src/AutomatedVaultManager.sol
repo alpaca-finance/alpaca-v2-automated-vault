@@ -102,12 +102,13 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     uint256 _lastCollectedFee = vaultFeeLastCollectedAt[_vaultToken];
 
     VaultInfo memory _vaultInfo = _getVaultInfo(_vaultToken);
-    uint256 _timePassed;
+
     unchecked {
-      _timePassed = block.timestamp - _lastCollectedFee;
+      _pendingFee = (
+        IAutomatedVaultERC20(_vaultToken).totalSupply() * _vaultInfo.managementFeePerSec
+          * (block.timestamp - _lastCollectedFee)
+      ) / 1e18;
     }
-    _pendingFee =
-      (IAutomatedVaultERC20(_vaultToken).totalSupply() * _vaultInfo.managementFeePerSec * _timePassed) / 1e18;
   }
 
   function _getVaultInfo(address _vaultToken) internal view returns (VaultInfo memory _vaultInfo) {
@@ -334,6 +335,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     _validateToleranceBps(_vaultInfo.toleranceBps);
     _validateMaxLeverage(_vaultInfo.maxLeverage);
     _validateMinimumDeposit(_vaultInfo.minimumDeposit);
+    _validateManagementFeePerSec(_vaultInfo.managementFeePerSec);
     // Sanity check oracle
     BaseOracle(_vaultInfo.vaultOracle).maxPriceAge();
     // Sanity check executor
@@ -390,6 +392,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   }
 
   function setManagementFeePerSec(address _vaultToken, uint256 _managementFeePerSec) external onlyOwner {
+    _validateManagementFeePerSec(_managementFeePerSec);
     vaultInfos[_vaultToken].managementFeePerSec = _managementFeePerSec;
 
     emit LogSetManagementFeePerSec(_vaultToken, _managementFeePerSec);
@@ -417,6 +420,13 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
 
   function _validateMinimumDeposit(uint256 _minimumDeposit) internal pure {
     if (_minimumDeposit < 1e18) {
+      revert AutomatedVaultManager_InvalidParams();
+    }
+  }
+
+  /// @dev Valid value range: 0 <= __managementFeePerSec <= 317097919837
+  function _validateManagementFeePerSec(uint256 __managementFeePerSec) internal pure {
+    if (__managementFeePerSec > 317097919837) {
       revert AutomatedVaultManager_InvalidParams();
     }
   }

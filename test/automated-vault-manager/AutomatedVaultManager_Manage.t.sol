@@ -87,7 +87,8 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
     vaultManager.setManagementFeePerSec(vaultToken, _managementFeePerSec);
     vm.stopPrank();
     // warp
-    vm.warp(block.timestamp + _timePassed);
+    uint256 _time = block.timestamp + _timePassed;
+    vm.warp(_time);
 
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), new bytes[](0));
@@ -96,6 +97,7 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
     uint256 _lastTimeCollecteAfter = vaultManager.vaultFeeLastCollectedAt(vaultToken);
 
     assertEq(IERC20(vaultToken).balanceOf(managementFeeTreasury), _expectedFee, "Management fee treasury balance");
-    assertGt(_lastTimeCollecteAfter, _lastTimeCollecteBefore, "Update last collected time");
+    assertGt(_lastTimeCollecteAfter, _lastTimeCollecteBefore, "Last collected time must be updated");
+    assertEq(_lastTimeCollecteAfter, _time, "Update last collected time correctly");
   }
 }
