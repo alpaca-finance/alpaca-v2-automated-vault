@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IERC20 } from "src/interfaces/IERC20.sol";
-import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 
 contract MockVaultOracleAndExecutor {
   uint256 private equityBefore;
@@ -10,7 +10,7 @@ contract MockVaultOracleAndExecutor {
   uint256 private equityAfter;
   uint256 private debtAfter;
   bool private isAfter;
-  IAutomatedVaultManager.WithdrawResult[] private results;
+  AutomatedVaultManager.TokenAmount[] private results;
 
   address public vaultManager;
 
@@ -27,13 +27,13 @@ contract MockVaultOracleAndExecutor {
     return "";
   }
 
-  function setOnWithdrawResult(IAutomatedVaultManager.WithdrawResult[] calldata _results) external {
+  function setOnTokenAmount(AutomatedVaultManager.TokenAmount[] calldata _results) external {
     for (uint256 i; i < _results.length; ++i) {
       results.push(_results[i]);
     }
   }
 
-  function onWithdraw(address, address, uint256) external returns (IAutomatedVaultManager.WithdrawResult[] memory) {
+  function onWithdraw(address, address, uint256) external returns (AutomatedVaultManager.TokenAmount[] memory) {
     isAfter = true;
     return results;
   }

@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "./fixtures/E2EFixture.f.sol";
-import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 
 contract E2ETest is E2EFixture {
   constructor() E2EFixture() { }
@@ -20,8 +20,8 @@ contract E2ETest is E2EFixture {
     vm.startPrank(depositor);
     usdt.approve(address(vaultManager), amount);
 
-    IAutomatedVaultManager.DepositTokenParams[] memory deposits = new IAutomatedVaultManager.DepositTokenParams[](1);
-    deposits[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: amount });
+    AutomatedVaultManager.TokenAmount[] memory deposits = new AutomatedVaultManager.TokenAmount[](1);
+    deposits[0] = AutomatedVaultManager.TokenAmount({ token: address(usdt), amount: amount });
     vaultManager.deposit(address(vaultToken), deposits, 0);
     vm.stopPrank();
 
@@ -48,7 +48,7 @@ contract E2ETest is E2EFixture {
     (uint256 equityBefore,) = pancakeV3VaultOracle.getEquityAndDebt(address(vaultToken), address(workerUSDTWBNB));
     uint256 totalSharesBefore = vaultToken.totalSupply();
 
-    AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts;
+    AutomatedVaultManager.TokenAmount[] memory minAmountOuts;
     vm.prank(withdrawFor);
     vaultManager.withdraw(address(vaultToken), withdrawAmount, minAmountOuts);
 
@@ -101,8 +101,8 @@ contract E2ETest is E2EFixture {
     deal(address(usdt), address(this), 1 ether);
 
     usdt.approve(address(vaultManager), 1 ether);
-    IAutomatedVaultManager.DepositTokenParams[] memory deposits = new IAutomatedVaultManager.DepositTokenParams[](1);
-    deposits[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: 1 ether });
+    AutomatedVaultManager.TokenAmount[] memory deposits = new AutomatedVaultManager.TokenAmount[](1);
+    deposits[0] = AutomatedVaultManager.TokenAmount({ token: address(usdt), amount: 1 ether });
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_TokenNotAllowed.selector);
     vaultManager.deposit(address(vaultToken), deposits, 0);
   }
@@ -112,8 +112,8 @@ contract E2ETest is E2EFixture {
     deal(address(usdt), address(this), 0.01 ether);
 
     usdt.approve(address(vaultManager), 0.01 ether);
-    IAutomatedVaultManager.DepositTokenParams[] memory deposits = new IAutomatedVaultManager.DepositTokenParams[](1);
-    deposits[0] = IAutomatedVaultManager.DepositTokenParams({ token: address(usdt), amount: 0.01 ether });
+    AutomatedVaultManager.TokenAmount[] memory deposits = new AutomatedVaultManager.TokenAmount[](1);
+    deposits[0] = AutomatedVaultManager.TokenAmount({ token: address(usdt), amount: 0.01 ether });
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_BelowMinimumDeposit.selector);
     vaultManager.deposit(address(vaultToken), deposits, 0);
   }
@@ -196,7 +196,7 @@ contract E2ETest is E2EFixture {
     _depositUSDTAndAssert(address(this), 1 ether);
 
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_WithdrawExceedBalance.selector);
-    AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts;
+    AutomatedVaultManager.TokenAmount[] memory minAmountOuts;
     vaultManager.withdraw(address(vaultToken), 2 ether, minAmountOuts);
   }
 

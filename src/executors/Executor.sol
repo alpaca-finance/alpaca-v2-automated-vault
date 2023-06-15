@@ -3,18 +3,23 @@ pragma solidity 0.8.19;
 
 // dependencies
 import { Multicall } from "@openzeppelin/utils/Multicall.sol";
+import { Initializable } from "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 
 // interfaces
-import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
+import { IBank } from "src/interfaces/IBank.sol";
 
-abstract contract Executor is Multicall {
+abstract contract Executor is Multicall, Initializable, Ownable2StepUpgradeable {
   error Executor_NotVaultManager();
   error Executor_NoCurrentWorker();
   error Executor_NoCurrentVaultToken();
+  error Executor_InvalidParams();
 
-  address public immutable vaultManager;
+  address public vaultManager;
+  IBank public bank;
   address private CURRENT_WORKER;
   address private CURRENT_VAULT_TOKEN;
 
@@ -23,8 +28,20 @@ abstract contract Executor is Multicall {
     _;
   }
 
-  constructor(address _vaultManager) {
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor() {
+    _disableInitializers();
+  }
+
+  function initialize(address _vaultManager, address _bank) external initializer {
+    // Sanity check
+    AutomatedVaultManager(_vaultManager).vaultTokenImplementation();
+    if (_vaultManager != IBank(_bank).vaultManager()) {
+      revert Executor_InvalidParams();
+    }
+
     vaultManager = _vaultManager;
+    bank = IBank(_bank);
   }
 
   function setExecutionScope(address _worker, address _vaultToken) external onlyVaultManager {
@@ -48,12 +65,12 @@ abstract contract Executor is Multicall {
 
   function sweepToWorker() external virtual { }
 
-  function onDeposit(PancakeV3Worker _worker, address _vaultToken) external virtual returns (bytes memory _result) { }
+  function onDeposit(address _worker, address _vaultToken) external virtual returns (bytes memory _result) { }
 
-  function onWithdraw(PancakeV3Worker _worker, address _vaultToken, uint256 _sharesToWithdraw)
+  function onWithdraw(address _worker, address _vaultToken, uint256 _sharesToWithdraw)
     external
     virtual
-    returns (IAutomatedVaultManager.WithdrawResult[] memory);
+    returns (AutomatedVaultManager.TokenAmount[] memory);
 
-  function onUpdate(address _vaultToken, PancakeV3Worker _worker) external virtual returns (bytes memory _result) { }
+  function onUpdate(address _worker, address _vaultToken) external virtual returns (bytes memory _result) { }
 }

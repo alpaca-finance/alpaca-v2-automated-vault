@@ -9,4 +9,5 @@ interface IBank {
     external
     view
     returns (uint256 _debtShares, uint256 _debtAmount);
+  function vaultManager() external view returns (address);
 }

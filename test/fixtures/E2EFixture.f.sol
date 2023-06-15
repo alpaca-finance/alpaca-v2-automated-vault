@@ -96,7 +96,11 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
       )
     );
 
-    pancakeV3Executor = IExecutor(address(new PCSV3Executor01(address(vaultManager), address(bank))));
+    pancakeV3Executor = IExecutor(
+      DeployHelper.deployUpgradeable(
+        "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", address(vaultManager), address(bank))
+      )
+    );
 
     vaultToken = IERC20(
       vaultManager.openVault(

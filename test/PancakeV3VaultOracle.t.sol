@@ -95,6 +95,24 @@ contract PancakeV3VaultOracleTest is BscFixture, ProtocolActorFixture {
     );
   }
 
+  function testCorrectness_SetMaxPriceDiff() public {
+    vm.prank(DEPLOYER);
+    oracle.setMaxPriceDiff(10_000);
+    assertEq(oracle.maxPriceDiff(), 10_000);
+  }
+
+  function testRevert_SetMaxPriceDiff_InvalidValue() public {
+    vm.prank(DEPLOYER);
+    vm.expectRevert(abi.encodeWithSignature("PancakeV3VaultOracle_InvalidParams()"));
+    oracle.setMaxPriceDiff(9999);
+  }
+
+  function testRevert_SetMaxPriceDiff_NotOwnerIsCaller() public {
+    vm.prank(address(1234));
+    vm.expectRevert("Ownable: caller is not the owner");
+    oracle.setMaxPriceDiff(10_000);
+  }
+
   // TODO; enable this when revisit oracle
   // struct TestGetPositionValueParams {
   //   ICommonV3Pool pool;

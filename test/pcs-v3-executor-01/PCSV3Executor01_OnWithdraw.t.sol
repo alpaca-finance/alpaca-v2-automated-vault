@@ -7,13 +7,14 @@ import { Executor } from "src/executors/Executor.sol";
 import { PCSV3Executor01 } from "src/executors/PCSV3Executor01.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 
-import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 
 import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { MockPancakeV3Worker } from "test/mocks/MockPancakeV3Worker.sol";
 import { MockBank } from "test/mocks/MockBank.sol";
 
 import "test/fixtures/BscFixture.f.sol";
+import { DeployHelper } from "test/helpers/DeployHelper.sol";
 
 contract PCSV3Executor01OnWithdrawTest is Test {
   PCSV3Executor01 executor;
@@ -26,7 +27,14 @@ contract PCSV3Executor01OnWithdrawTest is Test {
 
   function setUp() public {
     mockBank = address(new MockBank());
-    executor = new PCSV3Executor01(mockVaultManager,mockBank);
+    // Mock for sanity check
+    vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
+    vm.mockCall(mockBank, abi.encodeWithSignature("vaultManager()"), abi.encode(mockVaultManager));
+    executor = PCSV3Executor01(
+      DeployHelper.deployUpgradeable(
+        "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, mockBank)
+      )
+    );
 
     mockToken0 = new MockERC20("Mock Token0", "MTKN0", 18);
     mockToken1 = new MockERC20("Mock Token1", "MTKN1", 6);
@@ -52,8 +60,8 @@ contract PCSV3Executor01OnWithdrawTest is Test {
     uint256 bankToken1Before = mockToken1.balanceOf(mockBank);
 
     vm.prank(mockVaultManager);
-    IAutomatedVaultManager.WithdrawResult[] memory withdrawResults =
-      executor.onWithdraw(PancakeV3Worker(mockWorker), mockVaultToken, sharesToWithdraw);
+    AutomatedVaultManager.TokenAmount[] memory withdrawResults =
+      executor.onWithdraw(mockWorker, mockVaultToken, sharesToWithdraw);
 
     // Assertions
     // - worker balance decrease
@@ -169,7 +177,14 @@ contract PCSV3Executor01OnWithdrawForkTest is BscFixture {
     vm.createSelectFork("bsc_mainnet", BscFixture.FORK_BLOCK_NUMBER_1);
 
     mockBank = address(new MockBank());
-    executor = new PCSV3Executor01(mockVaultManager,mockBank);
+    // Mock for sanity check
+    vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
+    vm.mockCall(mockBank, abi.encodeWithSignature("vaultManager()"), abi.encode(mockVaultManager));
+    executor = PCSV3Executor01(
+      DeployHelper.deployUpgradeable(
+        "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, mockBank)
+      )
+    );
   }
 
   function testCorrectness_OnWithdraw_NotEnoughToRepayHaveToSwap_OnlyUndeployedFunds() public {
@@ -198,7 +213,7 @@ contract PCSV3Executor01OnWithdrawForkTest is BscFixture {
     );
 
     vm.prank(mockVaultManager);
-    executor.onWithdraw(PancakeV3Worker(mockWorker), mockVaultToken, totalShares);
+    executor.onWithdraw(mockWorker, mockVaultToken, totalShares);
 
     // Assertions
     // - executor balance is 0 since undeployed funds = debt (no equity)

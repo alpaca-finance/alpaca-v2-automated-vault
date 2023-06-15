@@ -6,6 +6,8 @@ import "@forge-std/Test.sol";
 import { PCSV3Executor01 } from "src/executors/PCSV3Executor01.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
 
+import { DeployHelper } from "test/helpers/DeployHelper.sol";
+
 contract PCSV3Executor01SweepToWorkerTest is Test {
   PCSV3Executor01 executor;
   address mockWorker = makeAddr("mockWorker");
@@ -16,7 +18,14 @@ contract PCSV3Executor01SweepToWorkerTest is Test {
   MockERC20 mockToken1;
 
   function setUp() public virtual {
-    executor = new PCSV3Executor01(mockVaultManager, mockBank);
+    // Mock for sanity check
+    vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
+    vm.mockCall(mockBank, abi.encodeWithSignature("vaultManager()"), abi.encode(mockVaultManager));
+    executor = PCSV3Executor01(
+      DeployHelper.deployUpgradeable(
+        "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, mockBank)
+      )
+    );
 
     mockToken0 = new MockERC20("Mock Token0", "MTKN0", 18);
     mockToken1 = new MockERC20("Mock Token1", "MTKN1", 6);

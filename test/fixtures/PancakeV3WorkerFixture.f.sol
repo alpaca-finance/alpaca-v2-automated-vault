@@ -6,7 +6,7 @@ import { ERC20 } from "@solmate/tokens/ERC20.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 
-import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 
 // fixtures
 import "test/fixtures/BscFixture.f.sol";
@@ -25,7 +25,7 @@ contract PancakeV3WorkerFixture is BscFixture, ProtocolActorFixture {
   ERC20 token0;
   ERC20 token1;
   uint24 poolFee;
-  IAutomatedVaultManager vaultManager = IAutomatedVaultManager(address(1));
+  AutomatedVaultManager vaultManager = AutomatedVaultManager(address(1));
   address IN_SCOPE_EXECUTOR = makeAddr("IN_SCOPE_EXECUTOR");
 
   constructor() BscFixture() ProtocolActorFixture() {
@@ -55,11 +55,7 @@ contract PancakeV3WorkerFixture is BscFixture, ProtocolActorFixture {
     token1 = worker.token1();
     poolFee = worker.poolFee();
 
-    vm.mockCall(
-      address(vaultManager),
-      abi.encodeWithSelector(IAutomatedVaultManager.EXECUTOR_IN_SCOPE.selector),
-      abi.encode(IN_SCOPE_EXECUTOR)
-    );
+    vm.mockCall(address(vaultManager), abi.encodeWithSignature("EXECUTOR_IN_SCOPE()"), abi.encode(IN_SCOPE_EXECUTOR));
 
     vm.startPrank(IN_SCOPE_EXECUTOR);
     token0.approve(address(worker), type(uint256).max);

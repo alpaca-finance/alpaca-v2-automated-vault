@@ -17,18 +17,12 @@ import { BaseOracle } from "src/oracles/BaseOracle.sol";
 import { IExecutor } from "src/interfaces/IExecutor.sol";
 import { IVaultOracle } from "src/interfaces/IVaultOracle.sol";
 import { IAutomatedVaultERC20 } from "src/interfaces/IAutomatedVaultERC20.sol";
-import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
 
 // libraries
 import { LibShareUtil } from "src/libraries/LibShareUtil.sol";
 import { MAX_BPS } from "src/libraries/Constants.sol";
 
-contract AutomatedVaultManager is
-  Initializable,
-  Ownable2StepUpgradeable,
-  ReentrancyGuardUpgradeable,
-  IAutomatedVaultManager
-{
+contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradeable {
   using SafeTransferLib for ERC20;
   using LibShareUtil for uint256;
 
@@ -42,6 +36,11 @@ contract AutomatedVaultManager is
   error AutomatedVaultManager_TooLittleReceived();
   error AutomatedVaultManager_TokenNotAllowed();
   error AutomatedVaultManager_InvalidParams();
+
+  struct TokenAmount {
+    address token;
+    uint256 amount;
+  }
 
   struct VaultInfo {
     address worker;
@@ -66,10 +65,9 @@ contract AutomatedVaultManager is
   address public EXECUTOR_IN_SCOPE;
 
   event LogOpenVault(address indexed _vaultToken, VaultInfo _vaultInfo);
-  event LogDeposit(
-    address indexed _vaultToken, address indexed _user, DepositTokenParams[] _deposits, uint256 _shareReceived
-  );
+  event LogDeposit(address indexed _vaultToken, address indexed _user, TokenAmount[] _deposits, uint256 _shareReceived);
   event LogWithdraw(address indexed _vaultToken, address indexed _user, uint256 _sharesWithdrawn);
+  event LogManage(address _vaultToken, bytes[] _executorParams, uint256 _equityBefore, uint256 _equityAfter);
   event LogSetVaultManager(address indexed _vaultToken, address _manager, bool _isOk);
   event LogSetAllowToken(address indexed _vaultToken, address _token, bool _isAllowed);
   event LogSetVaultTokenImplementation(address prevImplementation, address newImplementation);
@@ -98,7 +96,7 @@ contract AutomatedVaultManager is
     }
   }
 
-  function _pullTokens(address _vaultToken, address _destination, DepositTokenParams[] calldata _deposits) internal {
+  function _pullTokens(address _vaultToken, address _destination, TokenAmount[] calldata _deposits) internal {
     uint256 _depositLength = _deposits.length;
     for (uint256 _i; _i < _depositLength;) {
       if (!allowTokens[_vaultToken][_deposits[_i].token]) {
@@ -111,7 +109,7 @@ contract AutomatedVaultManager is
     }
   }
 
-  function deposit(address _vaultToken, DepositTokenParams[] calldata _depositParams, uint256 _minReceive)
+  function deposit(address _vaultToken, TokenAmount[] calldata _depositParams, uint256 _minReceive)
     external
     nonReentrant
     returns (bytes memory _result)
@@ -125,7 +123,7 @@ contract AutomatedVaultManager is
     ///////////////////////////
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
-    IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, _cachedVaultInfo.worker);
+    IExecutor(_cachedVaultInfo.executor).onUpdate(_cachedVaultInfo.worker, _vaultToken);
 
     (uint256 _totalEquityBefore,) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
@@ -175,7 +173,7 @@ contract AutomatedVaultManager is
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
     // 1. Update the vault
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
-    IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, _cachedVaultInfo.worker);
+    IExecutor(_cachedVaultInfo.executor).onUpdate(_cachedVaultInfo.worker, _vaultToken);
 
     // 2. execute manage
     (uint256 _totalEquityBefore,) =
@@ -209,16 +207,13 @@ contract AutomatedVaultManager is
     if (_debtAfter > (_cachedVaultInfo.maxLeverage - 1) * _totalEquityAfter) {
       revert AutomatedVaultManager_TooMuchLeverage();
     }
+
+    emit LogManage(_vaultToken, _executorParams, _totalEquityBefore, _totalEquityAfter);
   }
 
   function setVaultManager(address _vaultToken, address _manager, bool _isOk) external onlyOwner {
     isManager[_vaultToken][_manager] = _isOk;
     emit LogSetVaultManager(_vaultToken, _manager, _isOk);
-  }
-
-  struct WithdrawSlippage {
-    address token;
-    uint256 minAmountOut;
   }
 
   function setWithdrawalFeeTreasury(address _withdrawalFeeTreasury) external onlyOwner {
@@ -227,10 +222,10 @@ contract AutomatedVaultManager is
   }
 
   // TODO: withdrawal fee
-  function withdraw(address _vaultToken, uint256 _sharesToWithdraw, WithdrawSlippage[] calldata _minAmountOuts)
+  function withdraw(address _vaultToken, uint256 _sharesToWithdraw, TokenAmount[] calldata _minAmountOuts)
     external
     nonReentrant
-    returns (IAutomatedVaultManager.WithdrawResult[] memory _results)
+    returns (AutomatedVaultManager.TokenAmount[] memory _results)
   {
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
 
@@ -247,7 +242,7 @@ contract AutomatedVaultManager is
     EXECUTOR_IN_SCOPE = _cachedVaultInfo.executor;
 
     // Accrue interest and reinvest before execute to ensure fair interest and profit distribution
-    IExecutor(_cachedVaultInfo.executor).onUpdate(_vaultToken, _cachedVaultInfo.worker);
+    IExecutor(_cachedVaultInfo.executor).onUpdate(_cachedVaultInfo.worker, _vaultToken);
 
     (uint256 _totalEquityBefore,) =
       IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
@@ -299,7 +294,7 @@ contract AutomatedVaultManager is
         _amount = _results[_i].amount;
         // Check slippage
         for (uint256 _j; _j < _minAmountOutsLen;) {
-          if (_minAmountOuts[_j].token == _token && _minAmountOuts[_j].minAmountOut > _amount) {
+          if (_minAmountOuts[_j].token == _token && _minAmountOuts[_j].amount > _amount) {
             revert AutomatedVaultManager_ExceedSlippage();
           }
           unchecked {

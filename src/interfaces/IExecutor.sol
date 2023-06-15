@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IMulticall } from "src/interfaces/IMulticall.sol";
-import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 
 interface IExecutor is IMulticall {
   function vaultManager() external view returns (address);
@@ -13,9 +13,9 @@ interface IExecutor is IMulticall {
 
   function onWithdraw(address _worker, address _vaultToken, uint256 _sharesToWithdraw)
     external
-    returns (IAutomatedVaultManager.WithdrawResult[] memory);
+    returns (AutomatedVaultManager.TokenAmount[] memory);
 
-  function onUpdate(address _vaultToken, address _worker) external returns (bytes memory _result);
+  function onUpdate(address _worker, address _vaultToken) external returns (bytes memory _result);
 
   function sweepToWorker() external;
 }
