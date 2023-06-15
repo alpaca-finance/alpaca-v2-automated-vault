@@ -72,17 +72,14 @@ contract E2ETest is E2EFixture {
     (, uint256 wbnbDebtAfter) = bank.getVaultDebt(address(vaultToken), address(wbnb));
     assertEq(wbnbDebtBefore * totalSharesAfter / totalSharesBefore, wbnbDebtAfter, "wbnb repaid");
     // - undeployed funds decreased by withdrawn% (management fee will occur precision loss)
-    assertApproxEqRel(
-      usdt.balanceOf(address(workerUSDTWBNB)),
-      workerUSDTBefore * totalSharesAfter / totalSharesBefore,
-      2e14, // 2bps
-      "undeployed usdt withdrawn"
-    );
-    assertEq(
-      wbnb.balanceOf(address(workerUSDTWBNB)),
-      workerWBNBBefore * totalSharesAfter / totalSharesBefore,
-      "undeployed wbnb withdrawn"
-    );
+
+    uint256 expectedUsdtRemaining = (workerUSDTBefore * totalSharesAfter) / totalSharesBefore;
+    uint256 expectedWbnbRemaining = (workerWBNBBefore * totalSharesAfter) / totalSharesBefore;
+
+    // expect that maximum precision loss will be 1 wei
+    assertLe(usdt.balanceOf(address(workerUSDTWBNB)) - expectedUsdtRemaining, 1, "undeployed usdt withdrawn");
+    assertLe(wbnb.balanceOf(address(workerUSDTWBNB)) - expectedWbnbRemaining, 1, "undeployed wbnb withdrawn");
+
     // - equity reduced by approx withdrawn%
     (uint256 equityAfter,) = pancakeV3VaultOracle.getEquityAndDebt(address(vaultToken), address(workerUSDTWBNB));
     assertApproxEqRel(equityBefore * totalSharesAfter / totalSharesBefore, equityAfter, 2e14, "equity decreased");

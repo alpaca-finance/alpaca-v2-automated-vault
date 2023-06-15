@@ -52,7 +52,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     uint8 maxLeverage;
   }
 
-  uint256 constant MAX_PERCENTAGE_PER_SEC = 1e18 / uint256(365 days); // (100% / (365 * 24 * 60 * 60))
+  uint256 constant MAX_PERCENTAGE_PER_SEC = 317097919837; // (10% / (365 * 24 * 60 * 60))
 
   address public vaultTokenImplementation;
   address public managementFeeTreasury;
@@ -430,9 +430,9 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     }
   }
 
-  /// @dev Valid value range: 0 <= __managementFeePerSec <= MAX_PERCENTAGE_PER_SEC
-  function _validateManagementFeePerSec(uint256 __managementFeePerSec) internal pure {
-    if (__managementFeePerSec > MAX_PERCENTAGE_PER_SEC) {
+  /// @dev Valid value range: 0 <= _managementFeePerSec <= MAX_PERCENTAGE_PER_SEC
+  function _validateManagementFeePerSec(uint256 _managementFeePerSec) internal pure {
+    if (_managementFeePerSec > MAX_PERCENTAGE_PER_SEC) {
       revert AutomatedVaultManager_InvalidParams();
     }
   }
