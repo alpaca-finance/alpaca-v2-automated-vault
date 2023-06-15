@@ -52,7 +52,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     uint8 maxLeverage;
   }
 
-  uint256 constant MAX_PERCENTAGE_PER_SEC = 317097919837; // (10% / (365 * 24 * 60 * 60))
+  uint256 constant MAX_PERCENTAGE_PER_SEC = 10e16 / uint256(365 days); // (10% / (365 * 24 * 60 * 60))
 
   address public vaultTokenImplementation;
   address public managementFeeTreasury;
