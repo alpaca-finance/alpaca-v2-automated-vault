@@ -45,7 +45,7 @@ contract TC01 is PancakeV3WorkerExecutorBankIntegrationFixture {
     deal(address(usdt), address(executor), 1 ether);
     deal(address(wbnb), address(executor), 1 ether);
     // Call
-    executor.onDeposit(workerUSDTWBNB, address(mockVaultUSDTWBNBToken));
+    executor.onDeposit(address(workerUSDTWBNB), address(mockVaultUSDTWBNBToken));
     // Mimic vault manager minting shares when deposit
     deal(address(mockVaultUSDTWBNBToken), address(this), 1 ether, true);
 
@@ -130,7 +130,7 @@ contract TC01 is PancakeV3WorkerExecutorBankIntegrationFixture {
     //
     // Step 3: vault manager call executor `onWithdraw` half of shares
     //
-    executor.onWithdraw(workerUSDTWBNB, address(mockVaultUSDTWBNBToken), 0.5 ether);
+    executor.onWithdraw(address(workerUSDTWBNB), address(mockVaultUSDTWBNBToken), 0.5 ether);
     // Mimic vault manager shares burning when withdraw
     deal(address(mockVaultUSDTWBNBToken), address(this), 0.5 ether, true);
 
@@ -142,7 +142,7 @@ contract TC01 is PancakeV3WorkerExecutorBankIntegrationFixture {
     //
     // Step 4: vault manager call executor `onWithdraw` with the rest of shares
     //
-    executor.onWithdraw(workerUSDTWBNB, address(mockVaultUSDTWBNBToken), 0.5 ether);
+    executor.onWithdraw(address(workerUSDTWBNB), address(mockVaultUSDTWBNBToken), 0.5 ether);
 
     // Assertions
     // - executor balance is 0 (forward all to vault manager)

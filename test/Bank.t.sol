@@ -9,7 +9,7 @@ import { Bank } from "src/Bank.sol";
 
 // interfaces
 import { IERC20 } from "src/interfaces/IERC20.sol";
-import { IAutomatedVaultManager } from "src/interfaces/IAutomatedVaultManager.sol";
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 
 // libraries
 import { LibShareUtil } from "src/libraries/LibShareUtil.sol";
@@ -28,7 +28,7 @@ contract BankTest is ProtocolActorFixture {
 
   Bank bank;
   MockMoneyMarket mockMoneyMarket;
-  address vaultManager = makeAddr("vaultManager");
+  address mockVaultManager = makeAddr("mockVaultManager");
   address IN_SCOPE_EXECUTOR = makeAddr("IN_SCOPE_EXECUTOR");
 
   IERC20 wbnb;
@@ -44,17 +44,18 @@ contract BankTest is ProtocolActorFixture {
     deal(address(wbnb), address(mockMoneyMarket), 100_000 ether);
     deal(address(usdt), address(mockMoneyMarket), 100_000 ether);
 
+    // Mock sanity check
+    vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
+    // Deploy bank
     vm.prank(DEPLOYER);
     bank = Bank(
       DeployHelper.deployUpgradeable(
-        "Bank", abi.encodeWithSelector(Bank.initialize.selector, address(mockMoneyMarket), vaultManager)
+        "Bank", abi.encodeWithSelector(Bank.initialize.selector, address(mockMoneyMarket), mockVaultManager)
       )
     );
 
     vm.mockCall(
-      address(vaultManager),
-      abi.encodeWithSelector(IAutomatedVaultManager.EXECUTOR_IN_SCOPE.selector),
-      abi.encode(IN_SCOPE_EXECUTOR)
+      address(mockVaultManager), abi.encodeWithSignature("EXECUTOR_IN_SCOPE()"), abi.encode(IN_SCOPE_EXECUTOR)
     );
 
     deal(address(wbnb), IN_SCOPE_EXECUTOR, 100_000 ether);
