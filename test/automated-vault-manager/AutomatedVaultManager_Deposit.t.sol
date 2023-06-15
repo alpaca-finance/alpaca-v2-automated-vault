@@ -98,6 +98,7 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
 
     // state before
     uint256 _vaultSupplyBefore = IERC20(vaultToken).totalSupply();
+    uint256 _lastTimeCollecteBefore = vaultManager.vaultFeeLastCollectedAt(vaultToken);
 
     uint256 _timePassed = 100;
     uint256 _managementFeePerSec = 1;
@@ -127,9 +128,13 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
     mockToken0.approve(address(vaultManager), depositAmount);
     vaultManager.deposit(vaultToken, params, 0);
 
+    // state after
+    uint256 _lastTimeCollecteAfter = vaultManager.vaultFeeLastCollectedAt(vaultToken);
+
     // Assertions
     // 1. user's receive share amount = (deposit amount * (current share amount) / equity before deposit)
     // 2. management fee = (vault's total supply * time passed * fee/sec) / 1e18
+    // 3. last collected time must be updated
 
     assertEq(
       IERC20(vaultToken).balanceOf(address(this)),
@@ -137,5 +142,6 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
       "User share amount"
     );
     assertEq(IERC20(vaultToken).balanceOf(managementFeeTreasury), _expectedFee, "Management fee treasury balance");
+    assertGt(_lastTimeCollecteAfter, _lastTimeCollecteBefore, "Update last collected time");
   }
 }

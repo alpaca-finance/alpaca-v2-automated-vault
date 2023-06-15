@@ -61,7 +61,7 @@ contract AutomatedVaultManager is
   mapping(address => mapping(address => bool)) isManager;
   mapping(address => mapping(address => bool)) allowTokens;
   mapping(address => bool) public workerExisted;
-  mapping(address => uint256) vaultFeeLastCollectedAt;
+  mapping(address => uint256) public vaultFeeLastCollectedAt;
   /// @dev execution scope to tell downstream contracts (Bank, Worker, etc.)
   /// that current executor is acting on behalf of vault and can be trusted
   address public EXECUTOR_IN_SCOPE;
@@ -81,8 +81,10 @@ contract AutomatedVaultManager is
   event LogSetMangementFeeTreasury(address _managementFeeTreasury);
 
   modifier collectManagementFee(address _vaultToken) {
-    IAutomatedVaultERC20(_vaultToken).mint(managementFeeTreasury, pendingManagementFee(_vaultToken));
-    vaultFeeLastCollectedAt[_vaultToken] = block.timestamp;
+    if (block.timestamp > vaultFeeLastCollectedAt[_vaultToken]) {
+      IAutomatedVaultERC20(_vaultToken).mint(managementFeeTreasury, pendingManagementFee(_vaultToken));
+      vaultFeeLastCollectedAt[_vaultToken] = block.timestamp;
+    }
     _;
   }
 
@@ -102,13 +104,13 @@ contract AutomatedVaultManager is
   function pendingManagementFee(address _vaultToken) public view returns (uint256 _pendingFee) {
     uint256 _lastCollectedFee = vaultFeeLastCollectedAt[_vaultToken];
 
-    if (block.timestamp > _lastCollectedFee) {
-      VaultInfo memory _vaultInfo = _getVaultInfo(_vaultToken);
-      _pendingFee = (
-        IAutomatedVaultERC20(_vaultToken).totalSupply() * _vaultInfo.managementFeePerSec
-          * (block.timestamp - _lastCollectedFee)
-      ) / 1e18;
+    VaultInfo memory _vaultInfo = _getVaultInfo(_vaultToken);
+    uint256 _timePassed;
+    unchecked {
+      _timePassed = block.timestamp - _lastCollectedFee;
     }
+    _pendingFee =
+      (IAutomatedVaultERC20(_vaultToken).totalSupply() * _vaultInfo.managementFeePerSec * _timePassed) / 1e18;
   }
 
   function _getVaultInfo(address _vaultToken) internal view returns (VaultInfo memory _vaultInfo) {

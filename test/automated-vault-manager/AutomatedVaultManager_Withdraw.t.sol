@@ -113,7 +113,10 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     deal(withdrawResults[0].token, address(vaultManager), withdrawResults[0].amount);
     deal(withdrawResults[1].token, address(vaultManager), withdrawResults[1].amount);
 
+    // state before
     uint256 _vaultSupplyBefore = IERC20(vaultToken).totalSupply();
+    uint256 _lastTimeCollecteBefore = vaultManager.vaultFeeLastCollectedAt(vaultToken);
+
     uint256 _timePassed = 100;
     uint256 _managementFeePerSec = 1;
     uint256 _expectedFee = (_vaultSupplyBefore * _timePassed * _managementFeePerSec) / 1e18;
@@ -128,10 +131,14 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     AutomatedVaultManager.WithdrawSlippage[] memory minAmountOuts = new AutomatedVaultManager.WithdrawSlippage[](1);
     vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
 
+    // state after
+    uint256 _lastTimeCollecteAfter = vaultManager.vaultFeeLastCollectedAt(vaultToken);
+
     // Assertions
     // - management fee is minted
     // - [Cannot test] user share must be smaller since some the shares is increased
 
     assertEq(IERC20(vaultToken).balanceOf(managementFeeTreasury), _expectedFee, "Management fee treasury balance");
+    assertGt(_lastTimeCollecteAfter, _lastTimeCollecteBefore, "Update last collected time");
   }
 }

@@ -76,6 +76,7 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
     AutomatedVaultERC20(vaultToken).mint(address(1), 1 ether);
     // state before
     uint256 _vaultSupplyBefore = IERC20(vaultToken).totalSupply();
+    uint256 _lastTimeCollecteBefore = vaultManager.vaultFeeLastCollectedAt(vaultToken);
 
     uint256 _timePassed = 100;
     uint256 _managementFeePerSec = 1;
@@ -91,6 +92,10 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), new bytes[](0));
 
+    // state after
+    uint256 _lastTimeCollecteAfter = vaultManager.vaultFeeLastCollectedAt(vaultToken);
+
     assertEq(IERC20(vaultToken).balanceOf(managementFeeTreasury), _expectedFee, "Management fee treasury balance");
+    assertGt(_lastTimeCollecteAfter, _lastTimeCollecteBefore, "Update last collected time");
   }
 }
