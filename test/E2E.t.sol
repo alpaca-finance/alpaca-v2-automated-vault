@@ -518,7 +518,7 @@ contract E2ETest is E2EFixture {
     _depositUSDTAndAssert(address(this), depositAmount);
     // time pass
     vm.warp(block.timestamp + 100);
-    // withdraw
+    // deposit
     _depositUSDTAndAssert(address(this), depositAmount);
 
     assertNotEq(vaultToken.balanceOf(address(this)), depositAmount * 2);
@@ -527,6 +527,7 @@ contract E2ETest is E2EFixture {
   function testCorrectness_ManagementFee_MustCollect_WhenManage() public {
     _depositUSDTAndAssert(address(this), 100 ether);
     uint256 totalSupplyBefore = vaultToken.totalSupply();
+    uint256 userShareBefore = vaultToken.balanceOf(address(this));
 
     // set management fee
     vm.prank(DEPLOYER);
@@ -536,12 +537,18 @@ contract E2ETest is E2EFixture {
     vm.warp(block.timestamp + 100);
 
     bytes[] memory _data = new bytes[](0);
+
+    // pendingManagementFee will be skipped since it's in the same block
+    vm.expectCall(address(vaultManager), abi.encodeWithSignature("pendingManagementFee"), 0);
+
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), _data);
 
     uint256 totalSupplyAfter = vaultToken.totalSupply();
+    uint256 userShareAfter = vaultToken.balanceOf(address(this));
 
     assertGt(totalSupplyAfter, totalSupplyBefore);
+    assertEq(userShareAfter, userShareBefore);
   }
 
   function testCorrectness_ManagementFee_MustCollect_WhenWithdraw() public {
