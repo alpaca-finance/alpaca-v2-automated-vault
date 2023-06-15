@@ -53,7 +53,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   }
 
   address public vaultTokenImplementation;
-  address withdrawalFeeTreasury;
+  address public withdrawalFeeTreasury;
 
   // vault's ERC20 address => vault info
   mapping(address => VaultInfo) public vaultInfos;
@@ -83,11 +83,12 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     _disableInitializers();
   }
 
-  function initialize(address _vaultTokenImplementation) external initializer {
+  function initialize(address _vaultTokenImplementation, address _withdrawalFeeTreasury) external initializer {
     Ownable2StepUpgradeable.__Ownable2Step_init();
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
 
     vaultTokenImplementation = _vaultTokenImplementation;
+    withdrawalFeeTreasury = _withdrawalFeeTreasury;
   }
 
   function _getVaultInfo(address _vaultToken) internal view returns (VaultInfo memory _vaultInfo) {

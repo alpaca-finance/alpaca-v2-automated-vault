@@ -11,6 +11,7 @@ contract ProtocolActorFixture is Test {
   address public constant USER_BOB = address(0xb0b);
   address public constant USER_EVE = address(0xe4e);
   address public constant MANAGER = address(0xa4313);
+  address public WITHDRAWAL_FEE_TREASURY = makeAddr("WITHDRAWAL_FEE_TREASURY");
 
   constructor() {
     vm.label(DEPLOYER, "DEPLOYER");
@@ -19,5 +20,6 @@ contract ProtocolActorFixture is Test {
     vm.label(USER_BOB, "USER_BOB");
     vm.label(USER_EVE, "USER_EVE");
     vm.label(MANAGER, "MANAGER");
+    vm.label(WITHDRAWAL_FEE_TREASURY, "WITHDRAWAL_FEE_TREASURY");
   }
 }
