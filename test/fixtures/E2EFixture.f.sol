@@ -31,6 +31,8 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
   uint16 internal constant MAX_PRICE_AGE = 60 * 60;
   uint16 internal constant MAX_PRICE_DIFF = 10_500;
   uint256 internal constant MIN_DEPOSIT = 1 ether;
+  uint256 internal constant MANAGEMENT_FEE_PER_SEC = 0;
+  uint16 internal constant WITHDRAWAL_FEE = 0;
   uint16 internal constant TOLERANCE_BPS = 9900; // tolerate up to 1% equity loss on manage
   uint8 internal constant MAX_LEVERAGE = 10;
 
@@ -51,7 +53,10 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
       DeployHelper.deployUpgradeable(
         "AutomatedVaultManager",
         abi.encodeWithSelector(
-          AutomatedVaultManager.initialize.selector, address(new AutomatedVaultERC20()), WITHDRAWAL_FEE_TREASURY
+          AutomatedVaultManager.initialize.selector,
+          address(new AutomatedVaultERC20()),
+          MANAGEMENT_FEE_TREASURY,
+          WITHDRAWAL_FEE_TREASURY
         )
       )
     );
@@ -113,7 +118,8 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
           vaultOracle: address(pancakeV3VaultOracle),
           executor: address(pancakeV3Executor),
           minimumDeposit: MIN_DEPOSIT,
-          withdrawalFeeBps: 0,
+          managementFeePerSec: MANAGEMENT_FEE_PER_SEC,
+          withdrawalFeeBps: WITHDRAWAL_FEE,
           toleranceBps: TOLERANCE_BPS,
           maxLeverage: MAX_LEVERAGE
         })

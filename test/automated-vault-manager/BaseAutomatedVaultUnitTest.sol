@@ -19,10 +19,12 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
   AutomatedVaultManager vaultManager;
   MockVaultOracleAndExecutor mockVaultOracleAndExecutor;
   address mockWorker = makeAddr("mockWorker");
+  address managementFeeTreasury = makeAddr("managementFeeTreasury");
   MockERC20 mockToken0;
   MockERC20 mockToken1;
 
   uint256 internal constant DEFAULT_MINIMUM_DEPOSIT = 1 ether;
+  uint256 internal constant DEFAULT_FEE_PER_SEC = 0;
   uint8 internal constant DEFAULT_MAX_LEVERAGE = 10;
   uint16 internal constant DEFAULT_TOLERANCE_BPS = 9900;
 
@@ -35,7 +37,10 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
       DeployHelper.deployUpgradeable(
         "AutomatedVaultManager",
         abi.encodeWithSignature(
-          "initialize(address,address)", address(new AutomatedVaultERC20()), WITHDRAWAL_FEE_TREASURY
+          "initialize(address,address,address)",
+          address(new AutomatedVaultERC20()),
+          managementFeeTreasury,
+          WITHDRAWAL_FEE_TREASURY
         )
       )
     );
@@ -44,10 +49,13 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
     mockVaultOracleAndExecutor = new MockVaultOracleAndExecutor(address(vaultManager));
   }
 
-  function _openVault(address worker, uint256 minimumDeposit, uint16 toleranceBps, uint8 maxLeverage)
-    internal
-    returns (address vaultToken)
-  {
+  function _openVault(
+    address worker,
+    uint256 minimumDeposit,
+    uint256 managementFeePerSec,
+    uint16 toleranceBps,
+    uint8 maxLeverage
+  ) internal returns (address vaultToken) {
     vm.startPrank(DEPLOYER);
     vaultToken = vaultManager.openVault(
       "test vault",
@@ -57,6 +65,7 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
         vaultOracle: address(mockVaultOracleAndExecutor),
         executor: address(mockVaultOracleAndExecutor),
         minimumDeposit: minimumDeposit,
+        managementFeePerSec: managementFeePerSec,
         withdrawalFeeBps: 0,
         toleranceBps: toleranceBps,
         maxLeverage: maxLeverage
@@ -69,6 +78,7 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
   }
 
   function _openDefaultVault() internal returns (address) {
-    return _openVault(mockWorker, DEFAULT_MINIMUM_DEPOSIT, DEFAULT_TOLERANCE_BPS, DEFAULT_MAX_LEVERAGE);
+    return
+      _openVault(mockWorker, DEFAULT_MINIMUM_DEPOSIT, DEFAULT_FEE_PER_SEC, DEFAULT_TOLERANCE_BPS, DEFAULT_MAX_LEVERAGE);
   }
 }

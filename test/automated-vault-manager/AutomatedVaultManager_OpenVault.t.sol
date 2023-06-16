@@ -19,6 +19,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
 
   function testCorrectness_OpenVault() public {
     uint256 minimumDeposit = 100 ether;
+    uint256 managementFeePerSec = 0;
     uint16 toleranceBps = 9900;
     uint8 maxLeverage = 10;
 
@@ -31,6 +32,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: minimumDeposit,
+        managementFeePerSec: managementFeePerSec,
         withdrawalFeeBps: 0,
         toleranceBps: toleranceBps,
         maxLeverage: maxLeverage
@@ -43,6 +45,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
       address vaultWorkerOracle,
       address vaultExecutor,
       uint256 vaultMinimumDeposit,
+      uint256 vaultFeePerSec,
       uint16 vaultWithdrawalFeeBps,
       uint16 vaultToleranceBps,
       uint8 vaultMaxLeverage
@@ -53,6 +56,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
     assertEq(vaultToleranceBps, toleranceBps);
     assertEq(vaultMaxLeverage, maxLeverage);
     assertEq(vaultMinimumDeposit, minimumDeposit);
+    assertEq(vaultFeePerSec, managementFeePerSec);
     assertEq(vaultWithdrawalFeeBps, 0);
     assertEq(vaultManager.workerExisted(worker), true);
 
@@ -71,6 +75,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 100 ether,
+        managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
         maxLeverage: 10
@@ -90,6 +95,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 0.1 ether,
+        managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
         maxLeverage: 10
@@ -105,6 +111,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 1 ether,
+        managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 1,
         maxLeverage: 10
@@ -120,6 +127,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 1 ether,
+        managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
         maxLeverage: 11
@@ -137,6 +145,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 1 ether,
+        managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
         maxLeverage: 10
@@ -155,6 +164,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 1 ether,
+        managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
         maxLeverage: 10
@@ -172,6 +182,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 1 ether,
+        managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
         maxLeverage: 10
@@ -189,6 +200,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 1 ether,
+        managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
         maxLeverage: 10
@@ -204,6 +216,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 1 ether,
+        managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
         maxLeverage: 10
