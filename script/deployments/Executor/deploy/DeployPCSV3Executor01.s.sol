@@ -9,7 +9,6 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/proxy/transparent/Tra
 
 contract DeployPCSV3Executor01Script is BaseScript {
   function run() public {
-
     address _automatedVaultManager = automatedVaultManager;
     address _bank = bank;
 

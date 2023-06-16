@@ -17,9 +17,8 @@ contract DeployAutomatedVaultManagerScript is BaseScript {
     address automatedVaultManagerImplementation = address(new AutomatedVaultManager());
 
     // Deploy proxy
-    bytes memory initializerData = abi.encodeWithSelector(
-      AutomatedVaultManager.initialize.selector, _vaultTokenImplementation, _withdrawTreasury
-    );
+    bytes memory initializerData =
+      abi.encodeWithSelector(AutomatedVaultManager.initialize.selector, _vaultTokenImplementation, _withdrawTreasury);
     address automatedVaultManagerProxy = address(
       new TransparentUpgradeableProxy(
       automatedVaultManagerImplementation,
