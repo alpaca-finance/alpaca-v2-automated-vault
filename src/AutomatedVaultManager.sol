@@ -253,11 +253,6 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     emit LogSetVaultManager(_vaultToken, _manager, _isOk);
   }
 
-  function setWithdrawalFeeTreasury(address _withdrawalFeeTreasury) external onlyOwner {
-    withdrawalFeeTreasury = _withdrawalFeeTreasury;
-    emit LogSetWithdrawalFeeTreasury(_withdrawalFeeTreasury);
-  }
-
   function withdraw(address _vaultToken, uint256 _sharesToWithdraw, TokenAmount[] calldata _minAmountOuts)
     external
     collectManagementFee(_vaultToken)
@@ -431,9 +426,20 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   }
 
   function setManagementFeeTreasury(address _managementFeeTreasury) external onlyOwner {
+    if (_managementFeeTreasury == address(0)) {
+      revert AutomatedVaultManager_InvalidParams();
+    }
     managementFeeTreasury = _managementFeeTreasury;
 
     emit LogSetMangementFeeTreasury(_managementFeeTreasury);
+  }
+
+  function setWithdrawalFeeTreasury(address _withdrawalFeeTreasury) external onlyOwner {
+    if (_withdrawalFeeTreasury == address(0)) {
+      revert AutomatedVaultManager_InvalidParams();
+    }
+    withdrawalFeeTreasury = _withdrawalFeeTreasury;
+    emit LogSetWithdrawalFeeTreasury(_withdrawalFeeTreasury);
   }
 
   function setWithdrawalFeeBps(address _vaultToken, uint16 _withdrawalFeeBps) external onlyOwner {

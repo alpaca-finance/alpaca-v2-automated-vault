@@ -542,20 +542,28 @@ contract E2ETest is E2EFixture {
   function testCorrectness_ManagementFee_MustCollect_WhenDeposit() public {
     uint256 depositAmount = 100 ether;
     uint256 treasuryShareBefore = vaultToken.balanceOf(MANAGEMENT_FEE_TREASURY);
+    uint256 managementFeePerSec = 2;
+    uint256 timePassed = 100;
 
     // set management fee
     vm.prank(DEPLOYER);
-    vaultManager.setManagementFeePerSec(address(vaultToken), 2);
+    vaultManager.setManagementFeePerSec(address(vaultToken), managementFeePerSec);
 
     // deposit
     _depositUSDTAndAssert(address(this), depositAmount);
+
+    uint256 vaultTotalSupply = vaultToken.totalSupply();
+
     // time pass
-    skip(100);
+    skip(timePassed);
+
     // deposit
     _depositUSDTAndAssert(address(this), depositAmount);
     uint256 treasuryShareAfter = vaultToken.balanceOf(MANAGEMENT_FEE_TREASURY);
 
-    assertGt(treasuryShareAfter, treasuryShareBefore);
+    uint256 expectedFee = timePassed * managementFeePerSec * vaultTotalSupply / 1e18;
+
+    assertEq(treasuryShareAfter - treasuryShareBefore, expectedFee);
     assertGt(vaultToken.balanceOf(address(this)), depositAmount * 2);
   }
 
@@ -563,29 +571,37 @@ contract E2ETest is E2EFixture {
     _depositUSDTAndAssert(address(this), 100 ether);
     uint256 treasuryShareBefore = vaultToken.balanceOf(MANAGEMENT_FEE_TREASURY);
     uint256 userShareBefore = vaultToken.balanceOf(address(this));
+    uint256 managementFeePerSec = 2;
+    uint256 timePassed = 100;
 
     // set management fee
     vm.prank(DEPLOYER);
-    vaultManager.setManagementFeePerSec(address(vaultToken), 2);
+    vaultManager.setManagementFeePerSec(address(vaultToken), managementFeePerSec);
+
+    uint256 vaultTotalSupply = vaultToken.totalSupply();
 
     // time pass
-    skip(100);
+    skip(timePassed);
 
     bytes[] memory _data = new bytes[](0);
 
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), _data);
 
+    uint256 expectedFee = timePassed * managementFeePerSec * vaultTotalSupply / 1e18;
+
     uint256 treasuryShareAfter = vaultToken.balanceOf(MANAGEMENT_FEE_TREASURY);
     uint256 userShareAfter = vaultToken.balanceOf(address(this));
 
-    assertGt(treasuryShareAfter, treasuryShareBefore);
+    assertEq(treasuryShareAfter - treasuryShareBefore, expectedFee);
     assertEq(userShareAfter, userShareBefore);
   }
 
   function testCorrectness_ManagementFee_MustCollect_WhenWithdraw() public {
     uint256 depositAmount = 100 ether;
     uint256 treasuryShareBefore = vaultToken.balanceOf(MANAGEMENT_FEE_TREASURY);
+    uint256 managementFeePerSec = 2;
+    uint256 timePassed = 100;
 
     // set management fee
     vm.prank(DEPLOYER);
@@ -593,16 +609,19 @@ contract E2ETest is E2EFixture {
 
     // deposit
     _depositUSDTAndAssert(address(this), depositAmount);
+    uint256 vaultTotalSupply = vaultToken.totalSupply();
     uint256 userShare = IERC20(vaultToken).balanceOf(address(this));
     uint256 withdrawAmount = userShare / 2;
     // time pass
     skip(100);
+    uint256 expectedFee = timePassed * managementFeePerSec * vaultTotalSupply / 1e18;
+
     // withdraw
     _withdrawAndAssert(address(this), withdrawAmount);
 
     uint256 treasuryShareAfter = vaultToken.balanceOf(MANAGEMENT_FEE_TREASURY);
 
-    assertGt(treasuryShareAfter, treasuryShareBefore);
+    assertEq(treasuryShareAfter - treasuryShareBefore, expectedFee);
     // actual withdraw amount < expected withdraw amount (fee deducted)
     assertLt(IERC20(usdt).balanceOf(address(this)), depositAmount / 2);
   }
