@@ -143,4 +143,34 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     assertGt(_lastTimeCollecteAfter, _lastTimeCollecteBefore, "Last collected time must be updated");
     assertEq(_lastTimeCollecteAfter, _time, "Update last collected time correctly");
   }
+
+  function testCorrectness_WhenWithdraw_WithdrawalFee_ShouldBeCollected() public {
+    uint256 sharesToWithdraw = 1 ether;
+    uint16 withdrawalFeeBps = 100;
+
+    address vaultToken = _openDefaultVault();
+    deal(vaultToken, address(this), sharesToWithdraw, true);
+
+    AutomatedVaultManager.TokenAmount[] memory withdrawResults = new AutomatedVaultManager.TokenAmount[](2);
+    withdrawResults[0].token = address(mockToken0);
+    withdrawResults[0].amount = 1 ether;
+    withdrawResults[1].token = address(mockToken1);
+    withdrawResults[1].amount = 2 ether;
+    mockVaultOracleAndExecutor.setOnTokenAmount(withdrawResults);
+    deal(withdrawResults[0].token, address(vaultManager), withdrawResults[0].amount);
+    deal(withdrawResults[1].token, address(vaultManager), withdrawResults[1].amount);
+
+    // set fee
+    vm.startPrank(DEPLOYER);
+    vaultManager.setWithdrawalFeeBps(vaultToken, withdrawalFeeBps);
+    vm.stopPrank();
+
+    AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](1);
+    vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
+
+    // expect withdrawal fee = (withdraw amount * fee bps) / max bps
+    uint256 expectWithdrawalFee = (sharesToWithdraw * withdrawalFeeBps) / 10000;
+    // withdrawal fee must be minted to treasury
+    assertEq(IERC20(vaultToken).balanceOf(WITHDRAWAL_FEE_TREASURY), expectWithdrawalFee);
+  }
 }
