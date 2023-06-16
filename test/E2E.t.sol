@@ -510,11 +510,9 @@ contract E2ETest is E2EFixture {
     // expected share will mint to treasury
     uint256 expectedShare = share * withdrawalfeeBps / MAX_BPS;
 
-    // Assume:
-    // 1. deposit 100%
-    // 2. withdraw 100%, should receive (100 - fee)%
-    // full of deposit != full withdraw (must be deducted by withdrawal fee)
+    // 1. full of deposit < full withdraw (must be deducted by withdrawal fee)
     assertLt(usdt.balanceOf(address(this)), depositAmount);
+    // 2. withdraw 100%, should receive (100 - fee)%
     assertEq(usdt.balanceOf(address(this)), expectedWithdraw);
     // 3. withdrawal fee must mint to withdrawal fee
     assertEq(vaultToken.balanceOf(WITHDRAWAL_FEE_TREASURY), expectedShare);
