@@ -85,12 +85,12 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
         abi.encodeWithSelector(
           PancakeV3Worker.initialize.selector,
           PancakeV3Worker.ConstructorParams({
-            vaultManager: vaultManager,
-            positionManager: pancakeV3PositionManager,
-            pool: pancakeV3USDTWBNBPool,
-            router: pancakeV3Router,
-            masterChef: pancakeV3MasterChef,
-            zapV3: zapV3,
+            vaultManager: address(vaultManager),
+            positionManager: address(pancakeV3PositionManager),
+            pool: address(pancakeV3USDTWBNBPool),
+            router: address(pancakeV3Router),
+            masterChef: address(pancakeV3MasterChef),
+            zapV3: address(zapV3),
             performanceFeeBucket: PERFORMANCE_FEE_BUCKET,
             performanceFeeBps: PERFORMANCE_FEE_BPS
           })
