@@ -83,5 +83,4 @@ contract MoneyMarketForTestTest is Test {
 
     assertEq(mockToken0.balanceOf(address(moneyMarket)) - _mmBalanceBefore, 1 ether);
   }
-
 }

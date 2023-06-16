@@ -9,13 +9,17 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/proxy/transparent/Tra
 
 contract DeployPCSV3Executor01Script is BaseScript {
   function run() public {
+
+    address _automatedVaultManager = automatedVaultManager;
+    address _bank = bank;
+
     vm.startBroadcast(deployerPrivateKey);
 
     // Deploy implementation
     address executorImplementation = address(new PCSV3Executor01());
 
     // Deploy proxy
-    bytes memory initializerData = abi.encodeWithSelector(Executor.initialize.selector, automatedVaultManager, bank);
+    bytes memory initializerData = abi.encodeWithSelector(Executor.initialize.selector, _automatedVaultManager, _bank);
     address executorProxy = address(
       new TransparentUpgradeableProxy(
       executorImplementation,

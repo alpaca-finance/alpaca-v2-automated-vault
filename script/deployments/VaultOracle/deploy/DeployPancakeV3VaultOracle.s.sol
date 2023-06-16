@@ -11,6 +11,9 @@ contract DeployPancakeV3VaultOracleScript is BaseScript {
   uint16 constant MAX_PRICE_DIFF = 10_500;
 
   function run() public {
+    address _pancakeV3PositionManager = pancakeV3PositionManager;
+    address _bank = bank;
+
     vm.startBroadcast(deployerPrivateKey);
 
     // Deploy implementation
@@ -18,7 +21,7 @@ contract DeployPancakeV3VaultOracleScript is BaseScript {
 
     // Deploy proxy
     bytes memory initializerData = abi.encodeWithSelector(
-      PancakeV3VaultOracle.initialize.selector, pancakeV3PositionManager, bank, MAX_PRICE_AGE, MAX_PRICE_DIFF
+      PancakeV3VaultOracle.initialize.selector, _pancakeV3PositionManager, _bank, MAX_PRICE_AGE, MAX_PRICE_DIFF
     );
     address oracleProxy = address(
       new TransparentUpgradeableProxy(
