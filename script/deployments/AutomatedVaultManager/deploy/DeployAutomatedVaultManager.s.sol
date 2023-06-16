@@ -9,6 +9,7 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/proxy/transparent/Tra
 contract DeployAutomatedVaultManagerScript is BaseScript {
   function run() public {
     address _vaultTokenImplementation = automatedVaultERC20Implementation;
+    address _managementFeeTreasury = 0x2DD872C6f7275DAD633d7Deb1083EDA561E9B96b;
     address _withdrawTreasury = 0x2DD872C6f7275DAD633d7Deb1083EDA561E9B96b;
 
     vm.startBroadcast(deployerPrivateKey);
@@ -18,7 +19,7 @@ contract DeployAutomatedVaultManagerScript is BaseScript {
 
     // Deploy proxy
     bytes memory initializerData =
-      abi.encodeWithSelector(AutomatedVaultManager.initialize.selector, _vaultTokenImplementation, _withdrawTreasury);
+      abi.encodeWithSelector(AutomatedVaultManager.initialize.selector, _vaultTokenImplementation,_managementFeeTreasury, _withdrawTreasury);
     address automatedVaultManagerProxy = address(
       new TransparentUpgradeableProxy(
       automatedVaultManagerImplementation,
