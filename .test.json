@@ -23,7 +23,18 @@
       "executor01": {
         "proxy": "",
         "implementation": ""
-      }
+      },
+      "vaults": [
+        {
+          "name" : "",
+          "symbol": "",
+          "vaultToken": "",
+          "worker": {
+            "proxy": "",
+            "implementation": ""
+          }
+        }
+      ]
     }
   },
   "dependencies": {
@@ -33,7 +44,7 @@
       "swapRouter": "0x13f4EA83D0bd40E75C8222255bc855a974568Dd4",
       "masterChef": "0x556B9306565093C855AEA9AE92A594704c2Cd59e",
       "pools": {
-        "usdt-bnb-500": "0x36696169C63e42cd08ce11f5deeBbCeBae652050"
+        "usdt-wbnb-500": "0x36696169C63e42cd08ce11f5deeBbCeBae652050"
       }
     },
     "zapV3": "0xC462E9a70b16009d63fE9dFe701cA5bf70cBCb55"

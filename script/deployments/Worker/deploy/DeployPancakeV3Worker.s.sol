@@ -41,6 +41,8 @@ contract DeployPancakeV3WorkerScript is BaseScript {
       )
     );
 
+    console.log("workerImplementation", workerImplementation);
+    console.log("worker proxy", workerProxy);
     // TODO: write to json array
     // _writeJson(vm.toString(workerImplementation), ".automatedVault.pancake-v3-vault.workers.implementation");
     // _writeJson(vm.toString(workerProxy), ".automatedVault.pancake-v3-vault.workers.proxy");
