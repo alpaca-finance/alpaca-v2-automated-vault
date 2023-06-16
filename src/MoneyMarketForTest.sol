@@ -71,4 +71,8 @@ contract MoneyMarketForTest {
   function setBorrower(address _borrower) external onlyOwner {
     borrower = _borrower;
   }
+
+  function getMinDebtSize() external view returns (uint256) {
+    return 0;
+  }
 }

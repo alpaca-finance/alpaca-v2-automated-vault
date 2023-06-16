@@ -8,13 +8,17 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/proxy/transparent/Tra
 
 contract DeployMoneyMarketForTestScript is BaseScript {
   function run() public {
+    address _moneyMarket = moneyMarket;
+    address _automatedVaultManager = automatedVaultManager;
+
     vm.startBroadcast(deployerPrivateKey);
 
     // Deploy implementation
     address bankImplementation = address(new Bank());
 
     // Deploy proxy
-    bytes memory initializerData = abi.encodeWithSelector(Bank.initialize.selector, moneyMarket, automatedVaultManager);
+    bytes memory initializerData =
+      abi.encodeWithSelector(Bank.initialize.selector, _moneyMarket, _automatedVaultManager);
     address bankProxy = address(
       new TransparentUpgradeableProxy(
       bankImplementation,
