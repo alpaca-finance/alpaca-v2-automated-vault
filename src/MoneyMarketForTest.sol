@@ -61,10 +61,6 @@ contract MoneyMarketForTest {
     }
   }
 
-  function withdrawETH() external onlyOwner {
-    SafeTransferLib.safeTransferETH(owner, address(this).balance);
-  }
-
   function injectFund(address _token, uint256 _amount) external {
     ERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
   }

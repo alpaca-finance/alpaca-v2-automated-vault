@@ -83,16 +83,4 @@ contract MoneyMarketForTestTest is Test {
     assertEq(mockToken0.balanceOf(address(moneyMarket)) - _mmBalanceBefore, 1 ether);
   }
 
-  function testCorrectness_withdrawETH() public {
-    deal(address(moneyMarket), 1 ether);
-
-    uint256 _nativeBefore = address(moneyMarket).balance;
-
-    assertEq(_nativeBefore, 1 ether);
-    moneyMarket.withdrawETH();
-
-    assertEq(address(moneyMarket).balance, 0);
-  }
-
-  receive() external payable {}
 }
