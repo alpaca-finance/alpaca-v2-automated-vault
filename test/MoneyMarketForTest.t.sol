@@ -71,4 +71,16 @@ contract MoneyMarketForTestTest is Test {
     vm.expectRevert(bytes("NO"));
     moneyMarket.setInterestRatePerSec(1);
   }
+
+  function testCorrectness_injectFund() public {
+    uint256 _mmBalanceBefore = mockToken0.balanceOf(address(moneyMarket));
+    deal(address(mockToken0), address(this), 1 ether);
+
+    mockToken0.approve(address(moneyMarket), 1 ether);
+
+    moneyMarket.injectFund(address(mockToken0), 1 ether);
+
+    assertEq(mockToken0.balanceOf(address(moneyMarket)) - _mmBalanceBefore, 1 ether);
+  }
+
 }

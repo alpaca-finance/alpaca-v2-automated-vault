@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: BUSL
 pragma solidity 0.8.19;
 
-import { IERC20 } from "src/interfaces/IERC20.sol";
+import { ERC20 } from "@solmate/tokens/ERC20.sol";
+import { SafeTransferLib } from "@solmate/utils/SafeTransferLib.sol";
 
 contract MoneyMarketForTest {
+  using SafeTransferLib for ERC20;
+
   address internal immutable owner;
   address internal immutable bank;
   uint256 internal interestRatePerSec;
@@ -37,25 +40,29 @@ contract MoneyMarketForTest {
   function nonCollatBorrow(address token, uint256 amount) external onlyBank {
     accrueInterest(token);
     getNonCollatAccountDebt[bank][token] += amount;
-    IERC20(token).transfer(msg.sender, amount);
+    ERC20(token).safeTransfer(msg.sender, amount);
   }
 
   function nonCollatRepay(address, address token, uint256 amount) external {
     accrueInterest(token);
-    IERC20(token).transferFrom(msg.sender, address(this), amount);
+    ERC20(token).safeTransferFrom(msg.sender, address(this), amount);
     getNonCollatAccountDebt[bank][token] -= amount;
   }
 
   function withdrawTokens(address[] calldata tokens) external onlyOwner {
     uint256 len = tokens.length;
-    IERC20 token;
+    ERC20 token;
     for (uint256 i; i < len;) {
-      token = IERC20(tokens[i]);
-      token.transfer(owner, token.balanceOf(address(this)));
+      token = ERC20(tokens[i]);
+      token.safeTransfer(owner, token.balanceOf(address(this)));
       unchecked {
         ++i;
       }
     }
+  }
+
+  function injectFund(address _token, uint256 _amount) external {
+    ERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
   }
 
   function setInterestRatePerSec(uint256 newRate) external onlyOwner {
