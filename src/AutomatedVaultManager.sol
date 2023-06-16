@@ -392,9 +392,9 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     emit LogSetWithdrawalFeeBps(_vaultToken, _withdrawalFeeBps);
   }
 
-  /// @dev Valid value: withdrawalFeeBps <= 10000
+  /// @dev Valid value: withdrawalFeeBps <= 1000
   function _validateWithdrawalFeeBps(uint16 _withdrawalFeeBps) internal pure {
-    if (_withdrawalFeeBps > MAX_BPS) {
+    if (_withdrawalFeeBps > 1000) {
       revert AutomatedVaultManager_InvalidParams();
     }
   }
