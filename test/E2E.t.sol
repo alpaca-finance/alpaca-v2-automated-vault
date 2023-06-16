@@ -19,10 +19,11 @@ contract E2ETest is E2EFixture {
     uint256 totalShareBefore = vaultToken.totalSupply();
     (uint256 equityBefore,) = pancakeV3VaultOracle.getEquityAndDebt(address(vaultToken), address(workerUSDTWBNB));
     (, int256 usdtAnswer,,,) = usdtFeed.latestRoundData();
-    uint256 equityIncrease = amount * uint256(usdtAnswer) / (10 ** usdtFeed.decimals());
-    uint256 shareIncrease = equityBefore == 0
-      ? equityIncrease
-      : equityIncrease * (totalShareBefore + vaultManager.pendingManagementFee(address(vaultToken))) / equityBefore;
+    uint256 expectedEquityIncreased = amount * uint256(usdtAnswer) / (10 ** usdtFeed.decimals());
+    uint256 expectedShareIncreased = equityBefore == 0
+      ? expectedEquityIncreased
+      : expectedEquityIncreased * (totalShareBefore + vaultManager.pendingManagementFee(address(vaultToken)))
+        / equityBefore;
 
     vm.startPrank(depositor);
     usdt.approve(address(vaultManager), amount);
@@ -36,7 +37,7 @@ contract E2ETest is E2EFixture {
     // - undeployed usdt increase by deposited amount
     assertEq(usdt.balanceOf(address(workerUSDTWBNB)) - workerUSDTBefore, amount, "undeployed usdt increase");
     // - shares minted to depositor equal to usd value of 1 usdt (equity)
-    assertEq(vaultToken.balanceOf(depositor) - sharesBefore, shareIncrease, "shares received");
+    assertEq(vaultToken.balanceOf(depositor) - sharesBefore, expectedShareIncreased, "shares received");
   }
 
   function _withdrawAndAssert(address withdrawFor, uint256 withdrawAmount) internal {
@@ -77,8 +78,8 @@ contract E2ETest is E2EFixture {
     uint256 expectedWbnbRemaining = (workerWBNBBefore * totalSharesAfter) / totalSharesBefore;
 
     // expect that maximum precision loss will be 1 wei
-    assertLe(usdt.balanceOf(address(workerUSDTWBNB)) - expectedUsdtRemaining, 1, "undeployed usdt withdrawn");
-    assertLe(wbnb.balanceOf(address(workerUSDTWBNB)) - expectedWbnbRemaining, 1, "undeployed wbnb withdrawn");
+    assertApproxEqAbs(usdt.balanceOf(address(workerUSDTWBNB)), expectedUsdtRemaining, 1, "undeployed usdt withdrawn");
+    assertApproxEqAbs(wbnb.balanceOf(address(workerUSDTWBNB)), expectedWbnbRemaining, 1, "undeployed wbnb withdrawn");
 
     // - equity reduced by approx withdrawn%
     (uint256 equityAfter,) = pancakeV3VaultOracle.getEquityAndDebt(address(vaultToken), address(workerUSDTWBNB));
@@ -490,9 +491,13 @@ contract E2ETest is E2EFixture {
 
   function testCorrectness_ManagementFee_InTheSameBlock_ShouldSkip() public {
     uint256 _lastTimeCollectedBefore = vaultManager.vaultFeeLastCollectedAt(address(vaultToken));
+    uint256 _timePassed = 1;
     bytes[] memory _data = new bytes[](0);
 
-    // all interaction in same block.
+    skip(_timePassed);
+
+    // pendingManagementFee should call only once.
+    vm.expectCall(address(vaultManager), abi.encodeWithSignature("pendingManagementFee(address)"), 1);
     // deposit
     _depositUSDTAndAssert(address(this), 1 ether);
     // manage
@@ -501,11 +506,12 @@ contract E2ETest is E2EFixture {
     // withdraw
     _withdrawAndAssert(address(this), 1 ether);
 
-    assertEq(vaultManager.vaultFeeLastCollectedAt(address(vaultToken)), _lastTimeCollectedBefore);
+    assertEq(vaultManager.vaultFeeLastCollectedAt(address(vaultToken)), _lastTimeCollectedBefore + _timePassed);
   }
 
   function testCorrectness_ManagementFee_MustCollect_WhenDeposit() public {
     uint256 depositAmount = 100 ether;
+    uint256 treasuryShareBefore = vaultToken.balanceOf(MANAGEMENT_FEE_TREASURY);
 
     // set management fee
     vm.prank(DEPLOYER);
@@ -514,42 +520,42 @@ contract E2ETest is E2EFixture {
     // deposit
     _depositUSDTAndAssert(address(this), depositAmount);
     // time pass
-    vm.warp(block.timestamp + 100);
+    skip(100);
     // deposit
     _depositUSDTAndAssert(address(this), depositAmount);
+    uint256 treasuryShareAfter = vaultToken.balanceOf(MANAGEMENT_FEE_TREASURY);
 
-    assertNotEq(vaultToken.balanceOf(address(this)), depositAmount * 2);
+    assertGt(treasuryShareAfter, treasuryShareBefore);
+    assertGt(vaultToken.balanceOf(address(this)), depositAmount * 2);
   }
 
   function testCorrectness_ManagementFee_MustCollect_WhenManage() public {
     _depositUSDTAndAssert(address(this), 100 ether);
-    uint256 totalSupplyBefore = vaultToken.totalSupply();
+    uint256 treasuryShareBefore = vaultToken.balanceOf(MANAGEMENT_FEE_TREASURY);
     uint256 userShareBefore = vaultToken.balanceOf(address(this));
 
     // set management fee
     vm.prank(DEPLOYER);
     vaultManager.setManagementFeePerSec(address(vaultToken), 2);
 
-    // warp
-    vm.warp(block.timestamp + 100);
+    // time pass
+    skip(100);
 
     bytes[] memory _data = new bytes[](0);
-
-    // pendingManagementFee will be skipped since it's in the same block
-    vm.expectCall(address(vaultManager), abi.encodeWithSignature("pendingManagementFee"), 0);
 
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), _data);
 
-    uint256 totalSupplyAfter = vaultToken.totalSupply();
+    uint256 treasuryShareAfter = vaultToken.balanceOf(MANAGEMENT_FEE_TREASURY);
     uint256 userShareAfter = vaultToken.balanceOf(address(this));
 
-    assertGt(totalSupplyAfter, totalSupplyBefore);
+    assertGt(treasuryShareAfter, treasuryShareBefore);
     assertEq(userShareAfter, userShareBefore);
   }
 
   function testCorrectness_ManagementFee_MustCollect_WhenWithdraw() public {
     uint256 depositAmount = 100 ether;
+    uint256 treasuryShareBefore = vaultToken.balanceOf(MANAGEMENT_FEE_TREASURY);
 
     // set management fee
     vm.prank(DEPLOYER);
@@ -559,9 +565,13 @@ contract E2ETest is E2EFixture {
     _depositUSDTAndAssert(address(this), depositAmount);
     uint256 userShare = IERC20(vaultToken).balanceOf(address(this));
     // time pass
-    vm.warp(block.timestamp + 100);
+    skip(100);
     // withdraw
     _withdrawAndAssert(address(this), userShare);
+
+    uint256 treasuryShareAfter = vaultToken.balanceOf(MANAGEMENT_FEE_TREASURY);
+
+    assertGt(treasuryShareAfter, treasuryShareBefore);
     // assert amount in != amount out
     assertNotEq(depositAmount, IERC20(usdt).balanceOf(address(this)));
   }
