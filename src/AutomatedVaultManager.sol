@@ -81,6 +81,9 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   event LogSetMinimumDeposit(address _vaultToken, uint256 _minimumDeposit);
   event LogSetManagementFeePerSec(address _vaultToken, uint256 _managementFeePerSec);
   event LogSetMangementFeeTreasury(address _managementFeeTreasury);
+  event LogSetWithdrawalFeeTreasury(address _withdrawalFeeTreasury);
+  event LogSetWithdrawalFeeBps(address _vaultToken, uint16 _withdrawalFeeBps);
+  event LogWithdrawalFee(address _vaultToken, uint256 _withdrawalFee);
 
   modifier collectManagementFee(address _vaultToken) {
     if (block.timestamp > vaultFeeLastCollectedAt[_vaultToken]) {
@@ -89,10 +92,6 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     }
     _;
   }
-
-  event LogSetWithdrawalFeeTreasury(address _withdrawalFeeTreasury);
-  event LogSetWithdrawalFeeBps(address _vaultToken, uint16 _withdrawalFeeBps);
-  event LogWithdrawalFee(address _vaultToken, uint256 _withdrawalFee);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {

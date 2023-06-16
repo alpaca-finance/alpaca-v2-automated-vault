@@ -83,7 +83,7 @@ contract E2ETest is E2EFixture {
 
     // - equity reduced by approx withdrawn%
     (uint256 equityAfter,) = pancakeV3VaultOracle.getEquityAndDebt(address(vaultToken), address(workerUSDTWBNB));
-    assertApproxEqRel(equityBefore * totalSharesAfter / totalSharesBefore, equityAfter, 2e14, "equity decreased");
+    assertApproxEqRel(equityBefore * totalSharesAfter / totalSharesBefore, equityAfter, 2, "equity decreased");
   }
 
   /// -------------------------------
