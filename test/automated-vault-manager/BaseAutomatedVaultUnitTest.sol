@@ -37,7 +37,10 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
       DeployHelper.deployUpgradeable(
         "AutomatedVaultManager",
         abi.encodeWithSignature(
-          "initialize(address,address)", address(new AutomatedVaultERC20()), managementFeeTreasury
+          "initialize(address,address,address)",
+          address(new AutomatedVaultERC20()),
+          managementFeeTreasury,
+          WITHDRAWAL_FEE_TREASURY
         )
       )
     );
@@ -63,6 +66,7 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
         executor: address(mockVaultOracleAndExecutor),
         minimumDeposit: minimumDeposit,
         managementFeePerSec: managementFeePerSec,
+        withdrawalFeeBps: 0,
         toleranceBps: toleranceBps,
         maxLeverage: maxLeverage
       })

@@ -52,7 +52,10 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
       DeployHelper.deployUpgradeable(
         "AutomatedVaultManager",
         abi.encodeWithSelector(
-          AutomatedVaultManager.initialize.selector, address(new AutomatedVaultERC20()), MANAGEMENT_FEE_TREASURY
+          AutomatedVaultManager.initialize.selector,
+          address(new AutomatedVaultERC20()),
+          MANAGEMENT_FEE_TREASURY,
+          WITHDRAWAL_FEE_TREASURY
         )
       )
     );
@@ -115,6 +118,7 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
           executor: address(pancakeV3Executor),
           minimumDeposit: MIN_DEPOSIT,
           managementFeePerSec: MANAGEMENT_FEE_PER_SEC,
+          withdrawalFeeBps: 0,
           toleranceBps: TOLERANCE_BPS,
           maxLeverage: MAX_LEVERAGE
         })

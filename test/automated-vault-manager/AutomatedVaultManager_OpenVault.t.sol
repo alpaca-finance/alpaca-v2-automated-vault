@@ -33,6 +33,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         executor: executor,
         minimumDeposit: minimumDeposit,
         managementFeePerSec: managementFeePerSec,
+        withdrawalFeeBps: 0,
         toleranceBps: toleranceBps,
         maxLeverage: maxLeverage
       })
@@ -45,6 +46,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
       address vaultExecutor,
       uint256 vaultMinimumDeposit,
       uint256 vaultFeePerSec,
+      uint16 vaultWithdrawalFeeBps,
       uint16 vaultToleranceBps,
       uint8 vaultMaxLeverage
     ) = vaultManager.vaultInfos(vaultToken);
@@ -55,6 +57,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
     assertEq(vaultMaxLeverage, maxLeverage);
     assertEq(vaultMinimumDeposit, minimumDeposit);
     assertEq(vaultFeePerSec, managementFeePerSec);
+    assertEq(vaultWithdrawalFeeBps, 0);
     assertEq(vaultManager.workerExisted(worker), true);
 
     // Assert vault token
@@ -73,6 +76,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         executor: executor,
         minimumDeposit: 100 ether,
         managementFeePerSec: 0,
+        withdrawalFeeBps: 0,
         toleranceBps: 9900,
         maxLeverage: 10
       })
@@ -92,6 +96,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         executor: executor,
         minimumDeposit: 0.1 ether,
         managementFeePerSec: 0,
+        withdrawalFeeBps: 0,
         toleranceBps: 9900,
         maxLeverage: 10
       })
@@ -107,6 +112,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         executor: executor,
         minimumDeposit: 1 ether,
         managementFeePerSec: 0,
+        withdrawalFeeBps: 0,
         toleranceBps: 1,
         maxLeverage: 10
       })
@@ -122,6 +128,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         executor: executor,
         minimumDeposit: 1 ether,
         managementFeePerSec: 0,
+        withdrawalFeeBps: 0,
         toleranceBps: 9900,
         maxLeverage: 11
       })
@@ -139,6 +146,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         executor: executor,
         minimumDeposit: 1 ether,
         managementFeePerSec: 0,
+        withdrawalFeeBps: 0,
         toleranceBps: 9900,
         maxLeverage: 10
       })
@@ -157,6 +165,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         executor: executor,
         minimumDeposit: 1 ether,
         managementFeePerSec: 0,
+        withdrawalFeeBps: 0,
         toleranceBps: 9900,
         maxLeverage: 10
       })
@@ -174,6 +183,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         executor: executor,
         minimumDeposit: 1 ether,
         managementFeePerSec: 0,
+        withdrawalFeeBps: 0,
         toleranceBps: 9900,
         maxLeverage: 10
       })
@@ -191,6 +201,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         executor: executor,
         minimumDeposit: 1 ether,
         managementFeePerSec: 0,
+        withdrawalFeeBps: 0,
         toleranceBps: 9900,
         maxLeverage: 10
       })
@@ -206,6 +217,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         executor: executor,
         minimumDeposit: 1 ether,
         managementFeePerSec: 0,
+        withdrawalFeeBps: 0,
         toleranceBps: 9900,
         maxLeverage: 10
       })

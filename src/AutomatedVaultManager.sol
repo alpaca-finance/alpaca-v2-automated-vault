@@ -48,6 +48,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     address executor;
     uint256 minimumDeposit;
     uint256 managementFeePerSec;
+    uint16 withdrawalFeeBps;
     uint16 toleranceBps; // acceptable bps of equity deceased after it was manipulated
     uint8 maxLeverage;
   }
@@ -56,6 +57,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
 
   address public vaultTokenImplementation;
   address public managementFeeTreasury;
+  address public withdrawalFeeTreasury;
 
   // vault's ERC20 address => vault info
   mapping(address => VaultInfo) public vaultInfos;
@@ -88,17 +90,25 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     _;
   }
 
+  event LogSetWithdrawalFeeTreasury(address _withdrawalFeeTreasury);
+  event LogSetWithdrawalFeeBps(address _vaultToken, uint16 _withdrawalFeeBps);
+  event LogWithdrawalFee(address _vaultToken, uint256 _withdrawalFee);
+
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
     _disableInitializers();
   }
 
-  function initialize(address _vaultTokenImplementation, address _managementFeeTreasury) external initializer {
+  function initialize(address _vaultTokenImplementation, address _managementFeeTreasury, address _withdrawalFeeTreasury)
+    external
+    initializer
+  {
     Ownable2StepUpgradeable.__Ownable2Step_init();
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
 
     vaultTokenImplementation = _vaultTokenImplementation;
     managementFeeTreasury = _managementFeeTreasury;
+    withdrawalFeeTreasury = _withdrawalFeeTreasury;
   }
 
   function pendingManagementFee(address _vaultToken) public view returns (uint256 _pendingFee) {
@@ -244,7 +254,11 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     emit LogSetVaultManager(_vaultToken, _manager, _isOk);
   }
 
-  // TODO: withdrawal fee
+  function setWithdrawalFeeTreasury(address _withdrawalFeeTreasury) external onlyOwner {
+    withdrawalFeeTreasury = _withdrawalFeeTreasury;
+    emit LogSetWithdrawalFeeTreasury(_withdrawalFeeTreasury);
+  }
+
   function withdraw(address _vaultToken, uint256 _sharesToWithdraw, TokenAmount[] calldata _minAmountOuts)
     external
     collectManagementFee(_vaultToken)
@@ -257,6 +271,8 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     if (_sharesToWithdraw > IAutomatedVaultERC20(_vaultToken).balanceOf(msg.sender)) {
       revert AutomatedVaultManager_WithdrawExceedBalance();
     }
+
+    uint256 _actualWithdrawAmount = (_sharesToWithdraw * (MAX_BPS - _cachedVaultInfo.withdrawalFeeBps)) / MAX_BPS;
 
     ///////////////////////////
     // Executor scope opened //
@@ -271,7 +287,8 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
 
     // Execute withdraw
     // Executor should send withdrawn funds back here to check slippage
-    _results = IExecutor(_cachedVaultInfo.executor).onWithdraw(_cachedVaultInfo.worker, _vaultToken, _sharesToWithdraw);
+    _results =
+      IExecutor(_cachedVaultInfo.executor).onWithdraw(_cachedVaultInfo.worker, _vaultToken, _actualWithdrawAmount);
 
     EXECUTOR_IN_SCOPE = address(0);
     ///////////////////////////
@@ -293,8 +310,17 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     //   revert AutomatedVaultManager_TooMuchEquityLoss();
     // }
 
+    uint256 _withdrawalFee;
+    unchecked {
+      _withdrawalFee = _sharesToWithdraw - _actualWithdrawAmount;
+    }
+
     // Burn shares per requested amount before transfer out
     IAutomatedVaultERC20(_vaultToken).burn(msg.sender, _sharesToWithdraw);
+    // Mint withdrawal fee to withdrawal treasury
+    IAutomatedVaultERC20(_vaultToken).mint(withdrawalFeeTreasury, _withdrawalFee);
+
+    emit LogWithdrawalFee(_vaultToken, _withdrawalFee);
 
     // Transfer withdrawn funds to user
     // Tokens should be transferred from executor to here during `onWithdraw`
@@ -342,6 +368,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     _validateMaxLeverage(_vaultInfo.maxLeverage);
     _validateMinimumDeposit(_vaultInfo.minimumDeposit);
     _validateManagementFeePerSec(_vaultInfo.managementFeePerSec);
+    _validateWithdrawalFeeBps(_vaultInfo.withdrawalFeeBps);
     // Sanity check oracle
     BaseOracle(_vaultInfo.vaultOracle).maxPriceAge();
     // Sanity check executor
@@ -408,6 +435,20 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     managementFeeTreasury = _managementFeeTreasury;
 
     emit LogSetMangementFeeTreasury(_managementFeeTreasury);
+  }
+
+  function setWithdrawalFeeBps(address _vaultToken, uint16 _withdrawalFeeBps) external onlyOwner {
+    _validateWithdrawalFeeBps(_withdrawalFeeBps);
+    vaultInfos[_vaultToken].withdrawalFeeBps = _withdrawalFeeBps;
+
+    emit LogSetWithdrawalFeeBps(_vaultToken, _withdrawalFeeBps);
+  }
+
+  /// @dev Valid value: withdrawalFeeBps <= 1000
+  function _validateWithdrawalFeeBps(uint16 _withdrawalFeeBps) internal pure {
+    if (_withdrawalFeeBps > 1000) {
+      revert AutomatedVaultManager_InvalidParams();
+    }
   }
 
   /// @dev Valid value range: 9500 <= toleranceBps <= 10000
