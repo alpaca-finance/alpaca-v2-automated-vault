@@ -41,49 +41,60 @@ contract E2ETest is E2EFixture {
   }
 
   function _withdrawAndAssert(address withdrawFor, uint256 withdrawAmount) internal {
-    uint256 sharesBefore = vaultToken.balanceOf(withdrawFor);
-    IPancakeV3MasterChef.UserPositionInfo memory userInfoBefore =
-      pancakeV3MasterChef.userPositionInfos(workerUSDTWBNB.nftTokenId());
-    (, uint256 wbnbDebtBefore) = bank.getVaultDebt(address(vaultToken), address(wbnb));
-    (, uint256 usdtDebtBefore) = bank.getVaultDebt(address(vaultToken), address(usdt));
-    uint256 workerUSDTBefore = usdt.balanceOf(address(workerUSDTWBNB));
-    uint256 workerWBNBBefore = wbnb.balanceOf(address(workerUSDTWBNB));
-    (uint256 equityBefore,) = pancakeV3VaultOracle.getEquityAndDebt(address(vaultToken), address(workerUSDTWBNB));
-    uint256 totalSharesBefore = vaultToken.totalSupply() + vaultManager.pendingManagementFee(address(vaultToken));
+    {
+      uint256 sharesBefore = vaultToken.balanceOf(withdrawFor);
+      IPancakeV3MasterChef.UserPositionInfo memory userInfoBefore =
+        pancakeV3MasterChef.userPositionInfos(workerUSDTWBNB.nftTokenId());
+      (, uint256 wbnbDebtBefore) = bank.getVaultDebt(address(vaultToken), address(wbnb));
+      (, uint256 usdtDebtBefore) = bank.getVaultDebt(address(vaultToken), address(usdt));
+      uint256 workerUSDTBefore = usdt.balanceOf(address(workerUSDTWBNB));
+      uint256 workerWBNBBefore = wbnb.balanceOf(address(workerUSDTWBNB));
+      (uint256 equityBefore,) = pancakeV3VaultOracle.getEquityAndDebt(address(vaultToken), address(workerUSDTWBNB));
+      uint256 totalSharesBefore = vaultToken.totalSupply() + vaultManager.pendingManagementFee(address(vaultToken));
 
-    AutomatedVaultManager.TokenAmount[] memory minAmountOuts;
-    vm.prank(withdrawFor);
-    vaultManager.withdraw(address(vaultToken), withdrawAmount, minAmountOuts);
+      AutomatedVaultManager.TokenAmount[] memory minAmountOuts;
+      vm.prank(withdrawFor);
+      vaultManager.withdraw(address(vaultToken), withdrawAmount, minAmountOuts);
 
-    uint256 totalSharesAfter = vaultToken.totalSupply();
+      uint256 totalSharesAfter = vaultToken.totalSupply();
 
-    // Assertions
-    // didn't assert user balance due withdraw in and out of range result are different
-    // - user shares was burned
-    assertEq(sharesBefore - vaultToken.balanceOf(withdrawFor), withdrawAmount, "shares burned");
-    // - position decreased by withdrawn%
-    IPancakeV3MasterChef.UserPositionInfo memory userInfoAfter =
-      pancakeV3MasterChef.userPositionInfos(workerUSDTWBNB.nftTokenId());
-    assertApproxEqAbs(
-      userInfoBefore.liquidity * totalSharesAfter / totalSharesBefore, userInfoAfter.liquidity, 1, "liquidity decreased"
-    );
-    // - debt repaid by withdrawn%
-    (, uint256 usdtDebtAfter) = bank.getVaultDebt(address(vaultToken), address(usdt));
-    assertEq(usdtDebtBefore * totalSharesAfter / totalSharesBefore, usdtDebtAfter, "usdt repaid");
-    (, uint256 wbnbDebtAfter) = bank.getVaultDebt(address(vaultToken), address(wbnb));
-    assertEq(wbnbDebtBefore * totalSharesAfter / totalSharesBefore, wbnbDebtAfter, "wbnb repaid");
-    // - undeployed funds decreased by withdrawn% (management fee will occur precision loss)
+      // Assertions
+      // didn't assert user balance due withdraw in and out of range result are different
+      // - user shares was burned
+      assertEq(sharesBefore - vaultToken.balanceOf(withdrawFor), withdrawAmount, "shares burned");
+      // - position decreased by withdrawn%
+      IPancakeV3MasterChef.UserPositionInfo memory userInfoAfter =
+        pancakeV3MasterChef.userPositionInfos(workerUSDTWBNB.nftTokenId());
+      assertApproxEqAbs(
+        userInfoBefore.liquidity * totalSharesAfter / totalSharesBefore,
+        userInfoAfter.liquidity,
+        1,
+        "liquidity decreased"
+      );
+      // - debt repaid by withdrawn%
+      (, uint256 usdtDebtAfter) = bank.getVaultDebt(address(vaultToken), address(usdt));
+      assertEq(usdtDebtBefore * totalSharesAfter / totalSharesBefore, usdtDebtAfter, "usdt repaid");
+      (, uint256 wbnbDebtAfter) = bank.getVaultDebt(address(vaultToken), address(wbnb));
+      assertEq(wbnbDebtBefore * totalSharesAfter / totalSharesBefore, wbnbDebtAfter, "wbnb repaid");
+      // - undeployed funds decreased by withdrawn% (management fee will occur precision loss)
 
-    uint256 expectedUsdtRemaining = (workerUSDTBefore * totalSharesAfter) / totalSharesBefore;
-    uint256 expectedWbnbRemaining = (workerWBNBBefore * totalSharesAfter) / totalSharesBefore;
+      uint256 expectedUsdtRemaining = (workerUSDTBefore * totalSharesAfter) / totalSharesBefore;
+      uint256 expectedWbnbRemaining = (workerWBNBBefore * totalSharesAfter) / totalSharesBefore;
 
-    // expect that maximum precision loss will be 1 wei
-    assertApproxEqAbs(usdt.balanceOf(address(workerUSDTWBNB)), expectedUsdtRemaining, 1, "undeployed usdt withdrawn");
-    assertApproxEqAbs(wbnb.balanceOf(address(workerUSDTWBNB)), expectedWbnbRemaining, 1, "undeployed wbnb withdrawn");
+      // expect that maximum precision loss will be 1 wei
+      assertApproxEqAbs(usdt.balanceOf(address(workerUSDTWBNB)), expectedUsdtRemaining, 1, "undeployed usdt withdrawn");
+      assertApproxEqAbs(wbnb.balanceOf(address(workerUSDTWBNB)), expectedWbnbRemaining, 1, "undeployed wbnb withdrawn");
 
-    // - equity reduced by approx withdrawn%
-    (uint256 equityAfter,) = pancakeV3VaultOracle.getEquityAndDebt(address(vaultToken), address(workerUSDTWBNB));
-    assertApproxEqRel(equityBefore * totalSharesAfter / totalSharesBefore, equityAfter, 2, "equity decreased");
+      // - equity reduced by approx withdrawn%
+      (uint256 equityAfter,) = pancakeV3VaultOracle.getEquityAndDebt(address(vaultToken), address(workerUSDTWBNB));
+      assertApproxEqRel(equityBefore * totalSharesAfter / totalSharesBefore, equityAfter, 2, "equity decreased");
+    }
+
+    (,,,,, uint256 withdrawalFeeBps,,) = vaultManager.vaultInfos(address(vaultToken));
+    uint256 expectedShare = withdrawAmount * withdrawalFeeBps / MAX_BPS;
+
+    // expect that withdrawal fee must be collected (if it's set)
+    assertEq(vaultToken.balanceOf(WITHDRAWAL_FEE_TREASURY), expectedShare);
   }
 
   /// -------------------------------
@@ -508,15 +519,10 @@ contract E2ETest is E2EFixture {
     // expected withdraw amount
     uint256 expectedWithdraw = depositAmount * (MAX_BPS - withdrawalfeeBps) / MAX_BPS;
 
-    // expected share will mint to treasury
-    uint256 expectedShare = share * withdrawalfeeBps / MAX_BPS;
-
     // 1. full of deposit < full withdraw (must be deducted by withdrawal fee)
     assertLt(usdt.balanceOf(address(this)), depositAmount);
     // 2. withdraw 100%, should receive (100 - fee)%
     assertEq(usdt.balanceOf(address(this)), expectedWithdraw);
-    // 3. withdrawal fee must mint to withdrawal fee
-    assertEq(vaultToken.balanceOf(WITHDRAWAL_FEE_TREASURY), expectedShare);
   }
 
   function testCorrectness_ManagementFee_InTheSameBlock_ShouldSkip() public {
