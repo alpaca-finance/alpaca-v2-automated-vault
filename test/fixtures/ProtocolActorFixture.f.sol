@@ -11,6 +11,7 @@ contract ProtocolActorFixture is Test {
   address public constant USER_BOB = address(0xb0b);
   address public constant USER_EVE = address(0xe4e);
   address public constant MANAGER = address(0xa4313);
+
   address public WITHDRAWAL_FEE_TREASURY = makeAddr("WITHDRAWAL_FEE_TREASURY");
   address public MANAGEMENT_FEE_TREASURY = makeAddr("Management Fee");
 
