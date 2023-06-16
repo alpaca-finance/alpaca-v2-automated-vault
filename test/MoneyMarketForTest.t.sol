@@ -14,8 +14,9 @@ contract MoneyMarketForTestTest is Test {
   uint256 constant INTEREST_RATE_PER_SEC = 2536783358; // 8% per year
 
   function setUp() public {
-    moneyMarket = new MoneyMarketForTest(mockBank);
+    moneyMarket = new MoneyMarketForTest();
     moneyMarket.setInterestRatePerSec(INTEREST_RATE_PER_SEC);
+    moneyMarket.setBorrower(mockBank);
     mockToken0 = new MockERC20("mock0", "mock0", 18);
     mockToken1 = new MockERC20("mock1", "mock1", 6);
   }
