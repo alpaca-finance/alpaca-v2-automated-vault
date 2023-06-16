@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "./fixtures/E2EFixture.f.sol";
-import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
+import { AutomatedVaultManager, MAX_BPS } from "src/AutomatedVaultManager.sol";
 
 contract E2ETest is E2EFixture {
   constructor() E2EFixture() { }
@@ -486,5 +486,35 @@ contract E2ETest is E2EFixture {
     assertEq(wbnbDebt, 0);
 
     _withdrawAndAssert(address(this), vaultToken.balanceOf(address(this)));
+  }
+
+  function testCorrectness_WhenWithdraw_WithdrawalFee_ShouldBeCollected() public {
+    uint256 depositAmount = 100 ether;
+    uint16 withdrawalfeeBps = 100;
+
+    // set fee
+    vm.prank(DEPLOYER);
+    // 1% withdrawal fee
+    vaultManager.setWithdrawalFeeBps(address(vaultToken), withdrawalfeeBps);
+
+    // deposit
+    _depositUSDTAndAssert(address(this), depositAmount);
+
+    uint256 share = vaultToken.balanceOf(address(this));
+    // withdraw
+    _withdrawAndAssert(address(this), share);
+
+    // expected withdraw amount
+    uint256 expectedWithdraw = depositAmount * (MAX_BPS - withdrawalfeeBps) / MAX_BPS;
+
+    // expected share will mint to treasury
+    uint256 expectedShare = share * withdrawalfeeBps / MAX_BPS;
+
+    // 1. full of deposit < full withdraw (must be deducted by withdrawal fee)
+    assertLt(usdt.balanceOf(address(this)), depositAmount);
+    // 2. withdraw 100%, should receive (100 - fee)%
+    assertEq(usdt.balanceOf(address(this)), expectedWithdraw);
+    // 3. withdrawal fee must mint to withdrawal fee
+    assertEq(vaultToken.balanceOf(WITHDRAWAL_FEE_TREASURY), expectedShare);
   }
 }
