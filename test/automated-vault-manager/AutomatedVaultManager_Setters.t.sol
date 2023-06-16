@@ -67,13 +67,13 @@ contract AutomatedVaultManagerSetToleranceBpsTest is BaseAutomatedVaultUnitTest 
   function testCorrectness_SetToleranceBps() public {
     vm.startPrank(DEPLOYER);
     vaultManager.setToleranceBps(address(1), 9501);
-    (,,,,, uint16 toleranceBps,) = vaultManager.vaultInfos(address(1));
+    (,,,,,, uint16 toleranceBps,) = vaultManager.vaultInfos(address(1));
     assertEq(toleranceBps, 9501);
     vaultManager.setToleranceBps(address(1), 9900);
-    (,,,,, toleranceBps,) = vaultManager.vaultInfos(address(1));
+    (,,,,,, toleranceBps,) = vaultManager.vaultInfos(address(1));
     assertEq(toleranceBps, 9900);
     vaultManager.setToleranceBps(address(1), 10000);
-    (,,,,, toleranceBps,) = vaultManager.vaultInfos(address(1));
+    (,,,,,, toleranceBps,) = vaultManager.vaultInfos(address(1));
     assertEq(toleranceBps, 10000);
   }
 }
@@ -96,13 +96,13 @@ contract AutomatedVaultManagerSetMaxLeverageTest is BaseAutomatedVaultUnitTest {
   function testCorrectness_SetMaxLeverage() public {
     vm.startPrank(DEPLOYER);
     vaultManager.setMaxLeverage(address(1), 1);
-    (,,,,,, uint8 maxLeverage) = vaultManager.vaultInfos(address(1));
+    (,,,,,,, uint8 maxLeverage) = vaultManager.vaultInfos(address(1));
     assertEq(maxLeverage, 1);
     vaultManager.setMaxLeverage(address(1), 5);
-    (,,,,,, maxLeverage) = vaultManager.vaultInfos(address(1));
+    (,,,,,,, maxLeverage) = vaultManager.vaultInfos(address(1));
     assertEq(maxLeverage, 5);
     vaultManager.setMaxLeverage(address(1), 10);
-    (,,,,,, maxLeverage) = vaultManager.vaultInfos(address(1));
+    (,,,,,,, maxLeverage) = vaultManager.vaultInfos(address(1));
     assertEq(maxLeverage, 10);
   }
 }
@@ -125,10 +125,10 @@ contract AutomatedVaultManagerSetMinimumDepositTest is BaseAutomatedVaultUnitTes
   function testCorrectness_SetMinimumDeposit() public {
     vm.startPrank(DEPLOYER);
     vaultManager.setMinimumDeposit(address(1), 1e18);
-    (,,, uint256 minimumDeposit,,,) = vaultManager.vaultInfos(address(1));
+    (,,, uint256 minimumDeposit,,,,) = vaultManager.vaultInfos(address(1));
     assertEq(minimumDeposit, 1e18);
     vaultManager.setMinimumDeposit(address(1), 1e27);
-    (,,, minimumDeposit,,,) = vaultManager.vaultInfos(address(1));
+    (,,, minimumDeposit,,,,) = vaultManager.vaultInfos(address(1));
     assertEq(minimumDeposit, 1e27);
   }
 }
@@ -143,10 +143,10 @@ contract AutomatedVaultManagerSetFeePerSecTest is BaseAutomatedVaultUnitTest {
   function testCorrectness_SetFeePerSec() public {
     vm.startPrank(DEPLOYER);
     vaultManager.setManagementFeePerSec(address(1), 10);
-    (,,,, uint256 managementFeePerSec,,) = vaultManager.vaultInfos(address(1));
+    (,,,, uint256 managementFeePerSec,,,) = vaultManager.vaultInfos(address(1));
     assertEq(managementFeePerSec, 10);
     vaultManager.setManagementFeePerSec(address(1), 12);
-    (,,,, managementFeePerSec,,) = vaultManager.vaultInfos(address(1));
+    (,,,, managementFeePerSec,,,) = vaultManager.vaultInfos(address(1));
     assertEq(managementFeePerSec, 12);
   }
 }
