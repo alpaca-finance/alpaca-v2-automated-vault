@@ -559,20 +559,21 @@ contract E2ETest is E2EFixture {
 
     // set management fee
     vm.prank(DEPLOYER);
-    vaultManager.setManagementFeePerSec(address(vaultToken), 1);
+    vaultManager.setManagementFeePerSec(address(vaultToken), 2);
 
     // deposit
     _depositUSDTAndAssert(address(this), depositAmount);
     uint256 userShare = IERC20(vaultToken).balanceOf(address(this));
+    uint256 withdrawAmount = userShare / 2;
     // time pass
     skip(100);
     // withdraw
-    _withdrawAndAssert(address(this), userShare);
+    _withdrawAndAssert(address(this), withdrawAmount);
 
     uint256 treasuryShareAfter = vaultToken.balanceOf(MANAGEMENT_FEE_TREASURY);
 
     assertGt(treasuryShareAfter, treasuryShareBefore);
-    // assert amount in != amount out
-    assertNotEq(depositAmount, IERC20(usdt).balanceOf(address(this)));
+    // actual withdraw amount < expected withdraw amount (fee deducted)
+    assertLt(IERC20(usdt).balanceOf(address(this)), depositAmount / 2);
   }
 }
