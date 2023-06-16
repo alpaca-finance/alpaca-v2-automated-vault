@@ -23,7 +23,8 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
     equityAfter = bound(equityAfter, 0, equityBefore * tolerance / 10000);
     if (equityAfter > 0) equityAfter -= 1; // prevent equal case
 
-    address vaultToken = _openVault(mockWorker, DEFAULT_MINIMUM_DEPOSIT, tolerance, DEFAULT_MAX_LEVERAGE);
+    address vaultToken =
+      _openVault(mockWorker, DEFAULT_MINIMUM_DEPOSIT, DEFAULT_FEE_PER_SEC, tolerance, DEFAULT_MAX_LEVERAGE);
 
     mockVaultOracleAndExecutor.setGetEquityAndDebtResult({
       _equityBefore: equityBefore,
@@ -39,7 +40,7 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
 
   function testRevert_WhenManageCauseTooMuchLeverage() public {
     // max 10x leverage
-    address vaultToken = _openVault(mockWorker, DEFAULT_MINIMUM_DEPOSIT, DEFAULT_TOLERANCE_BPS, 10);
+    address vaultToken = _openVault(mockWorker, DEFAULT_MINIMUM_DEPOSIT, DEFAULT_FEE_PER_SEC, DEFAULT_TOLERANCE_BPS, 10);
 
     // 10x leverage with 100 equity allow up to 900 debt
     // 901 should revert
@@ -66,5 +67,37 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
 
     // Invariant: EXECUTOR_IN_SCOPE == address(0)
     assertEq(vaultManager.EXECUTOR_IN_SCOPE(), address(0));
+  }
+
+  function testCorrectness_WhenManage_ManagementFee_ShouldBeCollected() external {
+    address vaultToken = _openDefaultVault();
+
+    vm.prank(address(vaultManager));
+    AutomatedVaultERC20(vaultToken).mint(address(1), 1 ether);
+    // state before
+    uint256 _vaultSupplyBefore = IERC20(vaultToken).totalSupply();
+    uint256 _lastTimeCollecteBefore = vaultManager.vaultFeeLastCollectedAt(vaultToken);
+
+    uint256 _timePassed = 100;
+    uint256 _managementFeePerSec = 1;
+    uint256 _expectedFee = (_vaultSupplyBefore * _timePassed * _managementFeePerSec) / 1e18;
+
+    // set fee
+    vm.startPrank(DEPLOYER);
+    vaultManager.setManagementFeePerSec(vaultToken, _managementFeePerSec);
+    vm.stopPrank();
+    // warp
+    uint256 _time = block.timestamp + _timePassed;
+    vm.warp(_time);
+
+    vm.prank(MANAGER);
+    vaultManager.manage(address(vaultToken), new bytes[](0));
+
+    // state after
+    uint256 _lastTimeCollecteAfter = vaultManager.vaultFeeLastCollectedAt(vaultToken);
+
+    assertEq(IERC20(vaultToken).balanceOf(managementFeeTreasury), _expectedFee, "Management fee treasury balance");
+    assertGt(_lastTimeCollecteAfter, _lastTimeCollecteBefore, "Last collected time must be updated");
+    assertEq(_lastTimeCollecteAfter, _time, "Update last collected time correctly");
   }
 }
