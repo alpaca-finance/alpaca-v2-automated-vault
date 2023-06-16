@@ -16,6 +16,7 @@ contract DeployAutomatedVaultManagerScript is BaseScript {
       vaultOracle: address(0),
       executor: address(0),
       minimumDeposit: 0,
+      managementFeePerSec: 0,
       withdrawalFeeBps: 0,
       toleranceBps: 100,
       maxLeverage: 8
