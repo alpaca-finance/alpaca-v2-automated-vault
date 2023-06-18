@@ -12,9 +12,9 @@ contract DeployAutomatedVaultManagerScript is BaseScript {
     string memory _symbol = "N-USDT-BNB-500-PCS1";
 
     AutomatedVaultManager.VaultInfo memory vaultInfo = AutomatedVaultManager.VaultInfo({
-      worker: 0x9517b44741939776B13181a606dfEfb94a293b0a,
-      vaultOracle: 0x09c32b9c17bbb20Ac884E5689A90b8087859c9F0,
-      executor: 0x969A18e47256b35F54081a472D22e741C5AE607F,
+      worker: 0x969A18e47256b35F54081a472D22e741C5AE607F,
+      vaultOracle: 0x42f3A6c5e555a83F00208340b60aE2643CE90a62,
+      executor: 0xd8BD07eDFd276AA23EB4B6806C904728B4C7DCb3,
       minimumDeposit: 1 ether,
       managementFeePerSec: 0,
       withdrawalFeeBps: 0,
