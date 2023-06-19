@@ -33,6 +33,15 @@
             "proxy": "0x969A18e47256b35F54081a472D22e741C5AE607F",
             "implementation": "0x0861F1c23701ee140568e49b992Ed1910Bd51190"
           }
+        },
+        {
+          "name": "Market Neutral USDT-BNB-500 PCS2",
+          "symbol": "N-USDT-BNB-500-PCS2",
+          "vaultToken": "0x5dc672d3528535a97173AeD4671ccd2E5f627e44",
+          "worker": {
+            "proxy": "0x4a0cb84D2DD2bc0Aa5CC256EF6Ec3A4e1b83E74c",
+            "implementation": "0xFB411C3fBcEbd95822a23E80fc478D2eE4167355"
+          }
         }
       ]
     }
