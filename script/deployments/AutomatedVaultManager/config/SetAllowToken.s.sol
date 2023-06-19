@@ -8,7 +8,7 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/proxy/transparent/Tra
 
 contract SetAllowTokenScript is BaseScript {
   function run() public {
-    address _vaultToken = 0x130A4791cC36c3aaD8d4282404D5D7976C1E9246;
+    address _vaultToken = 0x5dc672d3528535a97173AeD4671ccd2E5f627e44;
     address _token = usdt;
     bool _isAllow = true;
 

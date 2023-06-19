@@ -8,11 +8,11 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/proxy/transparent/Tra
 
 contract DeployAutomatedVaultManagerScript is BaseScript {
   function run() public {
-    string memory _name = "Market Neutral USDT-BNB-500 PCS1";
-    string memory _symbol = "N-USDT-BNB-500-PCS1";
+    string memory _name = "Market Neutral USDT-BNB-500 PCS2";
+    string memory _symbol = "N-USDT-BNB-500-PCS2";
 
     AutomatedVaultManager.VaultInfo memory vaultInfo = AutomatedVaultManager.VaultInfo({
-      worker: 0x969A18e47256b35F54081a472D22e741C5AE607F,
+      worker: 0x4a0cb84D2DD2bc0Aa5CC256EF6Ec3A4e1b83E74c,
       vaultOracle: 0x42f3A6c5e555a83F00208340b60aE2643CE90a62,
       executor: 0xd8BD07eDFd276AA23EB4B6806C904728B4C7DCb3,
       minimumDeposit: 1 ether,
