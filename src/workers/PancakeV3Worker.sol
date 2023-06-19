@@ -478,22 +478,24 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
         _tokenOut = address(_token1);
       }
 
-      IPancakeV3Router _router = router;
-      uint256 _swapAmount = _cake.balanceOf(address(this));
-      _cake.safeApprove(address(_router), _swapAmount);
-      // TODO: multi-hop swap
-      // Swap CAKE for token0 or token1
-      _router.exactInputSingle(
-        IPancakeV3Router.ExactInputSingleParams({
-          tokenIn: address(_cake),
-          tokenOut: _tokenOut,
-          fee: poolFee,
-          recipient: address(this),
-          amountIn: _swapAmount,
-          amountOutMinimum: 0,
-          sqrtPriceLimitX96: 0
-        })
-      );
+      if (_tokenOut != address(_cake)) {
+        IPancakeV3Router _router = router;
+        uint256 _swapAmount = _cake.balanceOf(address(this));
+        _cake.safeApprove(address(_router), _swapAmount);
+        // TODO: multi-hop swap
+        // Swap CAKE for token0 or token1
+        _router.exactInputSingle(
+          IPancakeV3Router.ExactInputSingleParams({
+            tokenIn: address(_cake),
+            tokenOut: _tokenOut,
+            fee: poolFee,
+            recipient: address(this),
+            amountIn: _swapAmount,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0
+          })
+        );
+      }
     }
   }
 
