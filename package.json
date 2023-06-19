@@ -8,6 +8,7 @@
     "exec:bsc_mainnet:proxy-admin:deploy": "forge script ./script/deployments/ProxyAdmin/deploy/DeployProxyAdmin.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:money-market-mock:deploy": "forge script ./script/deployments/MoneyMarketForTest/deploy/DeployMoneyMarketForTest.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:money-market-mock:config:inject-fund": "forge script ./script/deployments/MoneyMarketForTest/config/InjectFund.s.sol --rpc-url bsc_mainnet --broadcast --slow",
+    "exec:bsc_mainnet:money-market-mock:config:withdraw-tokens": "forge script ./script/deployments/MoneyMarketForTest/config/WithdrawTokens.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:money-market-mock:config:set-interest-rate-per-sec": "forge script ./script/deployments/MoneyMarketForTest/config/SetInterestRatePerSec.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:money-market-mock:config:set-borrower": "forge script ./script/deployments/MoneyMarketForTest/config/SetBorrower.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:automated-vault-token-implementation:deploy": "forge script ./script/deployments/AutomatedVaultERC20/deploy/DeployAutomatedVaultERC20Implementation.s.sol --rpc-url bsc_mainnet --broadcast --slow",

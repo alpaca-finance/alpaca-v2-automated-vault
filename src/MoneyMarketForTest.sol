@@ -72,7 +72,7 @@ contract MoneyMarketForTest {
     borrower = _borrower;
   }
 
-  function getMinDebtSize() external view returns (uint256) {
+  function getMinDebtSize() external pure returns (uint256) {
     return 0;
   }
 }
