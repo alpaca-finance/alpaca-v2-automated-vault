@@ -24,7 +24,6 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   using SafeTransferLib for ERC20;
 
   error PancakeV3Worker_Unauthorized();
-  error PancakeV3Worker_InvalidTask();
   error PancakeV3Worker_PositionExist();
   error PancakeV3Worker_PositionNotExist();
   error PancakeV3Worker_InvalidParams();
@@ -135,6 +134,13 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     // Can't open position if already exist. Use `increasePosition` instead.
     if (nftTokenId != 0) {
       revert PancakeV3Worker_PositionExist();
+    }
+    {
+      // Prevent open out-of-range position
+      (, int24 _currTick,,,,,) = pool.slot0();
+      if (_tickLower > _currTick || _currTick > _tickUpper) {
+        revert PancakeV3Worker_InvalidParams();
+      }
     }
 
     // SLOAD
