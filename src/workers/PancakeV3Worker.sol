@@ -423,7 +423,6 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
    * 1. claim trading fee and harvest reward
    * 2. collect performance fee based
    */
-  // TODO: handle when either token0 or token1 is reward(cake) token
   function _harvest() internal {
     // Skip harvest if already done before in same block
     if (block.timestamp == lastHarvest) return;
