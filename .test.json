@@ -1,0 +1,52 @@
+{
+  "proxyAdmin": "0x13a1FDD80e1cC4171f4A4a9Dafd2063c28052623",
+  "performanceFeeBucket": "0x2DD872C6f7275DAD633d7Deb1083EDA561E9B96b",
+  "tokens": {
+    "wbnb": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+    "usdt": "0x55d398326f99059fF775485246999027B3197955"
+  },
+  "automatedVault": {
+    "automatedVaultERC20Implementation": "0x4a41d9eeFb9d252A59d90A2918Dd1852ddA98A6c",
+    "automatedVaultManager": {
+      "proxy": "0x356B7e738592235Da0593F0E652C34278972C3F7",
+      "implementation": "0x430824fe4D4800868640E21Bd851C6104aF2d855"
+    },
+    "bank": {
+      "proxy": "0x4e7C950b87999a42cA63cc5492d52F93e28e5351",
+      "implementation": "0x5813DE5b5A1780fAFab1387321FED2d7e7b72236"
+    },
+    "pancake-v3-vault": {
+      "vaultOracle": {
+        "proxy": "0x42f3A6c5e555a83F00208340b60aE2643CE90a62",
+        "implementation": "0x420EB436d3F1df55104B156E38564cB6F543f050"
+      },
+      "executor01": {
+        "proxy": "0xd8BD07eDFd276AA23EB4B6806C904728B4C7DCb3",
+        "implementation": "0x251e2171e2D5305275a974591fCA91089ff19D4e"
+      },
+      "vaults": [
+        {
+          "name": "Market Neutral USDT-BNB-500 PCS1",
+          "symbol": "N-USDT-BNB-500-PCS1",
+          "vaultToken": "0x130A4791cC36c3aaD8d4282404D5D7976C1E9246",
+          "worker": {
+            "proxy": "0x969A18e47256b35F54081a472D22e741C5AE607F",
+            "implementation": "0x0861F1c23701ee140568e49b992Ed1910Bd51190"
+          }
+        }
+      ]
+    }
+  },
+  "dependencies": {
+    "moneyMarket": "0x970D3FA5b331A9d5632a2027eb084931d89714e4",
+    "pancake-v3": {
+      "positionManager": "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364",
+      "swapRouter": "0x13f4EA83D0bd40E75C8222255bc855a974568Dd4",
+      "masterChef": "0x556B9306565093C855AEA9AE92A594704c2Cd59e",
+      "pools": {
+        "usdt-wbnb-500": "0x36696169C63e42cd08ce11f5deeBbCeBae652050"
+      }
+    },
+    "zapV3": "0xC462E9a70b16009d63fE9dFe701cA5bf70cBCb55"
+  }
+}

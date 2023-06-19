@@ -91,12 +91,12 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   }
 
   struct ConstructorParams {
-    AutomatedVaultManager vaultManager;
-    ICommonV3PositionManager positionManager;
-    ICommonV3Pool pool;
-    IPancakeV3Router router;
-    IPancakeV3MasterChef masterChef;
-    IZapV3 zapV3;
+    address vaultManager;
+    address positionManager;
+    address pool;
+    address router;
+    address masterChef;
+    address zapV3;
     address performanceFeeBucket;
     uint16 tradingPerformanceFeeBps;
     uint16 rewardPerformanceFeeBps;
@@ -106,18 +106,18 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     Ownable2StepUpgradeable.__Ownable2Step_init();
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
     // TODO: validate _params
-    vaultManager = _params.vaultManager;
+    vaultManager = AutomatedVaultManager(_params.vaultManager);
 
-    nftPositionManager = _params.positionManager;
-    pool = _params.pool;
-    router = _params.router;
-    masterChef = _params.masterChef;
-    poolFee = _params.pool.fee();
-    token0 = ERC20(pool.token0());
-    token1 = ERC20(pool.token1());
-    cake = ERC20(masterChef.CAKE());
+    nftPositionManager = ICommonV3PositionManager(_params.positionManager);
+    pool = ICommonV3Pool(_params.pool);
+    router = IPancakeV3Router(_params.router);
+    masterChef = IPancakeV3MasterChef(_params.masterChef);
+    poolFee = ICommonV3Pool(_params.pool).fee();
+    token0 = ERC20(ICommonV3Pool(_params.pool).token0());
+    token1 = ERC20(ICommonV3Pool(_params.pool).token1());
+    cake = ERC20(IPancakeV3MasterChef(_params.masterChef).CAKE());
 
-    zapV3 = _params.zapV3;
+    zapV3 = IZapV3(_params.zapV3);
 
     tradingPerformanceFeeBps = _params.tradingPerformanceFeeBps;
     rewardPerformanceFeeBps = _params.rewardPerformanceFeeBps;

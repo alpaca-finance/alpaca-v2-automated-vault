@@ -34,7 +34,6 @@ contract PancakeV3WorkerExecutorBankIntegrationFixture is Test, BscFixture, Prot
   Bank public bank;
   PCSV3Executor01 public executor;
   PancakeV3Worker public workerUSDTWBNB;
-  PancakeV3Worker public workerDOGEWBNB;
 
   // Out of scope
   MockMoneyMarket public mockMoneyMarket;
@@ -70,25 +69,6 @@ contract PancakeV3WorkerExecutorBankIntegrationFixture is Test, BscFixture, Prot
             vaultManager: AutomatedVaultManager(mockVaultManager),
             positionManager: pancakeV3PositionManager,
             pool: pancakeV3USDTWBNBPool,
-            router: pancakeV3Router,
-            masterChef: pancakeV3MasterChef,
-            zapV3: zapV3,
-            performanceFeeBucket: PERFORMANCE_FEE_BUCKET,
-            tradingPerformanceFeeBps: TRADING_PERFORMANCE_FEE_BPS,
-            rewardPerformanceFeeBps: REWARD_PERFORMANCE_FEE_BPS
-          })
-        )
-      )
-    );
-    workerDOGEWBNB = PancakeV3Worker(
-      DeployHelper.deployUpgradeable(
-        "PancakeV3Worker",
-        abi.encodeWithSelector(
-          PancakeV3Worker.initialize.selector,
-          PancakeV3Worker.ConstructorParams({
-            vaultManager: AutomatedVaultManager(mockVaultManager),
-            positionManager: pancakeV3PositionManager,
-            pool: pancakeV3DOGEWBNBPool,
             router: pancakeV3Router,
             masterChef: pancakeV3MasterChef,
             zapV3: zapV3,
