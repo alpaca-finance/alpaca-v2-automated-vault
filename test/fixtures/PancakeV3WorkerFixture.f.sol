@@ -26,12 +26,14 @@ contract PancakeV3WorkerFixture is BscFixture, ProtocolActorFixture {
   ERC20 token0;
   ERC20 token1;
   uint24 poolFee;
-  AutomatedVaultManager vaultManager = AutomatedVaultManager(address(1));
+  address vaultManager = makeAddr("vaultManager");
   address IN_SCOPE_EXECUTOR = makeAddr("IN_SCOPE_EXECUTOR");
 
   constructor() BscFixture() ProtocolActorFixture() {
     vm.createSelectFork("bsc_mainnet", BscFixture.FORK_BLOCK_NUMBER_1);
 
+    // Mock for sanity check
+    vm.mockCall(vaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(1)));
     vm.prank(DEPLOYER);
     worker = PancakeV3Worker(
       DeployHelper.deployUpgradeable(

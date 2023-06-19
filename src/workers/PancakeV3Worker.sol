@@ -105,7 +105,17 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   function initialize(ConstructorParams calldata _params) external initializer {
     Ownable2StepUpgradeable.__Ownable2Step_init();
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
-    // TODO: validate _params
+
+    // Validate params
+    if (_params.tradingPerformanceFeeBps > MAX_BPS || _params.rewardPerformanceFeeBps > MAX_BPS) {
+      revert PancakeV3Worker_InvalidParams();
+    }
+    if (_params.performanceFeeBucket == address(0)) {
+      revert PancakeV3Worker_InvalidParams();
+    }
+    // Sanity check
+    AutomatedVaultManager(_params.vaultManager).vaultTokenImplementation();
+
     vaultManager = AutomatedVaultManager(_params.vaultManager);
 
     nftPositionManager = ICommonV3PositionManager(_params.positionManager);
