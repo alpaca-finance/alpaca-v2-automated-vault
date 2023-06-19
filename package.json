@@ -1,0 +1,36 @@
+{
+  "name": "@alpaca-finance/alpaca-automated-vault",
+  "version": "0.0.1",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "----------Deploy Foundry Script-------------": "----------Deploy Foundry Script-------------",
+    "exec:bsc_mainnet:proxy-admin:deploy": "forge script ./script/deployments/ProxyAdmin/deploy/DeployProxyAdmin.s.sol --rpc-url bsc_mainnet --broadcast --slow",
+    "exec:bsc_mainnet:money-market-mock:deploy": "forge script ./script/deployments/MoneyMarketForTest/deploy/DeployMoneyMarketForTest.s.sol --rpc-url bsc_mainnet --broadcast --slow",
+    "exec:bsc_mainnet:money-market-mock:config:inject-fund": "forge script ./script/deployments/MoneyMarketForTest/config/InjectFund.s.sol --rpc-url bsc_mainnet --broadcast --slow",
+    "exec:bsc_mainnet:money-market-mock:config:set-interest-rate-per-sec": "forge script ./script/deployments/MoneyMarketForTest/config/SetInterestRatePerSec.s.sol --rpc-url bsc_mainnet --broadcast --slow",
+    "exec:bsc_mainnet:money-market-mock:config:set-borrower": "forge script ./script/deployments/MoneyMarketForTest/config/SetBorrower.s.sol --rpc-url bsc_mainnet --broadcast --slow",
+    "exec:bsc_mainnet:automated-vault-token-implementation:deploy": "forge script ./script/deployments/AutomatedVaultERC20/deploy/DeployAutomatedVaultERC20Implementation.s.sol --rpc-url bsc_mainnet --broadcast --slow",
+    "exec:bsc_mainnet:automated-vault-manager:deploy": "forge script ./script/deployments/AutomatedVaultManager/deploy/DeployAutomatedVaultManager.s.sol --rpc-url bsc_mainnet --broadcast --slow",
+    "exec:bsc_mainnet:automated-vault-manager:config:open-vault": "forge script ./script/deployments/AutomatedVaultManager/config/OpenVault.s.sol --rpc-url bsc_mainnet --broadcast --slow",
+    "exec:bsc_mainnet:automated-vault-manager:config:set-vault-manager": "forge script ./script/deployments/AutomatedVaultManager/config/SetVaultManager.s.sol --rpc-url bsc_mainnet --broadcast --slow",
+    "exec:bsc_mainnet:automated-vault-manager:config:set-allow-token": "forge script ./script/deployments/AutomatedVaultManager/config/SetAllowToken.s.sol --rpc-url bsc_mainnet --broadcast --slow",
+    "exec:bsc_mainnet:bank:deploy": "forge script ./script/deployments/Bank/deploy/DeployBank.s.sol --rpc-url bsc_mainnet --broadcast --slow",
+    "exec:bsc_mainnet:psc-v3-worker:deploy": "forge script ./script/deployments/Worker/deploy/DeployPancakeV3Worker.s.sol --rpc-url bsc_mainnet --broadcast --slow",
+    "exec:bsc_mainnet:psc-v3-vault-oracle:deploy": "forge script ./script/deployments/VaultOracle/deploy/DeployPancakeV3VaultOracle.s.sol --rpc-url bsc_mainnet --broadcast --slow",
+    "exec:bsc_mainnet:psc-v3-vault-oracle:config:set-price-feed": "forge script ./script/deployments/VaultOracle/config/SetPriceFeedOf.s.sol --rpc-url bsc_mainnet --broadcast --slow",
+    "exec:bsc_mainnet:psc-v3-executor01:deploy": "forge script ./script/deployments/Executor/deploy/DeployPCSV3Executor01.s.sol --rpc-url bsc_mainnet --broadcast --slow",
+
+
+    "----------Deploy Hardhat -------------": "----------Deploy Hardhat -------------"
+  },
+  "devDependencies": {
+
+  },
+  "dependencies": {
+
+  },
+  "engines": {
+    "node": ">=14.15.4"
+  }
+}

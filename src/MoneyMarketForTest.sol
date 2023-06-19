@@ -8,14 +8,14 @@ contract MoneyMarketForTest {
   using SafeTransferLib for ERC20;
 
   address internal immutable owner;
-  address internal immutable bank;
+  address internal borrower;
   uint256 internal interestRatePerSec;
 
   mapping(address => mapping(address => uint256)) public getNonCollatAccountDebt;
   mapping(address => uint256) public lastAccrualOf;
 
-  modifier onlyBank() {
-    require(msg.sender == bank, "NB");
+  modifier onlyBorrower() {
+    require(msg.sender == borrower, "NB");
     _;
   }
 
@@ -24,29 +24,28 @@ contract MoneyMarketForTest {
     _;
   }
 
-  constructor(address _bank) {
+  constructor() {
     owner = msg.sender;
-    bank = _bank;
   }
 
   function accrueInterest(address token) public {
     uint256 timePassed = block.timestamp - lastAccrualOf[token];
     if (timePassed == 0) return;
-    getNonCollatAccountDebt[bank][token] +=
-      getNonCollatAccountDebt[bank][token] * timePassed * interestRatePerSec / 1e18;
+    getNonCollatAccountDebt[borrower][token] +=
+      getNonCollatAccountDebt[borrower][token] * timePassed * interestRatePerSec / 1e18;
     lastAccrualOf[token] = block.timestamp;
   }
 
-  function nonCollatBorrow(address token, uint256 amount) external onlyBank {
+  function nonCollatBorrow(address token, uint256 amount) external onlyBorrower {
     accrueInterest(token);
-    getNonCollatAccountDebt[bank][token] += amount;
+    getNonCollatAccountDebt[borrower][token] += amount;
     ERC20(token).safeTransfer(msg.sender, amount);
   }
 
   function nonCollatRepay(address, address token, uint256 amount) external {
     accrueInterest(token);
     ERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-    getNonCollatAccountDebt[bank][token] -= amount;
+    getNonCollatAccountDebt[borrower][token] -= amount;
   }
 
   function withdrawTokens(address[] calldata tokens) external onlyOwner {
@@ -67,5 +66,13 @@ contract MoneyMarketForTest {
 
   function setInterestRatePerSec(uint256 newRate) external onlyOwner {
     interestRatePerSec = newRate;
+  }
+
+  function setBorrower(address _borrower) external onlyOwner {
+    borrower = _borrower;
+  }
+
+  function getMinDebtSize() external view returns (uint256) {
+    return 0;
   }
 }
