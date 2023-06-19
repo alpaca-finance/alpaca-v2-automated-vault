@@ -27,7 +27,8 @@ import "test/fixtures/ProtocolActorFixture.f.sol";
 import { DeployHelper } from "test/helpers/DeployHelper.sol";
 
 contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
-  uint16 internal constant PERFORMANCE_FEE_BPS = 1_000;
+  uint16 internal constant TRADING_PERFORMANCE_FEE_BPS = 1_000;
+  uint16 internal constant REWARD_PERFORMANCE_FEE_BPS = 1_000;
   uint16 internal constant MAX_PRICE_AGE = 60 * 60;
   uint16 internal constant MAX_PRICE_DIFF = 10_500;
   uint256 internal constant MIN_DEPOSIT = 1 ether;
@@ -97,7 +98,8 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
             masterChef: pancakeV3MasterChef,
             zapV3: zapV3,
             performanceFeeBucket: PERFORMANCE_FEE_BUCKET,
-            performanceFeeBps: PERFORMANCE_FEE_BPS
+            tradingPerformanceFeeBps: TRADING_PERFORMANCE_FEE_BPS,
+            rewardPerformanceFeeBps: REWARD_PERFORMANCE_FEE_BPS
           })
         )
       )

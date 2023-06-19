@@ -67,10 +67,10 @@ contract PancakeV3WorkerHarvestTest is PancakeV3WorkerFixture {
       })
     );
 
-    uint256 _token0ToBucket = _token0CollectAmount * PERFORMANCE_FEE_BPS / 10_000;
-    uint256 _token1ToBucket = _token1CollectAmount * PERFORMANCE_FEE_BPS / 10_000;
+    uint256 _token0ToBucket = _token0CollectAmount * TRADING_PERFORMANCE_FEE_BPS / 10_000;
+    uint256 _token1ToBucket = _token1CollectAmount * TRADING_PERFORMANCE_FEE_BPS / 10_000;
     uint256 _harvestAmount = pancakeV3MasterChef.harvest(worker.nftTokenId(), address(worker));
-    uint256 _cakeToBucket = _harvestAmount * PERFORMANCE_FEE_BPS / 10_000;
+    uint256 _cakeToBucket = _harvestAmount * REWARD_PERFORMANCE_FEE_BPS / 10_000;
     uint256 _swapAmount = _harvestAmount - _cakeToBucket;
 
     cake.approve(address(pancakeV3Router), _swapAmount);

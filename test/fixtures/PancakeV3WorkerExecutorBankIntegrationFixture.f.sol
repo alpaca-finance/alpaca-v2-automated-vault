@@ -25,7 +25,8 @@ import "test/fixtures/ProtocolActorFixture.f.sol";
 import { DeployHelper } from "test/helpers/DeployHelper.sol";
 
 contract PancakeV3WorkerExecutorBankIntegrationFixture is Test, BscFixture, ProtocolActorFixture {
-  uint16 internal constant PERFORMANCE_FEE_BPS = 1_000;
+  uint16 internal constant TRADING_PERFORMANCE_FEE_BPS = 1_000;
+  uint16 internal constant REWARD_PERFORMANCE_FEE_BPS = 1_000;
   uint8 internal constant MAX_LEVERAGE = 10;
   uint16 internal constant TOLERANCE_BPS = 9900;
 
@@ -73,7 +74,8 @@ contract PancakeV3WorkerExecutorBankIntegrationFixture is Test, BscFixture, Prot
             masterChef: pancakeV3MasterChef,
             zapV3: zapV3,
             performanceFeeBucket: PERFORMANCE_FEE_BUCKET,
-            performanceFeeBps: PERFORMANCE_FEE_BPS
+            tradingPerformanceFeeBps: TRADING_PERFORMANCE_FEE_BPS,
+            rewardPerformanceFeeBps: REWARD_PERFORMANCE_FEE_BPS
           })
         )
       )
@@ -91,7 +93,8 @@ contract PancakeV3WorkerExecutorBankIntegrationFixture is Test, BscFixture, Prot
             masterChef: pancakeV3MasterChef,
             zapV3: zapV3,
             performanceFeeBucket: PERFORMANCE_FEE_BUCKET,
-            performanceFeeBps: PERFORMANCE_FEE_BPS
+            tradingPerformanceFeeBps: TRADING_PERFORMANCE_FEE_BPS,
+            rewardPerformanceFeeBps: REWARD_PERFORMANCE_FEE_BPS
           })
         )
       )

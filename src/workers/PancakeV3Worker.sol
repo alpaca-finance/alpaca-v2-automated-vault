@@ -38,9 +38,10 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   int24 public posTickLower;
   int24 public posTickUpper;
 
-  // packed slot for reinvest
+  // packed slot for harvest
   address public performanceFeeBucket;
-  uint16 public performanceFeeBps;
+  uint16 public tradingPerformanceFeeBps;
+  uint16 public rewardPerformanceFeeBps;
   uint40 public lastHarvest;
 
   IZapV3 public zapV3;
@@ -66,9 +67,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
 
   /// Events
   event LogIncreaseLiquidity(uint256 _tokenId, uint256 _amount0, uint256 _amount1, uint128 _liquidity);
-  event LogCollectPerformanceFee(
-    address indexed _token, uint256 _earned, uint16 _performanceFeeBps, uint256 _performanceFee
-  );
+  event LogCollectPerformanceFee(address indexed _token, uint256 _earned, uint256 _feeCollected);
   event LogDecreaseLiquidity(uint256 tokenId, uint256 amount0out, uint256 amount1out, uint128 liquidityOut);
   event LogOpenPosition(
     uint256 indexed _tokenId, address _caller, int24 _tickLower, int24 _tickUpper, uint256 _amount0, uint256 _amount1
@@ -97,7 +96,8 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     IPancakeV3MasterChef masterChef;
     IZapV3 zapV3;
     address performanceFeeBucket;
-    uint16 performanceFeeBps;
+    uint16 tradingPerformanceFeeBps;
+    uint16 rewardPerformanceFeeBps;
   }
 
   function initialize(ConstructorParams calldata _params) external initializer {
@@ -117,7 +117,8 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
 
     zapV3 = _params.zapV3;
 
-    performanceFeeBps = _params.performanceFeeBps;
+    tradingPerformanceFeeBps = _params.tradingPerformanceFeeBps;
+    rewardPerformanceFeeBps = _params.rewardPerformanceFeeBps;
     performanceFeeBucket = _params.performanceFeeBucket;
   }
 
@@ -425,7 +426,6 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
 
     // SLOADs
     address _performanceFeeBucket = performanceFeeBucket;
-    uint16 _performanceFeeBps = performanceFeeBps;
     ERC20 _token0 = token0;
     ERC20 _token1 = token1;
     ERC20 _cake = cake;
@@ -446,15 +446,16 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
         })
       );
       // Collect performance fee on collected trading fee
+      uint16 _tradingPerformanceFeeBps = tradingPerformanceFeeBps;
       if (_fee0 > 0) {
         // Collect token0 performance fee
-        _token0.safeTransfer(_performanceFeeBucket, _cachedFee = _fee0 * _performanceFeeBps / MAX_BPS);
-        emit LogCollectPerformanceFee(address(_token0), _fee0, _performanceFeeBps, _cachedFee);
+        _token0.safeTransfer(_performanceFeeBucket, _cachedFee = _fee0 * _tradingPerformanceFeeBps / MAX_BPS);
+        emit LogCollectPerformanceFee(address(_token0), _fee0, _cachedFee);
       }
       if (_fee1 > 0) {
         // Collect token1 performance fee
-        _token1.safeTransfer(_performanceFeeBucket, _cachedFee = _fee1 * _performanceFeeBps / MAX_BPS);
-        emit LogCollectPerformanceFee(address(_token1), _fee1, _performanceFeeBps, _cachedFee);
+        _token1.safeTransfer(_performanceFeeBucket, _cachedFee = _fee1 * _tradingPerformanceFeeBps / MAX_BPS);
+        emit LogCollectPerformanceFee(address(_token1), _fee1, _cachedFee);
       }
     }
 
@@ -463,8 +464,8 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     if (_cakeRewards > 0) {
       // Handing CAKE rewards
       // Collect CAKE performance fee
-      _cake.safeTransfer(_performanceFeeBucket, _cachedFee = _cakeRewards * _performanceFeeBps / MAX_BPS);
-      emit LogCollectPerformanceFee(address(_cake), _cakeRewards, _performanceFeeBps, _cachedFee);
+      _cake.safeTransfer(_performanceFeeBucket, _cachedFee = _cakeRewards * rewardPerformanceFeeBps / MAX_BPS);
+      emit LogCollectPerformanceFee(address(_cake), _cakeRewards, _cachedFee);
       // Sell CAKE for token0 or token1, if any
       // Find out need to sell CAKE to which side by checking currTick
       (, int24 _currTick,,,,,) = pool.slot0();

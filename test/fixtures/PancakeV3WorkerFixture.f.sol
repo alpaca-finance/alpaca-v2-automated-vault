@@ -18,7 +18,8 @@ import { DeployHelper } from "test/helpers/DeployHelper.sol";
 contract PancakeV3WorkerFixture is BscFixture, ProtocolActorFixture {
   int24 internal constant TICK_LOWER = -58000;
   int24 internal constant TICK_UPPER = -57750;
-  uint16 internal constant PERFORMANCE_FEE_BPS = 1_000;
+  uint16 internal constant TRADING_PERFORMANCE_FEE_BPS = 1_000;
+  uint16 internal constant REWARD_PERFORMANCE_FEE_BPS = 2_000;
   uint256 internal constant DUST = 0.000000001 ether;
 
   PancakeV3Worker worker;
@@ -45,7 +46,8 @@ contract PancakeV3WorkerFixture is BscFixture, ProtocolActorFixture {
             masterChef: pancakeV3MasterChef,
             zapV3: zapV3,
             performanceFeeBucket: PERFORMANCE_FEE_BUCKET,
-            performanceFeeBps: PERFORMANCE_FEE_BPS
+            tradingPerformanceFeeBps: TRADING_PERFORMANCE_FEE_BPS,
+            rewardPerformanceFeeBps: REWARD_PERFORMANCE_FEE_BPS
           })
         )
       )
