@@ -82,6 +82,9 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     uint256 indexed _tokenId, address _caller, uint256 _amount0Out, uint256 _amount1Out, uint128 _liquidityOut
   );
   event LogTransferToExecutor(address indexed _token, address _to, uint256 _amount);
+  event LogSetTradingPerformanceFee(uint16 _prevTradingPerformanceFeeBps, uint16 _newTradingPerformanceFeeBps);
+  event LogSetRewardPerformanceFee(uint16 _prevRewardPerformanceFeeBps, uint16 _newRewardPerformanceFeeBps);
+  event LogSetPerformanceFeeBucket(address _prevPerformanceFeeBucket, address _newPerformanceFeeBucket);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -504,5 +507,33 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     // msg.sender is executor in scope
     ERC20(_token).safeTransfer(msg.sender, _amount);
     emit LogTransferToExecutor(_token, msg.sender, _amount);
+  }
+
+  /// =================
+  /// Admin functions
+  /// =================
+
+  function setTradingPerformanceFee(uint16 _tradingPerformanceFeeBps) external onlyOwner {
+    if (_tradingPerformanceFeeBps > MAX_BPS) {
+      revert PancakeV3Worker_InvalidParams();
+    }
+    emit LogSetTradingPerformanceFee(tradingPerformanceFeeBps, _tradingPerformanceFeeBps);
+    tradingPerformanceFeeBps = _tradingPerformanceFeeBps;
+  }
+
+  function setRewardPerformanceFee(uint16 _rewardPerformanceFeeBps) external onlyOwner {
+    if (_rewardPerformanceFeeBps > MAX_BPS) {
+      revert PancakeV3Worker_InvalidParams();
+    }
+    emit LogSetRewardPerformanceFee(rewardPerformanceFeeBps, _rewardPerformanceFeeBps);
+    rewardPerformanceFeeBps = _rewardPerformanceFeeBps;
+  }
+
+  function setPerformanceFeeBucket(address _performanceFeeBucket) external onlyOwner {
+    if (_performanceFeeBucket == address(0)) {
+      revert PancakeV3Worker_InvalidParams();
+    }
+    emit LogSetPerformanceFeeBucket(performanceFeeBucket, _performanceFeeBucket);
+    performanceFeeBucket = _performanceFeeBucket;
   }
 }
