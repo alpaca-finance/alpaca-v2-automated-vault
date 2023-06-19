@@ -1,0 +1,21 @@
+{
+  "token0price": "", // get from oracle (1e18)
+
+  "token1price": "",
+
+  "token0Undeployed": "", // balance of (worker) (getPositionValueUSD) (token decimal)
+
+  "token1Undeployed": "",
+
+  "token0Farmed": "", // pancake vault oracle (farm)
+
+  "token1Farmed": "",
+
+  "token0Debt": "", // bank *getVaykt debt (debt amount)
+
+  "token1Debt": "",
+
+  "lowerPrice": "", // 1e18 (vault oracle)
+
+  "upperPrice": "" // 1e18
+}
