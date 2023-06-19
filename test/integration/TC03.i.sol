@@ -56,27 +56,30 @@ contract TC03 is PancakeV3WorkerExecutorBankIntegrationFixture {
 
     // Move price out of range
     changePrank(address(this));
-    _swapExactInput(address(usdt), address(wbnb), 500, 10000 ether);
+    _swapExactInput(address(usdt), address(wbnb), 500, 300000 ether);
     changePrank(mockVaultManager);
 
-    // Calculate amount to borrow, keep for reference
+    // // Calculate amount to borrow, keep for reference
     // executor.closePosition();
-    // (uint256 amountIn, uint256 amountOut,) = zapV3.calc(
+    // (uint256 amountIn, uint256 amountOut, bool zeroForOne) = zapV3.calc(
     //   IZapV3.CalcParams({
     //     pool: address(pancakeV3USDTWBNBPool),
     //     amountIn0: usdt.balanceOf(address(workerUSDTWBNB)),
-    //     amountIn1: 0,
+    //     amountIn1: wbnb.balanceOf(address(workerUSDTWBNB)),
     //     tickLower: -57900,
     //     tickUpper: -57700
     //   })
     // );
+    // console.log(usdt.balanceOf(address(workerUSDTWBNB)));
+    // console.log(wbnb.balanceOf(address(workerUSDTWBNB)));
     // console.log(amountIn);
     // console.log(amountOut);
+    // console.log(zeroForOne);
 
     //
     // Step 2: vault manager borrow other side
     //
-    // Currently position only have 326574664399659123624 USDT
+    // Currently position only have 326805033887382592390 USDT
     // We have to borrow 222236699054462729 WBNB to make it balance when add to -57900, -57700 range
     deal(address(wbnb), address(mockMoneyMarket), 222236699054462729);
     executor.borrow(address(wbnb), 222236699054462729);
@@ -90,6 +93,6 @@ contract TC03 is PancakeV3WorkerExecutorBankIntegrationFixture {
     //
     // Step 3b: vault manager open position with new in range tick using old liquidity + borrowed to make it balance
     //
-    executor.openPosition(-57900, -57700, 326569122263000220054, 222236699054462729);
+    executor.openPosition(-57900, -57700, 326805033887382592390, 222236699054462729);
   }
 }

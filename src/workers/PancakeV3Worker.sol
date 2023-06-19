@@ -135,7 +135,6 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   }
 
   /// @dev Can't open position for pool that doesn't have CAKE reward (masterChef pid == 0).
-  // TODO: check sufficient balance for amountIn
   function openPosition(int24 _tickLower, int24 _tickUpper, uint256 _amountIn0, uint256 _amountIn1)
     external
     nonReentrant
@@ -242,6 +241,10 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     uint256 _amountIn0,
     uint256 _amountIn1
   ) internal returns (uint256 _amount0Desired, uint256 _amount1Desired) {
+    // Revert if not enough balance
+    if (ERC20(_token0).balanceOf(address(this)) < _amountIn0 || ERC20(_token1).balanceOf(address(this)) < _amountIn1) {
+      revert PancakeV3Worker_InvalidParams();
+    }
     (, int24 _currTick,,,,,) = pool.slot0();
     if (_tickLower <= _currTick && _currTick <= _tickUpper) {
       (_amount0Desired, _amount1Desired) = _prepareOptimalTokensForIncreaseInRange(
