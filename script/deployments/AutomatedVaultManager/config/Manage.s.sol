@@ -10,26 +10,29 @@ import { ERC20 } from "@solmate/tokens/ERC20.sol";
 contract ManageScript is BaseScript {
   function run() public {
     address _vaultToken = 0x5dc672d3528535a97173AeD4671ccd2E5f627e44;
+    address _worker = 0x4a0cb84D2DD2bc0Aa5CC256EF6Ec3A4e1b83E74c;
     // tick rage +- 20% from 240.887 USDT per BNB
     int24 _tickLower = -57080;
     int24 _tickUpper = -52610;
 
-    uint256 _amount0In = 5 ether;
+    uint256 _usdtWorkerBalance = ERC20(usdt).balanceOf(_worker);
+    uint256 _wbnbWorkerBalance = ERC20(wbnb).balanceOf(_worker);
 
-    // deposit input
-    AutomatedVaultManager.TokenAmount[] memory _depositParams = new AutomatedVaultManager.TokenAmount[](1);
-    _depositParams[0] = AutomatedVaultManager.TokenAmount({ token: usdt, amount: _amount0In });
+    uint256 _usdtToBorrow = 1 ether;
+    uint256 _wbnbToBorrow = 0.004166666667 ether;
 
     // maange input
-    bytes[] memory executorData = new bytes[](3);
-    executorData[0] = _getBorrowTokenBytes(usdt, 3 ether);
-    executorData[1] = _getTransferToWorkerBytes(usdt, 3 ether);
-    executorData[2] = _getOpenPositionBytes(_tickLower, _tickUpper, 8 ether, 0);
+    bytes[] memory executorData = new bytes[](5);
+    executorData[0] = _getBorrowTokenBytes(usdt, _usdtToBorrow);
+    executorData[1] = _getBorrowTokenBytes(wbnb, _wbnbToBorrow);
+    executorData[2] = _getTransferToWorkerBytes(usdt, _usdtToBorrow);
+    executorData[3] = _getTransferToWorkerBytes(wbnb, _wbnbToBorrow);
+    executorData[4] = _getOpenPositionBytes(
+      _tickLower, _tickUpper, (_usdtToBorrow + _usdtWorkerBalance), (_wbnbToBorrow + _wbnbWorkerBalance)
+    );
+
 
     vm.startBroadcast(deployerPrivateKey);
-
-    ERC20(usdt).approve(automatedVaultManager, _amount0In);
-    AutomatedVaultManager(automatedVaultManager).deposit(_vaultToken, _depositParams, 0);
 
     AutomatedVaultManager(automatedVaultManager).manage(_vaultToken, executorData);
 
