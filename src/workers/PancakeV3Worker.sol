@@ -537,7 +537,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     rewardPerformanceFeeBps = _rewardPerformanceFeeBps;
   }
 
-  function setPerformanceFeeBucket(address _performanceFeeBucket) external onlyOwner {
+  function setPerformanceFeeBucket(address _newPerformanceFeeBucket) external onlyOwner {
     if (_performanceFeeBucket == address(0)) {
       revert PancakeV3Worker_InvalidParams();
     }
