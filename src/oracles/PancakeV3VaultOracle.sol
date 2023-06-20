@@ -261,7 +261,7 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
     return (_posValUSD + _tokenValUSD - _debtValUSD, _debtValUSD);
   }
 
-  function safeGetTokenPriceE18(address _token) external view returns (uint256 _price) {
+  function getTokenPrice(address _token) external view returns (uint256 _price) {
     _price = _safeGetTokenPriceE18(_token);
   }
 }

@@ -11,7 +11,7 @@ import { LibTickMath } from "src/libraries/LibTickMath.sol";
 import { LibSqrtPriceX96 } from "src/libraries/LibSqrtPriceX96.sol";
 import { LibLiquidityAmounts } from "src/libraries/LibLiquidityAmounts.sol";
 
-import { IVaultReader } from "./IVaultReader.sol";
+import { IVaultReader } from "src/interfaces/IVaultReader.sol";
 
 contract VaultReader is IVaultReader {
   AutomatedVaultManager internal immutable automatedVaultManager;
@@ -24,7 +24,7 @@ contract VaultReader is IVaultReader {
     pancakeV3VaultOracle = PancakeV3VaultOracle(_pancakeV3VaultOracle);
   }
 
-  function getVaultSummary(address vaultToken) external view returns (VaultSummary memory _vaultSummary) {
+  function getVaultSummary(address _vaultToken) external view returns (VaultSummary memory _vaultSummary) {
     uint256 _farmed0Amount;
     uint256 _farmed1Amount;
     uint256 _debt0Amount;
@@ -32,14 +32,14 @@ contract VaultReader is IVaultReader {
     uint256 _priceLower;
     uint256 _priceUpper;
 
-    (address _worker,,,,,,,) = automatedVaultManager.vaultInfos(vaultToken);
+    (address _worker,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
     ERC20 _token0 = PancakeV3Worker(_worker).token0();
     ERC20 _token1 = PancakeV3Worker(_worker).token1();
     uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
     (uint160 _poolSqrtPriceX96,,,,,,) = ICommonV3Pool(PancakeV3Worker(_worker).pool()).slot0();
 
-    (, _debt0Amount) = bank.getVaultDebt(vaultToken, address(_token0));
-    (, _debt1Amount) = bank.getVaultDebt(vaultToken, address(_token1));
+    (, _debt0Amount) = bank.getVaultDebt(_vaultToken, address(_token0));
+    (, _debt1Amount) = bank.getVaultDebt(_vaultToken, address(_token1));
     (,,,,, int24 _tickLower, int24 _tickUpper, uint128 _liquidity,,,,) =
       PancakeV3Worker(_worker).nftPositionManager().positions(_tokenId);
     {
@@ -55,8 +55,8 @@ contract VaultReader is IVaultReader {
     }
 
     _vaultSummary = VaultSummary({
-      token0price: pancakeV3VaultOracle.safeGetTokenPriceE18(address(_token0)),
-      token1price: pancakeV3VaultOracle.safeGetTokenPriceE18(address(_token1)),
+      token0price: pancakeV3VaultOracle.getTokenPrice(address(_token0)),
+      token1price: pancakeV3VaultOracle.getTokenPrice(address(_token1)),
       token0Undeployed: _token0.balanceOf(_worker),
       token1Undeployed: _token1.balanceOf(_worker),
       token0Farmed: _farmed0Amount,
