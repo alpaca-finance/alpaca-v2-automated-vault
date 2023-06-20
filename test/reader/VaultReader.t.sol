@@ -118,7 +118,12 @@ contract VaultReaderTest is E2EFixture {
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), executorData);
 
+    uint256 _token0price = pancakeV3VaultOracle.getTokenPrice(address(usdt));
+
     /// @dev please checks the return value in verbose (forge test -vvvvv)
     IVaultReader.VaultSummary memory vaultSummary = vaultReader.getVaultSummary(address(vaultToken));
+
+    // assert vaultReader is working well. check from any value
+    assertEq(vaultSummary.token0price, _token0price);
   }
 }
