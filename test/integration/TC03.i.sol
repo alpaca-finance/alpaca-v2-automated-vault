@@ -9,7 +9,8 @@ import "../fixtures/PancakeV3WorkerExecutorBankIntegrationFixture.f.sol";
 
 // Scenario
 // current tick = -57864, tick spacing = 10
-// 1) vault manager open out of range position
+// 1) vault manager open position
+// price move out of range
 // 2) vault manager borrow other side
 // 3) vault manager change tick
 //   a) close out of range position
@@ -17,6 +18,24 @@ import "../fixtures/PancakeV3WorkerExecutorBankIntegrationFixture.f.sol";
 
 contract TC03 is PancakeV3WorkerExecutorBankIntegrationFixture {
   constructor() PancakeV3WorkerExecutorBankIntegrationFixture() { }
+
+  function _swapExactInput(address tokenIn_, address tokenOut_, uint24 fee_, uint256 swapAmount) internal {
+    deal(tokenIn_, address(this), swapAmount);
+    // Approve router to spend token1
+    IERC20(tokenIn_).approve(address(pancakeV3Router), swapAmount);
+    // Swap
+    pancakeV3Router.exactInputSingle(
+      IPancakeV3Router.ExactInputSingleParams({
+        tokenIn: tokenIn_,
+        tokenOut: tokenOut_,
+        fee: fee_,
+        recipient: address(this),
+        amountIn: swapAmount,
+        amountOutMinimum: 0,
+        sqrtPriceLimitX96: 0
+      })
+    );
+  }
 
   function test_TC03_PositionOutOfRange_BorrowMore_ChangeTick() public {
     vm.startPrank(mockVaultManager);
@@ -33,7 +52,12 @@ contract TC03 is PancakeV3WorkerExecutorBankIntegrationFixture {
     deal(address(usdt), address(workerUSDTWBNB), 1 ether);
     deal(address(wbnb), address(workerUSDTWBNB), 1 ether);
     // Open position
-    executor.openPosition(-57850, -57840, 1 ether, 1 ether);
+    executor.openPosition(-57870, -57860, 1 ether, 1 ether);
+
+    // Move price out of range
+    changePrank(address(this));
+    _swapExactInput(address(usdt), address(wbnb), 500, 10000 ether);
+    changePrank(mockVaultManager);
 
     // Calculate amount to borrow, keep for reference
     // executor.closePosition();

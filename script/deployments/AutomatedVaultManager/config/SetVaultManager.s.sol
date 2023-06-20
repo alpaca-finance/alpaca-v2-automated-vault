@@ -8,8 +8,8 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/proxy/transparent/Tra
 
 contract SetVaultManagerScript is BaseScript {
   function run() public {
-    address _vaultToken = 0x130A4791cC36c3aaD8d4282404D5D7976C1E9246;
-    address _manager = 0x6EB9bC094CC57e56e91f3bec4BFfe7D9B1802e38;
+    address _vaultToken = 0x5dc672d3528535a97173AeD4671ccd2E5f627e44;
+    address _manager = 0x2DD872C6f7275DAD633d7Deb1083EDA561E9B96b;
     bool _isManagerOk = true;
 
     vm.startBroadcast(deployerPrivateKey);

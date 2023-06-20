@@ -24,7 +24,6 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   using SafeTransferLib for ERC20;
 
   error PancakeV3Worker_Unauthorized();
-  error PancakeV3Worker_InvalidTask();
   error PancakeV3Worker_PositionExist();
   error PancakeV3Worker_PositionNotExist();
   error PancakeV3Worker_InvalidParams();
@@ -38,9 +37,10 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   int24 public posTickLower;
   int24 public posTickUpper;
 
-  // packed slot for reinvest
+  // packed slot for harvest
   address public performanceFeeBucket;
-  uint16 public performanceFeeBps;
+  uint16 public tradingPerformanceFeeBps;
+  uint16 public rewardPerformanceFeeBps;
   uint40 public lastHarvest;
 
   IZapV3 public zapV3;
@@ -66,9 +66,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
 
   /// Events
   event LogIncreaseLiquidity(uint256 _tokenId, uint256 _amount0, uint256 _amount1, uint128 _liquidity);
-  event LogCollectPerformanceFee(
-    address indexed _token, uint256 _earned, uint16 _performanceFeeBps, uint256 _performanceFee
-  );
+  event LogCollectPerformanceFee(address indexed _token, uint256 _earned, uint256 _feeCollected);
   event LogDecreaseLiquidity(uint256 tokenId, uint256 amount0out, uint256 amount1out, uint128 liquidityOut);
   event LogOpenPosition(
     uint256 indexed _tokenId, address _caller, int24 _tickLower, int24 _tickUpper, uint256 _amount0, uint256 _amount1
@@ -83,6 +81,9 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     uint256 indexed _tokenId, address _caller, uint256 _amount0Out, uint256 _amount1Out, uint128 _liquidityOut
   );
   event LogTransferToExecutor(address indexed _token, address _to, uint256 _amount);
+  event LogSetTradingPerformanceFee(uint16 _prevTradingPerformanceFeeBps, uint16 _newTradingPerformanceFeeBps);
+  event LogSetRewardPerformanceFee(uint16 _prevRewardPerformanceFeeBps, uint16 _newRewardPerformanceFeeBps);
+  event LogSetPerformanceFeeBucket(address _prevPerformanceFeeBucket, address _newPerformanceFeeBucket);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -97,7 +98,8 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     address masterChef;
     address zapV3;
     address performanceFeeBucket;
-    uint16 performanceFeeBps;
+    uint16 tradingPerformanceFeeBps;
+    uint16 rewardPerformanceFeeBps;
   }
 
   function initialize(ConstructorParams calldata _params) external initializer {
@@ -117,7 +119,8 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
 
     zapV3 = IZapV3(_params.zapV3);
 
-    performanceFeeBps = _params.performanceFeeBps;
+    tradingPerformanceFeeBps = _params.tradingPerformanceFeeBps;
+    rewardPerformanceFeeBps = _params.rewardPerformanceFeeBps;
     performanceFeeBucket = _params.performanceFeeBucket;
   }
 
@@ -131,6 +134,13 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     // Can't open position if already exist. Use `increasePosition` instead.
     if (nftTokenId != 0) {
       revert PancakeV3Worker_PositionExist();
+    }
+    {
+      // Prevent open out-of-range position
+      (, int24 _currTick,,,,,) = pool.slot0();
+      if (_tickLower > _currTick || _currTick > _tickUpper) {
+        revert PancakeV3Worker_InvalidParams();
+      }
     }
 
     // SLOAD
@@ -425,7 +435,6 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
 
     // SLOADs
     address _performanceFeeBucket = performanceFeeBucket;
-    uint16 _performanceFeeBps = performanceFeeBps;
     ERC20 _token0 = token0;
     ERC20 _token1 = token1;
     ERC20 _cake = cake;
@@ -446,15 +455,16 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
         })
       );
       // Collect performance fee on collected trading fee
+      uint16 _tradingPerformanceFeeBps = tradingPerformanceFeeBps;
       if (_fee0 > 0) {
         // Collect token0 performance fee
-        _token0.safeTransfer(_performanceFeeBucket, _cachedFee = _fee0 * _performanceFeeBps / MAX_BPS);
-        emit LogCollectPerformanceFee(address(_token0), _fee0, _performanceFeeBps, _cachedFee);
+        _token0.safeTransfer(_performanceFeeBucket, _cachedFee = _fee0 * _tradingPerformanceFeeBps / MAX_BPS);
+        emit LogCollectPerformanceFee(address(_token0), _fee0, _cachedFee);
       }
       if (_fee1 > 0) {
         // Collect token1 performance fee
-        _token1.safeTransfer(_performanceFeeBucket, _cachedFee = _fee1 * _performanceFeeBps / MAX_BPS);
-        emit LogCollectPerformanceFee(address(_token1), _fee1, _performanceFeeBps, _cachedFee);
+        _token1.safeTransfer(_performanceFeeBucket, _cachedFee = _fee1 * _tradingPerformanceFeeBps / MAX_BPS);
+        emit LogCollectPerformanceFee(address(_token1), _fee1, _cachedFee);
       }
     }
 
@@ -463,8 +473,8 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     if (_cakeRewards > 0) {
       // Handing CAKE rewards
       // Collect CAKE performance fee
-      _cake.safeTransfer(_performanceFeeBucket, _cachedFee = _cakeRewards * _performanceFeeBps / MAX_BPS);
-      emit LogCollectPerformanceFee(address(_cake), _cakeRewards, _performanceFeeBps, _cachedFee);
+      _cake.safeTransfer(_performanceFeeBucket, _cachedFee = _cakeRewards * rewardPerformanceFeeBps / MAX_BPS);
+      emit LogCollectPerformanceFee(address(_cake), _cakeRewards, _cachedFee);
       // Sell CAKE for token0 or token1, if any
       // Find out need to sell CAKE to which side by checking currTick
       (, int24 _currTick,,,,,) = pool.slot0();
@@ -474,22 +484,24 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
         _tokenOut = address(_token1);
       }
 
-      IPancakeV3Router _router = router;
-      uint256 _swapAmount = _cake.balanceOf(address(this));
-      _cake.safeApprove(address(_router), _swapAmount);
-      // TODO: multi-hop swap
-      // Swap CAKE for token0 or token1
-      _router.exactInputSingle(
-        IPancakeV3Router.ExactInputSingleParams({
-          tokenIn: address(_cake),
-          tokenOut: _tokenOut,
-          fee: poolFee,
-          recipient: address(this),
-          amountIn: _swapAmount,
-          amountOutMinimum: 0,
-          sqrtPriceLimitX96: 0
-        })
-      );
+      if (_tokenOut != address(_cake)) {
+        IPancakeV3Router _router = router;
+        uint256 _swapAmount = _cake.balanceOf(address(this));
+        _cake.safeApprove(address(_router), _swapAmount);
+        // TODO: multi-hop swap
+        // Swap CAKE for token0 or token1
+        _router.exactInputSingle(
+          IPancakeV3Router.ExactInputSingleParams({
+            tokenIn: address(_cake),
+            tokenOut: _tokenOut,
+            fee: poolFee,
+            recipient: address(this),
+            amountIn: _swapAmount,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0
+          })
+        );
+      }
     }
   }
 
@@ -503,5 +515,33 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     // msg.sender is executor in scope
     ERC20(_token).safeTransfer(msg.sender, _amount);
     emit LogTransferToExecutor(_token, msg.sender, _amount);
+  }
+
+  /// =================
+  /// Admin functions
+  /// =================
+
+  function setTradingPerformanceFee(uint16 _newTradingPerformanceFeeBps) external onlyOwner {
+    if (_newTradingPerformanceFeeBps > MAX_BPS) {
+      revert PancakeV3Worker_InvalidParams();
+    }
+    emit LogSetTradingPerformanceFee(tradingPerformanceFeeBps, _newTradingPerformanceFeeBps);
+    tradingPerformanceFeeBps = _newTradingPerformanceFeeBps;
+  }
+
+  function setRewardPerformanceFee(uint16 _newRewardPerformanceFeeBps) external onlyOwner {
+    if (_newRewardPerformanceFeeBps > MAX_BPS) {
+      revert PancakeV3Worker_InvalidParams();
+    }
+    emit LogSetRewardPerformanceFee(rewardPerformanceFeeBps, _newRewardPerformanceFeeBps);
+    rewardPerformanceFeeBps = _newRewardPerformanceFeeBps;
+  }
+
+  function setPerformanceFeeBucket(address _newPerformanceFeeBucket) external onlyOwner {
+    if (_newPerformanceFeeBucket == address(0)) {
+      revert PancakeV3Worker_InvalidParams();
+    }
+    emit LogSetPerformanceFeeBucket(performanceFeeBucket, _newPerformanceFeeBucket);
+    performanceFeeBucket = _newPerformanceFeeBucket;
   }
 }

@@ -8,12 +8,12 @@ import { ERC20 } from "@solmate/tokens/ERC20.sol";
 
 contract InjectFundScript is BaseScript {
   function run() public {
-    address _token = wbnb;
-    uint256 _amount = 0;
+    address _token = usdt;
+    uint256 _amount = 600 ether;
 
     vm.startBroadcast(deployerPrivateKey);
 
-    ERC20(wbnb).approve(moneyMarket, _amount);
+    ERC20(_token).approve(moneyMarket, _amount);
     MoneyMarketForTest(moneyMarket).injectFund(_token, _amount);
 
     vm.stopBroadcast();
