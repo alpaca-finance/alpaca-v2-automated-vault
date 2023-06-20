@@ -75,7 +75,7 @@ contract VaultReaderTest is E2EFixture {
 
     IVaultReader.VaultSummary memory vaultSummary = vaultReader.getVaultSummary(address(vaultToken));
 
-    // assert vaultReader is working well. check from any value
+    // test all return values work well.
     assertEq(vaultSummary.token0price, expectedVaultInfo.token0price);
     assertEq(vaultSummary.token1price, expectedVaultInfo.token1price);
     assertEq(vaultSummary.token0Undeployed, expectedVaultInfo.token0Undeployed);
