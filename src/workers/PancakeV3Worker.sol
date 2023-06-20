@@ -529,7 +529,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     tradingPerformanceFeeBps = _tradingPerformanceFeeBps;
   }
 
-  function setRewardPerformanceFee(uint16 _rewardPerformanceFeeBps) external onlyOwner {
+  function setRewardPerformanceFee(uint16 _newRewardPerformanceFeeBps) external onlyOwner {
     if (_rewardPerformanceFeeBps > MAX_BPS) {
       revert PancakeV3Worker_InvalidParams();
     }
