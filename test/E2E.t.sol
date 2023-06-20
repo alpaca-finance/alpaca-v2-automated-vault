@@ -298,7 +298,7 @@ contract E2ETest is E2EFixture {
     executorData = new bytes[](1);
     executorData[0] = abi.encodeCall(
       PCSV3Executor01.openPosition,
-      (-57850, -57840, usdt.balanceOf(address(workerUSDTWBNB)), wbnb.balanceOf(address(workerUSDTWBNB)))
+      (-57870, -57860, usdt.balanceOf(address(workerUSDTWBNB)), wbnb.balanceOf(address(workerUSDTWBNB)))
     );
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), executorData);
@@ -308,8 +308,8 @@ contract E2ETest is E2EFixture {
     // - tick is updated
     IPancakeV3MasterChef.UserPositionInfo memory userInfo =
       pancakeV3MasterChef.userPositionInfos(workerUSDTWBNB.nftTokenId());
-    assertEq(userInfo.tickLower, -57850);
-    assertEq(userInfo.tickUpper, -57840);
+    assertEq(userInfo.tickLower, -57870);
+    assertEq(userInfo.tickUpper, -57860);
 
     _withdrawAndAssert(address(this), vaultToken.balanceOf(address(this)));
   }
@@ -410,64 +410,65 @@ contract E2ETest is E2EFixture {
     _withdrawAndAssert(address(this), vaultToken.balanceOf(address(this)));
   }
 
-  function testCorrectness_Manage_ClosePosition_RepayOneSide_BorrowOtherAndOpenOutOfRange() public {
-    _depositUSDTAndAssert(address(this), 100 ether);
+  // Obsolete case since we don't allow to open out-of-range position
+  // function testCorrectness_Manage_ClosePosition_RepayOneSide_BorrowOtherAndOpenOutOfRange() public {
+  //   _depositUSDTAndAssert(address(this), 100 ether);
 
-    // Borrow wbnb and open position
-    deal(address(wbnb), address(moneyMarket), 0.1 ether);
-    bytes[] memory executorData = new bytes[](3);
-    executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(wbnb), 0.1 ether));
-    executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(wbnb), 0.1 ether));
-    executorData[2] = abi.encodeCall(PCSV3Executor01.openPosition, (-57900, -57800, 100 ether, 0.1 ether));
-    vm.prank(MANAGER);
-    vaultManager.manage(address(vaultToken), executorData);
+  //   // Borrow wbnb and open position
+  //   deal(address(wbnb), address(moneyMarket), 0.1 ether);
+  //   bytes[] memory executorData = new bytes[](3);
+  //   executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(wbnb), 0.1 ether));
+  //   executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(wbnb), 0.1 ether));
+  //   executorData[2] = abi.encodeCall(PCSV3Executor01.openPosition, (-57900, -57800, 100 ether, 0.1 ether));
+  //   vm.prank(MANAGER);
+  //   vaultManager.manage(address(vaultToken), executorData);
 
-    // Close position
-    executorData = new bytes[](1);
-    executorData[0] = abi.encodeCall(PCSV3Executor01.closePosition, ());
-    vm.prank(MANAGER);
-    vaultManager.manage(address(vaultToken), executorData);
+  //   // Close position
+  //   executorData = new bytes[](1);
+  //   executorData[0] = abi.encodeCall(PCSV3Executor01.closePosition, ());
+  //   vm.prank(MANAGER);
+  //   vaultManager.manage(address(vaultToken), executorData);
 
-    // Repay wbnb
-    executorData = new bytes[](2);
-    executorData[0] = abi.encodeCall(PCSV3Executor01.transferFromWorker, (address(wbnb), 0.1 ether));
-    executorData[1] = abi.encodeCall(PCSV3Executor01.repay, (address(wbnb), 0.1 ether));
-    vm.prank(MANAGER);
-    vaultManager.manage(address(vaultToken), executorData);
+  //   // Repay wbnb
+  //   executorData = new bytes[](2);
+  //   executorData[0] = abi.encodeCall(PCSV3Executor01.transferFromWorker, (address(wbnb), 0.1 ether));
+  //   executorData[1] = abi.encodeCall(PCSV3Executor01.repay, (address(wbnb), 0.1 ether));
+  //   vm.prank(MANAGER);
+  //   vaultManager.manage(address(vaultToken), executorData);
 
-    // Borrow usdt and open position out-of-range (current tick = -57864)
-    deal(address(usdt), address(moneyMarket), 100 ether);
-    executorData = new bytes[](3);
-    executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(usdt), 100 ether));
-    executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(usdt), 100 ether));
-    executorData[2] = abi.encodeCall(
-      PCSV3Executor01.openPosition,
-      (-30000, -20000, usdt.balanceOf(address(workerUSDTWBNB)) + 100 ether, wbnb.balanceOf(address(workerUSDTWBNB)))
-    );
-    vm.prank(MANAGER);
-    vaultManager.manage(address(vaultToken), executorData);
+  //   // Borrow usdt and open position out-of-range (current tick = -57864)
+  //   deal(address(usdt), address(moneyMarket), 100 ether);
+  //   executorData = new bytes[](3);
+  //   executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(usdt), 100 ether));
+  //   executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(usdt), 100 ether));
+  //   executorData[2] = abi.encodeCall(
+  //     PCSV3Executor01.openPosition,
+  //     (-30000, -20000, usdt.balanceOf(address(workerUSDTWBNB)) + 100 ether, wbnb.balanceOf(address(workerUSDTWBNB)))
+  //   );
+  //   vm.prank(MANAGER);
+  //   vaultManager.manage(address(vaultToken), executorData);
 
-    // Assertions
-    // - usdt debt increase
-    (, uint256 usdtDebt) = bank.getVaultDebt(address(vaultToken), address(usdt));
-    assertEq(usdtDebt, 100 ether);
-    // - wbnb debt all repaid
-    (, uint256 wbnbDebt) = bank.getVaultDebt(address(vaultToken), address(wbnb));
-    assertEq(wbnbDebt, 0);
-    // - liquidity was provided for new position
-    IPancakeV3MasterChef.UserPositionInfo memory userInfo =
-      pancakeV3MasterChef.userPositionInfos(workerUSDTWBNB.nftTokenId());
-    assertGt(userInfo.liquidity, 0);
-    assertEq(userInfo.tickLower, -30000);
-    assertEq(userInfo.tickUpper, -20000);
+  //   // Assertions
+  //   // - usdt debt increase
+  //   (, uint256 usdtDebt) = bank.getVaultDebt(address(vaultToken), address(usdt));
+  //   assertEq(usdtDebt, 100 ether);
+  //   // - wbnb debt all repaid
+  //   (, uint256 wbnbDebt) = bank.getVaultDebt(address(vaultToken), address(wbnb));
+  //   assertEq(wbnbDebt, 0);
+  //   // - liquidity was provided for new position
+  //   IPancakeV3MasterChef.UserPositionInfo memory userInfo =
+  //     pancakeV3MasterChef.userPositionInfos(workerUSDTWBNB.nftTokenId());
+  //   assertGt(userInfo.liquidity, 0);
+  //   assertEq(userInfo.tickLower, -30000);
+  //   assertEq(userInfo.tickUpper, -20000);
 
-    _withdrawAndAssert(address(this), vaultToken.balanceOf(address(this)));
-    // Assertions
-    // - usdt balance greater than 0
-    assertGt(usdt.balanceOf(address(this)), 0);
-    // - wbnb balance 0 due to out of range
-    assertEq(wbnb.balanceOf(address(this)), 0);
-  }
+  //   _withdrawAndAssert(address(this), vaultToken.balanceOf(address(this)));
+  //   // Assertions
+  //   // - usdt balance greater than 0
+  //   assertGt(usdt.balanceOf(address(this)), 0);
+  //   // - wbnb balance 0 due to out of range
+  //   assertEq(wbnb.balanceOf(address(this)), 0);
+  // }
 
   function testCorrectness_Manage_Repurchase() public {
     _depositUSDTAndAssert(address(this), 100 ether);

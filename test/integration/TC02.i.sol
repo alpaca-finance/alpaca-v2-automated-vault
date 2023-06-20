@@ -74,6 +74,20 @@ contract TC02 is PancakeV3WorkerExecutorBankIntegrationFixture {
     _swapExactInput(address(usdt), address(wbnb), 500, _swapExactInput(address(wbnb), address(usdt), 500, 10_000 ether));
     changePrank(mockVaultManager);
 
+    // Find out trading fee
+    uint256 beforeCollectTradingFee = vm.snapshot();
+    changePrank(address(workerUSDTWBNB));
+    (uint256 token0TradingFee, uint256 token1TradingFee) = pancakeV3MasterChef.collect(
+      IPancakeV3MasterChef.CollectParams({
+        tokenId: workerUSDTWBNB.nftTokenId(),
+        recipient: address(this),
+        amount0Max: type(uint128).max,
+        amount1Max: type(uint128).max
+      })
+    );
+    changePrank(mockVaultManager);
+    vm.revertTo(beforeCollectTradingFee);
+
     //
     // Step 2: vault manager call onUpdate
     //
@@ -82,16 +96,32 @@ contract TC02 is PancakeV3WorkerExecutorBankIntegrationFixture {
     executor.onUpdate(address(workerUSDTWBNB), address(mockVaultUSDTWBNBToken));
     // Assertions
     // - trading fees should be collected
-    // - worker balance should increase by trading fees
-    (,,,,,,,,,, uint128 token0Owed, uint128 token1Owed) =
+    (,,,,,,,,,, uint128 token0OwedAfter, uint128 token1OwedAfter) =
       pancakeV3PositionManager.positions(workerUSDTWBNB.nftTokenId());
-    assertEq(token0Owed, 0);
-    assertEq(token1Owed, 0);
-    assertGt(usdt.balanceOf(address(workerUSDTWBNB)), usdtBefore);
-    assertGt(wbnb.balanceOf(address(workerUSDTWBNB)), wbnbBefore);
+    assertEq(token0OwedAfter, 0);
+    assertEq(token1OwedAfter, 0);
+    // - worker balance should increase by trading fees sub performance fee
+    uint256 expectedToken0TradingPerformanceFee = token0TradingFee * TRADING_PERFORMANCE_FEE_BPS / 10000;
+    uint256 expectedToken1TradingPerformanceFee = token1TradingFee * TRADING_PERFORMANCE_FEE_BPS / 10000;
+    assertApproxEqAbs(
+      usdt.balanceOf(address(workerUSDTWBNB)) - usdtBefore, token0TradingFee - expectedToken0TradingPerformanceFee, 1
+    );
+    assertApproxEqAbs(
+      wbnb.balanceOf(address(workerUSDTWBNB)) - wbnbBefore, token1TradingFee - expectedToken1TradingPerformanceFee, 1
+    );
+    // - trading performance fee should be sent to performanceFeeBucket
+    assertEq(expectedToken0TradingPerformanceFee, usdt.balanceOf(PERFORMANCE_FEE_BUCKET));
+    assertEq(expectedToken1TradingPerformanceFee, wbnb.balanceOf(PERFORMANCE_FEE_BUCKET));
 
     // Time passed, CAKE reward accrued
     skip(100_000);
+
+    // Find out CAKE reward
+    uint256 beforeHarvest = vm.snapshot();
+    changePrank(address(workerUSDTWBNB));
+    uint256 cakeReward = pancakeV3MasterChef.harvest(workerUSDTWBNB.nftTokenId(), address(this));
+    changePrank(mockVaultManager);
+    vm.revertTo(beforeHarvest);
 
     //
     // Step 3: vault manager call onUpdate
@@ -100,11 +130,13 @@ contract TC02 is PancakeV3WorkerExecutorBankIntegrationFixture {
     executor.onUpdate(address(workerUSDTWBNB), address(mockVaultUSDTWBNBToken));
     // Assertions
     // - CAKE reward should be harvested
-    // - worker usdt should increase due to harvested reward being swapped to usdt (current tick is closer to tick lower)
-    IPancakeV3MasterChef.UserPositionInfo memory userInfo =
+    IPancakeV3MasterChef.UserPositionInfo memory userInfoAfter =
       pancakeV3MasterChef.userPositionInfos(workerUSDTWBNB.nftTokenId());
-    assertEq(userInfo.reward, 0);
+    assertEq(userInfoAfter.reward, 0);
+    // - worker usdt should increase due to harvested reward being swapped to usdt (current tick is closer to tick lower)
     assertGt(usdt.balanceOf(address(workerUSDTWBNB)), usdtBefore);
+    // - CAKE reward should be sent to performanceFeeBucket
+    assertEq(cakeReward * REWARD_PERFORMANCE_FEE_BPS / 10000, cake.balanceOf(PERFORMANCE_FEE_BUCKET));
 
     // Money market accure borrowing interest
     mockMoneyMarket.pretendAccrueInterest(address(bank), address(wbnb), 1 ether);

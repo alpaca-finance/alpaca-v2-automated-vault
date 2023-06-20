@@ -10,12 +10,12 @@ contract DeployPancakeV3WorkerScript is BaseScript {
   function run() public {
     vm.startBroadcast(deployerPrivateKey);
 
-    _deployWorker(pancakeV3USDTWBNB500Pool, 1_000);
+    _deployWorker(pancakeV3USDTWBNB500Pool, 1_000, 1_000);
 
     vm.stopBroadcast();
   }
 
-  function _deployWorker(address pool, uint16 performanceFeeBps) internal {
+  function _deployWorker(address pool, uint16 tradingPerformanceFeeBps, uint16 rewardPerformanceFeeBps) internal {
     // Deploy implementation
     address workerImplementation = address(new PancakeV3Worker());
 
@@ -30,7 +30,8 @@ contract DeployPancakeV3WorkerScript is BaseScript {
         masterChef: pancakeV3MasterChef,
         zapV3: zapV3,
         performanceFeeBucket: performanceFeeBucket,
-        performanceFeeBps: performanceFeeBps
+        tradingPerformanceFeeBps: tradingPerformanceFeeBps,
+        rewardPerformanceFeeBps: rewardPerformanceFeeBps
       })
     );
     address workerProxy = address(
