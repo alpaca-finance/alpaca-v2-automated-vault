@@ -105,7 +105,17 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   function initialize(ConstructorParams calldata _params) external initializer {
     Ownable2StepUpgradeable.__Ownable2Step_init();
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
-    // TODO: validate _params
+
+    // Validate params
+    if (_params.tradingPerformanceFeeBps > MAX_BPS || _params.rewardPerformanceFeeBps > MAX_BPS) {
+      revert PancakeV3Worker_InvalidParams();
+    }
+    if (_params.performanceFeeBucket == address(0)) {
+      revert PancakeV3Worker_InvalidParams();
+    }
+    // Sanity check
+    AutomatedVaultManager(_params.vaultManager).vaultTokenImplementation();
+
     vaultManager = AutomatedVaultManager(_params.vaultManager);
 
     nftPositionManager = ICommonV3PositionManager(_params.positionManager);
@@ -125,7 +135,6 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   }
 
   /// @dev Can't open position for pool that doesn't have CAKE reward (masterChef pid == 0).
-  // TODO: check sufficient balance for amountIn
   function openPosition(int24 _tickLower, int24 _tickUpper, uint256 _amountIn0, uint256 _amountIn1)
     external
     nonReentrant
@@ -232,6 +241,10 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     uint256 _amountIn0,
     uint256 _amountIn1
   ) internal returns (uint256 _amount0Desired, uint256 _amount1Desired) {
+    // Revert if not enough balance
+    if (ERC20(_token0).balanceOf(address(this)) < _amountIn0 || ERC20(_token1).balanceOf(address(this)) < _amountIn1) {
+      revert PancakeV3Worker_InvalidParams();
+    }
     (, int24 _currTick,,,,,) = pool.slot0();
     if (_tickLower <= _currTick && _currTick <= _tickUpper) {
       (_amount0Desired, _amount1Desired) = _prepareOptimalTokensForIncreaseInRange(
@@ -423,7 +436,6 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
    * 1. claim trading fee and harvest reward
    * 2. collect performance fee based
    */
-  // TODO: handle when either token0 or token1 is reward(cake) token
   function _harvest() internal {
     // Skip harvest if already done before in same block
     if (block.timestamp == lastHarvest) return;

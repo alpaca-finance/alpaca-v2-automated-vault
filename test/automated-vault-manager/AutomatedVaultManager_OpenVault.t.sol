@@ -5,7 +5,6 @@ import "./BaseAutomatedVaultUnitTest.sol";
 
 import { IERC20 } from "src/interfaces/IERC20.sol";
 
-// TODO: open vault sanity check test
 contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
   address worker = makeAddr("worker");
   address vaultOracle = makeAddr("vaultOracle");
