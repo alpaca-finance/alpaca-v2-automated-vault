@@ -5,6 +5,7 @@ import "../fixtures/E2EFixture.f.sol";
 import { VaultReader, IVaultReader } from "src/reader/VaultReader.sol";
 import { LibTickMath } from "src/libraries/LibTickMath.sol";
 import { LibSqrtPriceX96 } from "src/libraries/LibSqrtPriceX96.sol";
+import { LibLiquidityAmounts } from "src/libraries/LibLiquidityAmounts.sol";
 
 contract VaultReaderTest is E2EFixture {
   VaultReader vaultReader;
@@ -14,116 +15,86 @@ contract VaultReaderTest is E2EFixture {
     vaultReader = new VaultReader(address(vaultManager), address(bank), address(pancakeV3VaultOracle));
   }
 
-  function _depositUSDTAndAssert(address depositor, uint256 amount) internal {
-    deal(address(usdt), depositor, amount);
+  function testCorrectness_VaultReader_ShouldWork() external {
+    address _token0 = address(usdt);
+    address _token1 = address(wbnb);
+    (address _worker,,,,,,,) = vaultManager.vaultInfos(address(vaultToken));
+    uint256 depositAmount = 100 ether;
 
-    uint256 sharesBefore = vaultToken.balanceOf(depositor);
-    uint256 workerUSDTBefore = usdt.balanceOf(address(workerUSDTWBNB));
-    uint256 totalShareBefore = vaultToken.totalSupply();
-    (uint256 equityBefore,) = pancakeV3VaultOracle.getEquityAndDebt(address(vaultToken), address(workerUSDTWBNB));
-    (, int256 usdtAnswer,,,) = usdtFeed.latestRoundData();
-    uint256 expectedEquityIncreased = amount * uint256(usdtAnswer) / (10 ** usdtFeed.decimals());
-    uint256 expectedShareIncreased = equityBefore == 0
-      ? expectedEquityIncreased
-      : expectedEquityIncreased * (totalShareBefore + vaultManager.pendingManagementFee(address(vaultToken)))
-        / equityBefore;
-
-    vm.startPrank(depositor);
-    usdt.approve(address(vaultManager), amount);
-
-    AutomatedVaultManager.TokenAmount[] memory deposits = new AutomatedVaultManager.TokenAmount[](1);
-    deposits[0] = AutomatedVaultManager.TokenAmount({ token: address(usdt), amount: amount });
-    vaultManager.deposit(address(vaultToken), deposits, 0);
-    vm.stopPrank();
-
-    // Assertions
-    // - undeployed usdt increase by deposited amount
-    assertEq(usdt.balanceOf(address(workerUSDTWBNB)) - workerUSDTBefore, amount, "undeployed usdt increase");
-    // - shares minted to depositor equal to usd value of 1 usdt (equity)
-    assertEq(vaultToken.balanceOf(depositor) - sharesBefore, expectedShareIncreased, "shares received");
-  }
-
-  function _withdrawAndAssert(address withdrawFor, uint256 withdrawAmount) internal {
+    // Vault action
     {
-      uint256 sharesBefore = vaultToken.balanceOf(withdrawFor);
-      IPancakeV3MasterChef.UserPositionInfo memory userInfoBefore =
-        pancakeV3MasterChef.userPositionInfos(workerUSDTWBNB.nftTokenId());
-      (, uint256 wbnbDebtBefore) = bank.getVaultDebt(address(vaultToken), address(wbnb));
-      (, uint256 usdtDebtBefore) = bank.getVaultDebt(address(vaultToken), address(usdt));
-      uint256 workerUSDTBefore = usdt.balanceOf(address(workerUSDTWBNB));
-      uint256 workerWBNBBefore = wbnb.balanceOf(address(workerUSDTWBNB));
-      (uint256 equityBefore,) = pancakeV3VaultOracle.getEquityAndDebt(address(vaultToken), address(workerUSDTWBNB));
-      uint256 totalSharesBefore = vaultToken.totalSupply() + vaultManager.pendingManagementFee(address(vaultToken));
+      // Deposit
+      deal(_token0, address(this), depositAmount);
+      vm.startPrank(address(this));
+      usdt.approve(address(vaultManager), depositAmount);
 
-      AutomatedVaultManager.TokenAmount[] memory minAmountOuts;
-      vm.prank(withdrawFor);
-      vaultManager.withdraw(address(vaultToken), withdrawAmount, minAmountOuts);
+      AutomatedVaultManager.TokenAmount[] memory deposits = new AutomatedVaultManager.TokenAmount[](1);
+      deposits[0] = AutomatedVaultManager.TokenAmount({ token: _token0, amount: depositAmount });
+      vaultManager.deposit(address(vaultToken), deposits, 0);
+      vm.stopPrank();
 
-      uint256 totalSharesAfter = vaultToken.totalSupply();
+      // Open position with 100 USDT
+      bytes[] memory executorData = new bytes[](1);
+      executorData[0] = abi.encodeCall(PCSV3Executor01.openPosition, (-58000, -57750, 100 ether, 0));
+      vm.prank(MANAGER);
+      vaultManager.manage(address(vaultToken), executorData);
 
-      // Assertions
-      // didn't assert user balance due withdraw in and out of range result are different
-      // - user shares was burned
-      assertEq(sharesBefore - vaultToken.balanceOf(withdrawFor), withdrawAmount, "shares burned");
-      // - position decreased by withdrawn%
-      IPancakeV3MasterChef.UserPositionInfo memory userInfoAfter =
-        pancakeV3MasterChef.userPositionInfos(workerUSDTWBNB.nftTokenId());
-      assertApproxEqAbs(
-        userInfoBefore.liquidity * totalSharesAfter / totalSharesBefore,
-        userInfoAfter.liquidity,
-        1,
-        "liquidity decreased"
-      );
-      // - debt repaid by withdrawn%
-      (, uint256 usdtDebtAfter) = bank.getVaultDebt(address(vaultToken), address(usdt));
-      assertEq(usdtDebtBefore * totalSharesAfter / totalSharesBefore, usdtDebtAfter, "usdt repaid");
-      (, uint256 wbnbDebtAfter) = bank.getVaultDebt(address(vaultToken), address(wbnb));
-      assertEq(wbnbDebtBefore * totalSharesAfter / totalSharesBefore, wbnbDebtAfter, "wbnb repaid");
-      // - undeployed funds decreased by withdrawn% (management fee will occur precision loss)
-
-      uint256 expectedUsdtRemaining = (workerUSDTBefore * totalSharesAfter) / totalSharesBefore;
-      uint256 expectedWbnbRemaining = (workerWBNBBefore * totalSharesAfter) / totalSharesBefore;
-
-      // expect that maximum precision loss will be 1 wei
-      assertApproxEqAbs(usdt.balanceOf(address(workerUSDTWBNB)), expectedUsdtRemaining, 1, "undeployed usdt withdrawn");
-      assertApproxEqAbs(wbnb.balanceOf(address(workerUSDTWBNB)), expectedWbnbRemaining, 1, "undeployed wbnb withdrawn");
-
-      // - equity reduced by approx withdrawn%
-      (uint256 equityAfter,) = pancakeV3VaultOracle.getEquityAndDebt(address(vaultToken), address(workerUSDTWBNB));
-      assertApproxEqRel(equityBefore * totalSharesAfter / totalSharesBefore, equityAfter, 2, "equity decreased");
+      // Borrow 0.3 WBNB and increase position
+      deal(_token1, address(moneyMarket), 0.3 ether);
+      executorData = new bytes[](3);
+      executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (_token1, 0.3 ether));
+      executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (_token1, 0.3 ether));
+      executorData[2] = abi.encodeCall(PCSV3Executor01.increasePosition, (0, 0.3 ether));
+      vm.prank(MANAGER);
+      vaultManager.manage(address(vaultToken), executorData);
     }
 
-    (,,,,, uint256 withdrawalFeeBps,,) = vaultManager.vaultInfos(address(vaultToken));
-    uint256 expectedShare = withdrawAmount * withdrawalFeeBps / MAX_BPS;
+    IVaultReader.VaultSummary memory expectedVaultInfo;
 
-    // expect that withdrawal fee must be collected (if it's set)
-    assertEq(vaultToken.balanceOf(WITHDRAWAL_FEE_TREASURY), expectedShare);
-  }
+    {
+      expectedVaultInfo.token0price = pancakeV3VaultOracle.getTokenPrice(_token0);
+      expectedVaultInfo.token1price = pancakeV3VaultOracle.getTokenPrice(_token1);
+      expectedVaultInfo.token0Undeployed = IERC20(_token0).balanceOf(_worker);
+      expectedVaultInfo.token1Undeployed = IERC20(_token1).balanceOf(_worker);
+      (, expectedVaultInfo.token0Debt) = bank.getVaultDebt(address(vaultToken), address(_token0));
+      (, expectedVaultInfo.token1Debt) = bank.getVaultDebt(address(vaultToken), address(_token1));
 
-  function test_VaultReader_ShouldWork() external {
-    _depositUSDTAndAssert(address(this), 100 ether);
+      uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
+      (uint160 _poolSqrtPriceX96,,,,,,) = ICommonV3Pool(PancakeV3Worker(_worker).pool()).slot0();
+      (,,,,, int24 _tickLower, int24 _tickUpper, uint128 _liquidity,,,,) =
+        PancakeV3Worker(_worker).nftPositionManager().positions(_tokenId);
+      (expectedVaultInfo.token0Farmed, expectedVaultInfo.token1Farmed) = LibLiquidityAmounts.getAmountsForLiquidity(
+        _poolSqrtPriceX96,
+        LibTickMath.getSqrtRatioAtTick(_tickLower),
+        LibTickMath.getSqrtRatioAtTick(_tickUpper),
+        _liquidity
+      );
+      expectedVaultInfo.lowerPrice = _tickToPrice(_tickLower, IERC20(_token0).decimals(), IERC20(_token1).decimals());
+      expectedVaultInfo.upperPrice = _tickToPrice(_tickUpper, IERC20(_token0).decimals(), IERC20(_token1).decimals());
+    }
 
-    // Open position with 100 USDT
-    bytes[] memory executorData = new bytes[](1);
-    executorData[0] = abi.encodeCall(PCSV3Executor01.openPosition, (-58000, -57750, 100 ether, 0));
-    vm.prank(MANAGER);
-    vaultManager.manage(address(vaultToken), executorData);
-
-    // Borrow 0.3 WBNB and increase position
-    deal(address(wbnb), address(moneyMarket), 0.3 ether);
-    executorData = new bytes[](3);
-    executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(wbnb), 0.3 ether));
-    executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(wbnb), 0.3 ether));
-    executorData[2] = abi.encodeCall(PCSV3Executor01.increasePosition, (0, 0.3 ether));
-    vm.prank(MANAGER);
-    vaultManager.manage(address(vaultToken), executorData);
-
-    uint256 _token0price = pancakeV3VaultOracle.getTokenPrice(address(usdt));
-
-    /// @dev please checks the return value in verbose (forge test -vvvvv)
     IVaultReader.VaultSummary memory vaultSummary = vaultReader.getVaultSummary(address(vaultToken));
 
     // assert vaultReader is working well. check from any value
-    assertEq(vaultSummary.token0price, _token0price);
+    assertEq(vaultSummary.token0price, expectedVaultInfo.token0price);
+    assertEq(vaultSummary.token1price, expectedVaultInfo.token1price);
+    assertEq(vaultSummary.token0Undeployed, expectedVaultInfo.token0Undeployed);
+    assertEq(vaultSummary.token1Undeployed, expectedVaultInfo.token1Undeployed);
+    assertEq(vaultSummary.token0Farmed, expectedVaultInfo.token0Farmed);
+    assertEq(vaultSummary.token1Farmed, expectedVaultInfo.token1Farmed);
+    assertEq(vaultSummary.token0Debt, expectedVaultInfo.token0Debt);
+    assertEq(vaultSummary.token1Debt, expectedVaultInfo.token1Debt);
+    assertEq(vaultSummary.lowerPrice, expectedVaultInfo.lowerPrice);
+    assertEq(vaultSummary.upperPrice, expectedVaultInfo.upperPrice);
+  }
+
+  function _tickToPrice(int24 _tick, uint256 _token0Decimals, uint256 _token1Decimals)
+    public
+    pure
+    returns (uint256 _price)
+  {
+    // tick => sqrtPriceX96 => price
+    uint160 _sqrtPriceX96 = LibTickMath.getSqrtRatioAtTick(_tick);
+    _price = LibSqrtPriceX96.decodeSqrtPriceX96(_sqrtPriceX96, _token0Decimals, _token1Decimals);
   }
 }
