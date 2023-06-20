@@ -21,9 +21,10 @@ contract ManageScript is BaseScript {
     _depositParams[0] = AutomatedVaultManager.TokenAmount({ token: usdt, amount: _amount0In });
 
     // maange input
-    bytes[] memory executorData = new bytes[](2);
+    bytes[] memory executorData = new bytes[](3);
     executorData[0] = _getBorrowTokenBytes(usdt, 3 ether);
-    executorData[1] = _getOpenPositionBytes(_tickLower, _tickUpper, 8 ether, 0);
+    executorData[1] = _getTransferToWorkerBytes(usdt, 3 ether);
+    executorData[2] = _getOpenPositionBytes(_tickLower, _tickUpper, 8 ether, 0);
 
     vm.startBroadcast(deployerPrivateKey);
 
@@ -45,6 +46,10 @@ contract ManageScript is BaseScript {
 
   function _getBorrowTokenBytes(address _token, uint256 _amount) internal pure returns (bytes memory _data) {
     _data = abi.encodeCall(PCSV3Executor01.borrow, (_token, _amount));
+  }
+
+  function _getTransferToWorkerBytes(address _token, uint256 _amount) internal pure returns (bytes memory _data) {
+    _data = abi.encodeCall(PCSV3Executor01.transferToWorker, (_token, _amount));
   }
 
   function _getClosePositionBytes() internal pure returns (bytes memory _data) {
