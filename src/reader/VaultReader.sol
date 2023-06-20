@@ -14,12 +14,12 @@ import { LibLiquidityAmounts } from "src/libraries/LibLiquidityAmounts.sol";
 import { IVaultReader } from "./IVaultReader.sol";
 
 contract VaultReader is IVaultReader {
-  AutomatedVaultManager internal immutable avManager;
+  AutomatedVaultManager internal immutable automatedVaultManager;
   PancakeV3VaultOracle internal immutable pancakeV3VaultOracle;
   Bank internal immutable bank;
 
-  constructor(address _avManager, address _bank, address _pancakeV3VaultOracle) {
-    avManager = AutomatedVaultManager(_avManager);
+  constructor(address _automatedVaultManager, address _bank, address _pancakeV3VaultOracle) {
+    automatedVaultManager = AutomatedVaultManager(_automatedVaultManager);
     bank = Bank(_bank);
     pancakeV3VaultOracle = PancakeV3VaultOracle(_pancakeV3VaultOracle);
   }
@@ -32,7 +32,7 @@ contract VaultReader is IVaultReader {
     uint256 _priceLower;
     uint256 _priceUpper;
 
-    (address _worker,,,,,,,) = avManager.vaultInfos(vaultToken);
+    (address _worker,,,,,,,) = automatedVaultManager.vaultInfos(vaultToken);
     ERC20 _token0 = PancakeV3Worker(_worker).token0();
     ERC20 _token1 = PancakeV3Worker(_worker).token1();
     uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
