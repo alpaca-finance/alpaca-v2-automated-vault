@@ -238,13 +238,16 @@ contract BankTest is ProtocolActorFixture {
     uint256 prevBalance = IERC20(repayToken).balanceOf(IN_SCOPE_EXECUTOR);
 
     // Do borrowOnBehalfOf
-    vm.prank(IN_SCOPE_EXECUTOR);
+    vm.startPrank(IN_SCOPE_EXECUTOR);
+    IERC20(repayToken).approve(address(bank), type(uint256).max);
     bank.repayOnBehalfOf(vaultToken, repayToken, repayAmount);
+    vm.stopPrank();
 
     (uint256 newVaultDebtShares, uint256 newVaultDebtAmount) = bank.getVaultDebt(vaultToken, repayToken);
+    uint256 expectedRepayAmount = prevVaultDebtAmount > repayAmount ? repayAmount : prevVaultDebtAmount;
 
     // Repayer tokens deducted by specified repay amount
-    assertEq(prevBalance - IERC20(repayToken).balanceOf(IN_SCOPE_EXECUTOR), repayAmount, "repayer pay tokens");
+    assertEq(prevBalance - IERC20(repayToken).balanceOf(IN_SCOPE_EXECUTOR), expectedRepayAmount, "repayer pay tokens");
 
     // Vault debt shares should decrease
     assertEq(prevVaultDebtShares - newVaultDebtShares, expectedDebtSharesToDecrease, "vault debt shares decrease");
@@ -255,11 +258,13 @@ contract BankTest is ProtocolActorFixture {
 
     // Vault debt amount should decrease by repaid amount
     // Can tolerate 1 wei precision loss due to share to value conversion
-    assertApproxEqAbs(prevVaultDebtAmount - newVaultDebtAmount, repayAmount, 1, "vault debt amount decrease");
+    assertApproxEqAbs(prevVaultDebtAmount - newVaultDebtAmount, expectedRepayAmount, 1, "vault debt amount decrease");
 
     // MM non-collat token debt of bank should decrease by borrowed amount
     assertEq(
-      prevMMDebt - mockMoneyMarket.getNonCollatAccountDebt(address(bank), repayToken), repayAmount, "mm debt decrease"
+      prevMMDebt - mockMoneyMarket.getNonCollatAccountDebt(address(bank), repayToken),
+      expectedRepayAmount,
+      "mm debt decrease"
     );
 
     // No funds should remain in bank
@@ -271,8 +276,6 @@ contract BankTest is ProtocolActorFixture {
     address vault2 = makeAddr("VAULT_2");
 
     vm.startPrank(IN_SCOPE_EXECUTOR);
-    wbnb.approve(address(bank), type(uint256).max);
-    usdt.approve(address(bank), type(uint256).max);
 
     // Create debt without interest
     bank.borrowOnBehalfOf(vault1, address(wbnb), 1 ether);
@@ -320,6 +323,25 @@ contract BankTest is ProtocolActorFixture {
     assertEq(debtShares, 0);
     assertEq(debtAmount, 0);
     (debtShares, debtAmount) = bank.getVaultDebt(vault2, address(usdt));
+    assertEq(debtShares, 0);
+    assertEq(debtAmount, 0);
+  }
+
+  function testFuzz_RepayOnBehalfOf_RepayMoreThanDebt(uint256 borrowAmount, uint256 repayAmount) public {
+    borrowAmount = bound(borrowAmount, 1e6, 1e24);
+    repayAmount = bound(repayAmount, borrowAmount, type(uint256).max);
+
+    address vault1 = makeAddr("VAULT_1");
+    deal(address(wbnb), address(mockMoneyMarket), borrowAmount);
+
+    // Create debt without interest
+    _doAndAssertBorrowOnBehalfOf(vault1, address(wbnb), borrowAmount, borrowAmount);
+
+    // Repay more than debt
+    _doAndAssertRepayOnBehalfOf(vault1, address(wbnb), repayAmount, borrowAmount);
+
+    // There should be no debt left
+    (uint256 debtShares, uint256 debtAmount) = bank.getVaultDebt(vault1, address(wbnb));
     assertEq(debtShares, 0);
     assertEq(debtAmount, 0);
   }

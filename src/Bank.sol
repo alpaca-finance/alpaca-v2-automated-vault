@@ -83,24 +83,24 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
   }
 
   function borrowOnBehalfOf(address _vaultToken, address _token, uint256 _amount) external onlyExecutorWithinScope {
-    // Cache to save gas
     IMoneyMarket _moneyMarket = moneyMarket;
-    // Accure interest
+    // Accure interest first
     _moneyMarket.accrueInterest(_token);
 
     // Effects
-    // Cache to save gas
     uint256 _cachedTokenDebtShares = tokenDebtShares[_token];
+
     // NOTE: must accrue interest on money market before calculate shares to correctly reflect debt
     // Round up in protocol favor
     uint256 _debtSharesToAdd = _amount.valueToShareRoundingUp(
       _cachedTokenDebtShares, _moneyMarket.getNonCollatAccountDebt(address(this), _token)
     );
     // Add to borrowed token list if borrow for first time
-    if (_cachedTokenDebtShares == 0) {
+    if (!vaultDebtTokens[_vaultToken].contains(_token)) {
       vaultDebtTokens[_vaultToken].add(_token);
     }
-    // Safe to use unchecked since overflow amount would revert on borrow or transfer anyway
+    // Safe to use unchecked since amount that would cause an overflow
+    // would revert on borrow or transfer anyway
     unchecked {
       tokenDebtShares[_token] = _cachedTokenDebtShares + _debtSharesToAdd;
       vaultDebtShares[_vaultToken][_token] += _debtSharesToAdd;
@@ -116,37 +116,39 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
   }
 
   function repayOnBehalfOf(address _vaultToken, address _token, uint256 _amount) external onlyExecutorWithinScope {
-    // Transfer in first to early revert if insufficient balance
-    ERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
-
-    // Cache to save gas
     IMoneyMarket _moneyMarket = moneyMarket;
-    // Accure interest
+    // Accure interest first
     _moneyMarket.accrueInterest(_token);
 
-    // Effects
-    // Cache to save gas
     uint256 _cachedTokenDebtShares = tokenDebtShares[_token];
+    uint256 _cachedVaultDebtShares = vaultDebtShares[_vaultToken][_token];
+    uint256 _cachedMMDebt = _moneyMarket.getNonCollatAccountDebt(address(this), _token);
+
     // NOTE: must accrue interest on money market before calculate shares to correctly reflect debt
-    // Round down in protocol favor
-    uint256 _debtSharesToDecrease =
-      _amount.valueToShare(_cachedTokenDebtShares, _moneyMarket.getNonCollatAccountDebt(address(this), _token));
-    if (_debtSharesToDecrease > _cachedTokenDebtShares) {
-      revert Bank_RepayMoreThanDebt();
+    // Round down in protocol favor: decrease less debt
+    uint256 _debtSharesToDecrease = _amount.valueToShare(_cachedTokenDebtShares, _cachedMMDebt);
+    // Cap to debt if try to repay more than debt and re-calculate repay amount
+    if (_debtSharesToDecrease > _cachedVaultDebtShares) {
+      _debtSharesToDecrease = _cachedVaultDebtShares;
+      // Round up in protocol favor: repay more
+      _amount = _debtSharesToDecrease.shareToValueRoundingUp(_cachedMMDebt, _cachedTokenDebtShares);
     }
-    // Safe to unchecked, already checked above
+
+    // Transfer capped amount
+    ERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
+
+    // Decrease vault and total debt shares and remove token from borrowed token list if repay all
+    // Safe to unchecked, total vault debt shares must always be less than total token debt shares
     unchecked {
-      tokenDebtShares[_token] = _cachedTokenDebtShares - _debtSharesToDecrease;
-      // Remove from borrowed token list if repay all
-      if (_cachedTokenDebtShares - _debtSharesToDecrease == 0) {
+      vaultDebtShares[_vaultToken][_token] = _cachedVaultDebtShares - _debtSharesToDecrease;
+      if (_cachedVaultDebtShares - _debtSharesToDecrease == 0) {
         vaultDebtTokens[_vaultToken].remove(_token);
       }
+      tokenDebtShares[_token] = _cachedTokenDebtShares - _debtSharesToDecrease;
     }
-    vaultDebtShares[_vaultToken][_token] -= _debtSharesToDecrease;
 
-    // Interactions
+    // Non-collat repay money market for itself
     ERC20(_token).safeApprove(address(_moneyMarket), _amount);
-    // Non-collat repay money market, repay for itself
     _moneyMarket.nonCollatRepay(address(this), _token, _amount);
 
     emit LogRepayOnBehalfOf(_vaultToken, msg.sender, _token, _amount);
