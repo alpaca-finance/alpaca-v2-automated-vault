@@ -8,9 +8,7 @@ contract VaultReaderScript is BaseScript {
   function run() public {
     vm.startBroadcast(deployerPrivateKey);
 
-    address pancakeVaultOracle = address(0);
-
-    address vaultReader = address(new VaultReader(automatedVaultManager, bank, pancakeVaultOracle));
+    address vaultReader = address(new VaultReader(automatedVaultManager, bank, pancakeV3VaultOracle));
 
     vm.stopBroadcast();
 

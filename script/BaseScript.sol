@@ -20,6 +20,7 @@ contract BaseScript is Script {
   address internal automatedVaultERC20Implementation;
   address internal automatedVaultManager;
   address internal bank;
+  address internal pancakeV3VaultOracle;
 
   // Dependencies
   address internal moneyMarket;
@@ -44,6 +45,8 @@ contract BaseScript is Script {
       abi.decode(configJson.parseRaw(".automatedVault.automatedVaultERC20Implementation"), (address));
     automatedVaultManager = abi.decode(configJson.parseRaw(".automatedVault.automatedVaultManager.proxy"), (address));
     bank = abi.decode(configJson.parseRaw(".automatedVault.bank.proxy"), (address));
+    pancakeV3VaultOracle =
+      abi.decode(configJson.parseRaw("automatedVault.pancake-v3-vault.vaultOracle.proxy"), (address));
     // Dependencies
     moneyMarket = abi.decode(configJson.parseRaw(".dependencies.moneyMarket"), (address));
     pancakeV3PositionManager = abi.decode(configJson.parseRaw(".dependencies.pancake-v3.positionManager"), (address));
