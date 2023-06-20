@@ -521,27 +521,27 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   /// Admin functions
   /// =================
 
-  function setTradingPerformanceFee(uint16 _tradingPerformanceFeeBps) external onlyOwner {
-    if (_tradingPerformanceFeeBps > MAX_BPS) {
+  function setTradingPerformanceFee(uint16 _newTradingPerformanceFeeBps) external onlyOwner {
+    if (_newTradingPerformanceFeeBps > MAX_BPS) {
       revert PancakeV3Worker_InvalidParams();
     }
-    emit LogSetTradingPerformanceFee(tradingPerformanceFeeBps, _tradingPerformanceFeeBps);
-    tradingPerformanceFeeBps = _tradingPerformanceFeeBps;
+    emit LogSetTradingPerformanceFee(tradingPerformanceFeeBps, _newTradingPerformanceFeeBps);
+    tradingPerformanceFeeBps = _newTradingPerformanceFeeBps;
   }
 
   function setRewardPerformanceFee(uint16 _newRewardPerformanceFeeBps) external onlyOwner {
-    if (_rewardPerformanceFeeBps > MAX_BPS) {
+    if (_newRewardPerformanceFeeBps > MAX_BPS) {
       revert PancakeV3Worker_InvalidParams();
     }
-    emit LogSetRewardPerformanceFee(rewardPerformanceFeeBps, _rewardPerformanceFeeBps);
-    rewardPerformanceFeeBps = _rewardPerformanceFeeBps;
+    emit LogSetRewardPerformanceFee(rewardPerformanceFeeBps, _newRewardPerformanceFeeBps);
+    rewardPerformanceFeeBps = _newRewardPerformanceFeeBps;
   }
 
   function setPerformanceFeeBucket(address _newPerformanceFeeBucket) external onlyOwner {
-    if (_performanceFeeBucket == address(0)) {
+    if (_newPerformanceFeeBucket == address(0)) {
       revert PancakeV3Worker_InvalidParams();
     }
-    emit LogSetPerformanceFeeBucket(performanceFeeBucket, _performanceFeeBucket);
-    performanceFeeBucket = _performanceFeeBucket;
+    emit LogSetPerformanceFeeBucket(performanceFeeBucket, _newPerformanceFeeBucket);
+    performanceFeeBucket = _newPerformanceFeeBucket;
   }
 }
