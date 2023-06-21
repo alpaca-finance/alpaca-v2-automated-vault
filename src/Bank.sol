@@ -95,10 +95,10 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     uint256 _debtSharesToAdd = _amount.valueToShareRoundingUp(
       _cachedTokenDebtShares, _moneyMarket.getNonCollatAccountDebt(address(this), _token)
     );
-    // Add to borrowed token list if borrow for first time
-    if (!vaultDebtTokens[_vaultToken].contains(_token)) {
-      vaultDebtTokens[_vaultToken].add(_token);
-    }
+    // Add to borrowed token set
+    // EnumerableSet already check for duplicate element
+    vaultDebtTokens[_vaultToken].add(_token);
+    
     // Safe to use unchecked since amount that would cause an overflow
     // would revert on borrow or transfer anyway
     unchecked {
