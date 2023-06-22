@@ -149,11 +149,12 @@ contract VaultReaderTest is E2EFixture {
       vaultManager.manage(address(vaultToken), executorData);
     }
 
-    console.log(vaultReader.getVaultSharePrice(address(vaultToken)));
+    // share price should be around 1 since we haven't done anything beside opening position
+    assertApproxEqAbs(vaultReader.getVaultSharePrice(address(vaultToken)), 1 ether, 0.005 ether);
 
     // push position out of range
     _swapExactInput(address(usdt), address(wbnb), 500, 1000000 ether);
 
-    console.log(vaultReader.getVaultSharePrice(address(vaultToken)));
+    assertApproxEqAbs(vaultReader.getVaultSharePrice(address(vaultToken)), 1 ether, 0.005 ether);
   }
 }
