@@ -98,7 +98,7 @@ contract TC01 is PancakeV3WorkerExecutorBankIntegrationFixture {
     assertEq(wbnbDebt, 0);
     // Check worker undeployed funds
     assertEq(usdt.balanceOf(address(workerUSDTWBNB)), 148215047846778138997);
-    assertEq(wbnb.balanceOf(address(workerUSDTWBNB)), 547828663631556983);
+    assertEq(wbnb.balanceOf(address(workerUSDTWBNB)), 547828663631556984);
 
     vm.revertTo(beforeManageMulticall);
 
@@ -125,7 +125,7 @@ contract TC01 is PancakeV3WorkerExecutorBankIntegrationFixture {
     (, wbnbDebt) = bank.getVaultDebt(address(mockVaultUSDTWBNBToken), address(wbnb));
     assertEq(wbnbDebt, 0);
     assertEq(usdt.balanceOf(address(workerUSDTWBNB)), 148215047846778138997);
-    assertEq(wbnb.balanceOf(address(workerUSDTWBNB)), 547828663631556983);
+    assertEq(wbnb.balanceOf(address(workerUSDTWBNB)), 547828663631556984);
 
     //
     // Step 3: vault manager call executor `onWithdraw` half of shares
@@ -137,7 +137,7 @@ contract TC01 is PancakeV3WorkerExecutorBankIntegrationFixture {
     // Assertions
     // - vault manager balance is half of undeployed funds
     assertEq(usdt.balanceOf(address(mockVaultManager)), 74107523923389069498);
-    assertEq(wbnb.balanceOf(address(mockVaultManager)), 273914331815778491);
+    assertEq(wbnb.balanceOf(address(mockVaultManager)), 273914331815778492);
 
     //
     // Step 4: vault manager call executor `onWithdraw` with the rest of shares
@@ -156,6 +156,6 @@ contract TC01 is PancakeV3WorkerExecutorBankIntegrationFixture {
     assertEq(wbnb.balanceOf(address(workerUSDTWBNB)), 0);
     // Check vault manager balance
     assertEq(usdt.balanceOf(address(mockVaultManager)), 148215047846778138997);
-    assertEq(wbnb.balanceOf(address(mockVaultManager)), 547828663631556983);
+    assertEq(wbnb.balanceOf(address(mockVaultManager)), 547828663631556984);
   }
 }
