@@ -97,4 +97,40 @@ contract VaultReaderTest is E2EFixture {
     uint160 _sqrtPriceX96 = LibTickMath.getSqrtRatioAtTick(_tick);
     _price = LibSqrtPriceX96.decodeSqrtPriceX96(_sqrtPriceX96, _token0Decimals, _token1Decimals);
   }
+
+  function testCorrectness_VaultReader_GetVaultSharePrice() public {
+    address _token0 = address(usdt);
+    address _token1 = address(wbnb);
+    uint256 depositAmount = 100 ether;
+
+    // Vault action
+    {
+      // Deposit
+      deal(_token0, address(this), depositAmount);
+      vm.startPrank(address(this));
+      usdt.approve(address(vaultManager), depositAmount);
+
+      AutomatedVaultManager.TokenAmount[] memory deposits = new AutomatedVaultManager.TokenAmount[](1);
+      deposits[0] = AutomatedVaultManager.TokenAmount({ token: _token0, amount: depositAmount });
+      vaultManager.deposit(address(vaultToken), deposits, 0);
+      vm.stopPrank();
+
+      // Open position with 100 USDT
+      bytes[] memory executorData = new bytes[](1);
+      executorData[0] = abi.encodeCall(PCSV3Executor01.openPosition, (-58000, -57750, 100 ether, 0));
+      vm.prank(MANAGER);
+      vaultManager.manage(address(vaultToken), executorData);
+
+      // Borrow 0.3 WBNB and increase position
+      deal(_token1, address(moneyMarket), 0.3 ether);
+      executorData = new bytes[](3);
+      executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (_token1, 0.3 ether));
+      executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (_token1, 0.3 ether));
+      executorData[2] = abi.encodeCall(PCSV3Executor01.increasePosition, (0, 0.3 ether));
+      vm.prank(MANAGER);
+      vaultManager.manage(address(vaultToken), executorData);
+    }
+
+    console.log(vaultReader.getVaultSharePrice(address(vaultToken)));
+  }
 }

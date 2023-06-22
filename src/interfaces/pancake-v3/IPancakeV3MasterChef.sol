@@ -60,4 +60,6 @@ interface IPancakeV3MasterChef {
   }
 
   function userPositionInfos(uint256 tokenId) external view returns (UserPositionInfo memory);
+
+  function pendingCake(uint256 _tokenId) external view returns (uint256 reward);
 }

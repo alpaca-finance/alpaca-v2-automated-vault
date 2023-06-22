@@ -58,4 +58,8 @@ interface ICommonV3Pool {
     uint160 sqrtPriceLimitX96,
     bytes calldata data
   ) external returns (int256 amount0, int256 amount1);
+
+  function feeGrowthGlobal0X128() external view returns (uint256);
+
+  function feeGrowthGlobal1X128() external view returns (uint256);
 }
