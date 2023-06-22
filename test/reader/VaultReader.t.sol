@@ -15,6 +15,24 @@ contract VaultReaderTest is E2EFixture {
     vaultReader = new VaultReader(address(vaultManager), address(bank), address(pancakeV3VaultOracle));
   }
 
+  function _swapExactInput(address tokenIn_, address tokenOut_, uint24 fee_, uint256 swapAmount) internal {
+    deal(tokenIn_, address(this), swapAmount);
+    // Approve router to spend token1
+    IERC20(tokenIn_).approve(address(pancakeV3Router), swapAmount);
+    // Swap
+    pancakeV3Router.exactInputSingle(
+      IPancakeV3Router.ExactInputSingleParams({
+        tokenIn: tokenIn_,
+        tokenOut: tokenOut_,
+        fee: fee_,
+        recipient: address(this),
+        amountIn: swapAmount,
+        amountOutMinimum: 0,
+        sqrtPriceLimitX96: 0
+      })
+    );
+  }
+
   function testCorrectness_VaultReader_ShouldWork() external {
     address _token0 = address(usdt);
     address _token1 = address(wbnb);
@@ -96,5 +114,47 @@ contract VaultReaderTest is E2EFixture {
     // tick => sqrtPriceX96 => price
     uint160 _sqrtPriceX96 = LibTickMath.getSqrtRatioAtTick(_tick);
     _price = LibSqrtPriceX96.decodeSqrtPriceX96(_sqrtPriceX96, _token0Decimals, _token1Decimals);
+  }
+
+  function testCorrectness_VaultReader_GetVaultSharePrice() public {
+    address _token0 = address(usdt);
+    address _token1 = address(wbnb);
+    uint256 depositAmount = 100 ether;
+
+    // Vault action
+    {
+      // Deposit
+      deal(_token0, address(this), depositAmount);
+      vm.startPrank(address(this));
+      usdt.approve(address(vaultManager), depositAmount);
+
+      AutomatedVaultManager.TokenAmount[] memory deposits = new AutomatedVaultManager.TokenAmount[](1);
+      deposits[0] = AutomatedVaultManager.TokenAmount({ token: _token0, amount: depositAmount });
+      vaultManager.deposit(address(vaultToken), deposits, 0);
+      vm.stopPrank();
+
+      // Open position with 100 USDT
+      bytes[] memory executorData = new bytes[](1);
+      executorData[0] = abi.encodeCall(PCSV3Executor01.openPosition, (-57870, -57750, 100 ether, 0));
+      vm.prank(MANAGER);
+      vaultManager.manage(address(vaultToken), executorData);
+
+      // Borrow 0.3 WBNB and increase position
+      deal(_token1, address(moneyMarket), 0.3 ether);
+      executorData = new bytes[](3);
+      executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (_token1, 0.3 ether));
+      executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (_token1, 0.3 ether));
+      executorData[2] = abi.encodeCall(PCSV3Executor01.increasePosition, (0, 0.3 ether));
+      vm.prank(MANAGER);
+      vaultManager.manage(address(vaultToken), executorData);
+    }
+
+    // share price should be around 1 since we haven't done anything beside opening position
+    assertApproxEqAbs(vaultReader.getVaultSharePrice(address(vaultToken)), 1 ether, 0.005 ether);
+
+    // push position out of range
+    _swapExactInput(address(usdt), address(wbnb), 500, 1000000 ether);
+
+    assertApproxEqAbs(vaultReader.getVaultSharePrice(address(vaultToken)), 1 ether, 0.005 ether);
   }
 }

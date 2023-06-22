@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 interface IChainlinkAggregator {
   function decimals() external view returns (uint8);
+
   function latestRoundData()
     external
     view

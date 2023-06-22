@@ -1,22 +1,32 @@
 // SPDX-License-Identifier: BUSL
 pragma solidity 0.8.19;
 
-import { AutomatedVaultManager, ERC20 } from "src/AutomatedVaultManager.sol";
+import { ERC20 } from "@solmate/tokens/ERC20.sol";
+
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 import { PancakeV3VaultOracle } from "src/oracles/PancakeV3VaultOracle.sol";
 import { Bank } from "src/Bank.sol";
 import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
+import { ICommonV3PositionManager } from "src/interfaces/ICommonV3PositionManager.sol";
+import { IPancakeV3MasterChef } from "src/interfaces/pancake-v3/IPancakeV3MasterChef.sol";
+import { IChainlinkAggregator } from "src/interfaces/IChainlinkAggregator.sol";
 
 import { LibTickMath } from "src/libraries/LibTickMath.sol";
 import { LibSqrtPriceX96 } from "src/libraries/LibSqrtPriceX96.sol";
 import { LibLiquidityAmounts } from "src/libraries/LibLiquidityAmounts.sol";
+import { LibFullMath } from "src/libraries/LibFullMath.sol";
+import { LibFixedPoint128 } from "src/libraries/LibFixedPoint128.sol";
 
 import { IVaultReader } from "src/interfaces/IVaultReader.sol";
 
+// TODO: rename to PancakeV3VaultReader?
 contract VaultReader is IVaultReader {
   AutomatedVaultManager internal immutable automatedVaultManager;
   PancakeV3VaultOracle internal immutable pancakeV3VaultOracle;
   Bank internal immutable bank;
+  IChainlinkAggregator internal constant cakePriceFeed =
+    IChainlinkAggregator(0xB6064eD41d4f67e353768aA239cA86f4F73665a1);
 
   constructor(address _automatedVaultManager, address _bank, address _pancakeV3VaultOracle) {
     automatedVaultManager = AutomatedVaultManager(_automatedVaultManager);
@@ -24,7 +34,7 @@ contract VaultReader is IVaultReader {
     pancakeV3VaultOracle = PancakeV3VaultOracle(_pancakeV3VaultOracle);
   }
 
-  function getVaultSummary(address _vaultToken) external view returns (VaultSummary memory _vaultSummary) {
+  function getVaultSummary(address _vaultToken) public view returns (VaultSummary memory _vaultSummary) {
     // prerequisites
     (address _worker,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
     ERC20 _token0 = PancakeV3Worker(_worker).token0();
@@ -62,5 +72,105 @@ contract VaultReader is IVaultReader {
     // tick => sqrtPriceX96 => price
     uint160 _sqrtPriceX96 = LibTickMath.getSqrtRatioAtTick(_tick);
     _price = LibSqrtPriceX96.decodeSqrtPriceX96(_sqrtPriceX96, _token0Decimals, _token1Decimals);
+  }
+
+  function getVaultSharePrice(address _vaultToken) external view returns (uint256 _sharePrice) {
+    VaultSummary memory _vautlSummary = getVaultSummary(_vaultToken);
+
+    (address _worker,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
+    uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
+
+    // Find pending cake equity
+    uint256 _cakeEquity;
+    {
+      uint256 _pendingCake = IPancakeV3MasterChef(PancakeV3Worker(_worker).masterChef()).pendingCake(_tokenId);
+      (, int256 _cakePrice,,,) = cakePriceFeed.latestRoundData();
+      // cake price is 8 decimals, cake itself is 18 decimals
+      _cakeEquity = _pendingCake * uint256(_cakePrice) / 1e8;
+    }
+
+    // Find uncollected trading fee amount
+    (uint256 _token0TradingFee, uint256 _token1TradingFee) =
+      _getPositionFees(_tokenId, PancakeV3Worker(_worker).nftPositionManager(), PancakeV3Worker(_worker).pool());
+
+    // TODO: include pending interest after upgrade mm
+    uint256 _token0PositionValue = (_vautlSummary.token0Undeployed + _vautlSummary.token0Farmed + _token0TradingFee)
+      * _vautlSummary.token0price / 1e18;
+    uint256 _token0DebtValue = _vautlSummary.token0Debt * _vautlSummary.token0price / 1e18;
+    uint256 _token1PositionValue = (_vautlSummary.token1Undeployed + _vautlSummary.token1Farmed + _token1TradingFee)
+      * _vautlSummary.token1price / 1e18;
+    uint256 _token1DebtValue = _vautlSummary.token1Debt * _vautlSummary.token1price / 1e18;
+    uint256 _totalEquity =
+      _token0PositionValue + _token1PositionValue + _cakeEquity - _token0DebtValue - _token1DebtValue;
+    _sharePrice = _totalEquity * 1e18 / ERC20(_vaultToken).totalSupply();
+    return _sharePrice;
+  }
+
+  struct FeeParams {
+    address token0;
+    address token1;
+    uint24 fee;
+    int24 tickLower;
+    int24 tickUpper;
+    uint128 liquidity;
+    uint256 positionFeeGrowthInside0LastX128;
+    uint256 positionFeeGrowthInside1LastX128;
+    uint256 tokensOwed0;
+    uint256 tokensOwed1;
+  }
+
+  function _getPositionFees(uint256 tokenId, ICommonV3PositionManager positionManager, ICommonV3Pool pool)
+    private
+    view
+    returns (uint256 amount0, uint256 amount1)
+  {
+    (
+      ,
+      ,
+      ,
+      ,
+      ,
+      int24 tickLower,
+      int24 tickUpper,
+      uint128 liquidity,
+      uint256 positionFeeGrowthInside0LastX128,
+      uint256 positionFeeGrowthInside1LastX128,
+      uint256 tokensOwed0,
+      uint256 tokensOwed1
+    ) = positionManager.positions(tokenId);
+
+    (uint256 poolFeeGrowthInside0LastX128, uint256 poolFeeGrowthInside1LastX128) =
+      _getFeeGrowthInside(pool, tickLower, tickUpper);
+
+    amount0 = LibFullMath.mulDiv(
+      poolFeeGrowthInside0LastX128 - positionFeeGrowthInside0LastX128, liquidity, LibFixedPoint128.Q128
+    ) + tokensOwed0;
+
+    amount1 = LibFullMath.mulDiv(
+      poolFeeGrowthInside1LastX128 - positionFeeGrowthInside1LastX128, liquidity, LibFixedPoint128.Q128
+    ) + tokensOwed1;
+  }
+
+  function _getFeeGrowthInside(ICommonV3Pool pool, int24 tickLower, int24 tickUpper)
+    private
+    view
+    returns (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128)
+  {
+    (, int24 tickCurrent,,,,,) = pool.slot0();
+    (,, uint256 lowerFeeGrowthOutside0X128, uint256 lowerFeeGrowthOutside1X128,,,,) = pool.ticks(tickLower);
+    (,, uint256 upperFeeGrowthOutside0X128, uint256 upperFeeGrowthOutside1X128,,,,) = pool.ticks(tickUpper);
+
+    if (tickCurrent < tickLower) {
+      feeGrowthInside0X128 = lowerFeeGrowthOutside0X128 - upperFeeGrowthOutside0X128;
+      feeGrowthInside1X128 = lowerFeeGrowthOutside1X128 - upperFeeGrowthOutside1X128;
+    } else if (tickCurrent < tickUpper) {
+      uint256 feeGrowthGlobal0X128 = pool.feeGrowthGlobal0X128();
+      uint256 feeGrowthGlobal1X128 = pool.feeGrowthGlobal1X128();
+      feeGrowthInside0X128 = feeGrowthGlobal0X128 - lowerFeeGrowthOutside0X128 - upperFeeGrowthOutside0X128;
+      feeGrowthInside1X128 = feeGrowthGlobal1X128 - lowerFeeGrowthOutside1X128 - upperFeeGrowthOutside1X128;
+    } else {
+      feeGrowthInside0X128 = upperFeeGrowthOutside0X128 - lowerFeeGrowthOutside0X128;
+      feeGrowthInside1X128 = upperFeeGrowthOutside1X128 - lowerFeeGrowthOutside1X128;
+    }
   }
 }
