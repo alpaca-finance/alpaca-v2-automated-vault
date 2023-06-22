@@ -94,12 +94,14 @@ contract VaultReader is IVaultReader {
       _getPositionFees(_tokenId, PancakeV3Worker(_worker).nftPositionManager(), PancakeV3Worker(_worker).pool());
 
     // TODO: include pending interest after upgrade mm
-    uint256 _totalToken0 =
-      _vautlSummary.token0Undeployed + _vautlSummary.token0Farmed + _token0TradingFee - _vautlSummary.token0Debt;
-    uint256 _totalToken1 =
-      _vautlSummary.token1Undeployed + _vautlSummary.token1Farmed + _token1TradingFee - _vautlSummary.token1Debt;
+    uint256 _token0PositionValue = (_vautlSummary.token0Undeployed + _vautlSummary.token0Farmed + _token0TradingFee)
+      * _vautlSummary.token0price / 1e18;
+    uint256 _token0DebtValue = _vautlSummary.token0Debt * _vautlSummary.token0price / 1e18;
+    uint256 _token1PositionValue = (_vautlSummary.token1Undeployed + _vautlSummary.token1Farmed + _token1TradingFee)
+      * _vautlSummary.token1price / 1e18;
+    uint256 _token1DebtValue = _vautlSummary.token1Debt * _vautlSummary.token1price / 1e18;
     uint256 _totalEquity =
-      (_totalToken0 * _vautlSummary.token0price + _totalToken1 * _vautlSummary.token1price) / 1e18 + _cakeEquity;
+      _token0PositionValue + _token1PositionValue + _cakeEquity - _token0DebtValue - _token1DebtValue;
     _sharePrice = _totalEquity * 1e18 / ERC20(_vaultToken).totalSupply();
     return _sharePrice;
   }

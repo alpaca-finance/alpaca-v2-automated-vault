@@ -15,6 +15,24 @@ contract VaultReaderTest is E2EFixture {
     vaultReader = new VaultReader(address(vaultManager), address(bank), address(pancakeV3VaultOracle));
   }
 
+  function _swapExactInput(address tokenIn_, address tokenOut_, uint24 fee_, uint256 swapAmount) internal {
+    deal(tokenIn_, address(this), swapAmount);
+    // Approve router to spend token1
+    IERC20(tokenIn_).approve(address(pancakeV3Router), swapAmount);
+    // Swap
+    pancakeV3Router.exactInputSingle(
+      IPancakeV3Router.ExactInputSingleParams({
+        tokenIn: tokenIn_,
+        tokenOut: tokenOut_,
+        fee: fee_,
+        recipient: address(this),
+        amountIn: swapAmount,
+        amountOutMinimum: 0,
+        sqrtPriceLimitX96: 0
+      })
+    );
+  }
+
   function testCorrectness_VaultReader_ShouldWork() external {
     address _token0 = address(usdt);
     address _token1 = address(wbnb);
@@ -117,7 +135,7 @@ contract VaultReaderTest is E2EFixture {
 
       // Open position with 100 USDT
       bytes[] memory executorData = new bytes[](1);
-      executorData[0] = abi.encodeCall(PCSV3Executor01.openPosition, (-58000, -57750, 100 ether, 0));
+      executorData[0] = abi.encodeCall(PCSV3Executor01.openPosition, (-57870, -57750, 100 ether, 0));
       vm.prank(MANAGER);
       vaultManager.manage(address(vaultToken), executorData);
 
@@ -130,6 +148,11 @@ contract VaultReaderTest is E2EFixture {
       vm.prank(MANAGER);
       vaultManager.manage(address(vaultToken), executorData);
     }
+
+    console.log(vaultReader.getVaultSharePrice(address(vaultToken)));
+
+    // push position out of range
+    _swapExactInput(address(usdt), address(wbnb), 500, 1000000 ether);
 
     console.log(vaultReader.getVaultSharePrice(address(vaultToken)));
   }
