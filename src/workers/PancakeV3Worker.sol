@@ -289,7 +289,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
 
     // Swap
     ERC20(_tokenIn).safeApprove(address(router), _amountSwap);
-    router.exactInputSingle(
+    uint256 _amountOut = router.exactInputSingle(
       IPancakeV3Router.ExactInputSingleParams({
         tokenIn: _tokenIn,
         tokenOut: _tokenOut,
@@ -301,8 +301,13 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
       })
     );
 
-    _optimalAmount0 = ERC20(_token0).balanceOf(address(this));
-    _optimalAmount1 = ERC20(_token1).balanceOf(address(this));
+    if (_zeroForOne) {
+      _optimalAmount0 = _amountIn0 - _amountSwap;
+      _optimalAmount1 = _amountIn1 + _amountOut;
+    } else {
+      _optimalAmount0 = _amountIn0 + _amountOut;
+      _optimalAmount1 = _amountIn1 - _amountSwap;
+    }
   }
 
   function _prepareOptimalTokensForIncreaseOutOfRange(
