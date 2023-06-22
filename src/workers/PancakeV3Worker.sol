@@ -20,8 +20,6 @@ import { IPancakeV3MasterChef } from "src/interfaces/pancake-v3/IPancakeV3Master
 import { LibTickMath } from "src/libraries/LibTickMath.sol";
 import { MAX_BPS } from "src/libraries/Constants.sol";
 
-import "@forge-std/console.sol";
-
 contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradeable {
   using SafeTransferLib for ERC20;
 
@@ -369,11 +367,6 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
         _optimalAmount1 = _amountIn1 + ERC20(_token1).balanceOf(address(this)) - _token1Before;
       }
     }
-
-    console.log("optimalAmount0: %s", _optimalAmount0);
-    console.log("optimalAmount1: %s", _optimalAmount1);
-    console.log("balance0: %s", ERC20(_token0).balanceOf(address(this)));
-    console.log("balance1: %s", ERC20(_token1).balanceOf(address(this)));
 
     // Also prepare in range if tick is back in range after swap
     (, _currTick,,,,,) = pool.slot0();
