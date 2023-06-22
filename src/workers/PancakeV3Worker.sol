@@ -20,6 +20,8 @@ import { IPancakeV3MasterChef } from "src/interfaces/pancake-v3/IPancakeV3Master
 import { LibTickMath } from "src/libraries/LibTickMath.sol";
 import { MAX_BPS } from "src/libraries/Constants.sol";
 
+import "@forge-std/console.sol";
+
 contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradeable {
   using SafeTransferLib for ERC20;
 
@@ -321,7 +323,6 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   ) internal returns (uint256 _optimalAmount0, uint256 _optimalAmount1) {
     // SLOAD
     int24 _tickSpacing = pool.tickSpacing();
-    IPancakeV3Router _router = router;
 
     // If out of upper range (currTick > tickUpper), we swap token0 for token1
     // and vice versa, to push price closer to range.
@@ -329,9 +330,10 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     // we will swap until price hit the first tick within range.
     if (_currTick > _tickUpper) {
       if (_amountIn0 > 0) {
+        uint256 _token0Before = ERC20(_token0).balanceOf(address(this));
         // zero for one swap
-        ERC20(_token0).safeApprove(address(_router), _amountIn0);
-        _router.exactInputSingle(
+        ERC20(_token0).safeApprove(address(router), _amountIn0);
+        uint256 _amountOut = router.exactInputSingle(
           IPancakeV3Router.ExactInputSingleParams({
             tokenIn: _token0,
             tokenOut: _token1,
@@ -342,12 +344,16 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
             sqrtPriceLimitX96: LibTickMath.getSqrtRatioAtTick(_tickUpper - _tickSpacing - 1)
           })
         );
+        // Update optimal amount
+        _optimalAmount0 = _amountIn0 + ERC20(_token0).balanceOf(address(this)) - _token0Before;
+        _optimalAmount1 = _amountIn1 + _amountOut;
       }
     } else {
       if (_amountIn1 > 0) {
+        uint256 _token1Before = ERC20(_token1).balanceOf(address(this));
         // one for zero swap
-        ERC20(_token1).safeApprove(address(_router), _amountIn1);
-        _router.exactInputSingle(
+        ERC20(_token1).safeApprove(address(router), _amountIn1);
+        uint256 _amountOut = router.exactInputSingle(
           IPancakeV3Router.ExactInputSingleParams({
             tokenIn: _token1,
             tokenOut: _token0,
@@ -358,12 +364,16 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
             sqrtPriceLimitX96: LibTickMath.getSqrtRatioAtTick(_tickLower + _tickSpacing + 1)
           })
         );
+        // Update optimal amount
+        _optimalAmount0 = _amountIn0 + _amountOut;
+        _optimalAmount1 = _amountIn1 + ERC20(_token1).balanceOf(address(this)) - _token1Before;
       }
     }
 
-    // Update optimal amount
-    _optimalAmount0 = ERC20(_token0).balanceOf(address(this));
-    _optimalAmount1 = ERC20(_token1).balanceOf(address(this));
+    console.log("optimalAmount0: %s", _optimalAmount0);
+    console.log("optimalAmount1: %s", _optimalAmount1);
+    console.log("balance0: %s", ERC20(_token0).balanceOf(address(this)));
+    console.log("balance1: %s", ERC20(_token1).balanceOf(address(this)));
 
     // Also prepare in range if tick is back in range after swap
     (, _currTick,,,,,) = pool.slot0();
