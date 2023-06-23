@@ -31,7 +31,9 @@ contract DeployPancakeV3WorkerScript is BaseScript {
         zapV3: zapV3,
         performanceFeeBucket: performanceFeeBucket,
         tradingPerformanceFeeBps: tradingPerformanceFeeBps,
-        rewardPerformanceFeeBps: rewardPerformanceFeeBps
+        rewardPerformanceFeeBps: rewardPerformanceFeeBps,
+        cakeToToken0Path: abi.encodePacked(address(cake), uint24(2500), address(usdt)),
+        cakeToToken1Path: abi.encodePacked(address(cake), uint24(2500), address(wbnb))
       })
     );
     address workerProxy = address(

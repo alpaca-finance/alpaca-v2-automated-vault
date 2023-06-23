@@ -3,7 +3,8 @@
   "performanceFeeBucket": "0x2DD872C6f7275DAD633d7Deb1083EDA561E9B96b",
   "tokens": {
     "wbnb": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
-    "usdt": "0x55d398326f99059fF775485246999027B3197955"
+    "usdt": "0x55d398326f99059fF775485246999027B3197955",
+    "cake": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82"
   },
   "automatedVault": {
     "automatedVaultERC20Implementation": "0x4a41d9eeFb9d252A59d90A2918Dd1852ddA98A6c",

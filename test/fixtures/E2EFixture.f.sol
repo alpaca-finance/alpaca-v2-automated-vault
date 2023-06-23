@@ -99,7 +99,9 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
             zapV3: address(zapV3),
             performanceFeeBucket: PERFORMANCE_FEE_BUCKET,
             tradingPerformanceFeeBps: TRADING_PERFORMANCE_FEE_BPS,
-            rewardPerformanceFeeBps: REWARD_PERFORMANCE_FEE_BPS
+            rewardPerformanceFeeBps: REWARD_PERFORMANCE_FEE_BPS,
+            cakeToToken0Path: abi.encodePacked(address(cake), uint24(2500), address(usdt)),
+            cakeToToken1Path: abi.encodePacked(address(cake), uint24(2500), address(wbnb))
           })
         )
       )
