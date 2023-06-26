@@ -172,7 +172,7 @@ contract PCSV3Executor01 is Executor {
       );
     }
 
-    _repayToken.approve(address(bank), _repayAmount);
+    _repayToken.safeApprove(address(bank), _repayAmount);
     bank.repayOnBehalfOf(_vaultToken, address(_repayToken), _repayAmount);
     emit LogRepay(_vaultToken, address(_repayToken), _repayAmount);
   }

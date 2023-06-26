@@ -181,14 +181,14 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
       revert AutomatedVaultManager_BelowMinimumDeposit();
     }
 
-    uint256 _shareRecived =
+    uint256 _shareReceived =
       _equityChanged.valueToShare(IAutomatedVaultERC20(_vaultToken).totalSupply(), _totalEquityBefore);
-    if (_shareRecived < _minReceive) {
+    if (_shareReceived < _minReceive) {
       revert AutomatedVaultManager_TooLittleReceived();
     }
-    IAutomatedVaultERC20(_vaultToken).mint(msg.sender, _shareRecived);
+    IAutomatedVaultERC20(_vaultToken).mint(msg.sender, _shareReceived);
 
-    emit LogDeposit(_vaultToken, msg.sender, _depositParams, _shareRecived);
+    emit LogDeposit(_vaultToken, msg.sender, _depositParams, _shareReceived);
   }
 
   function manage(address _vaultToken, bytes[] calldata _executorParams)
@@ -297,12 +297,6 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
         IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
       _equityChanged = _totalEquityBefore - _totalEquityAfter;
     }
-    // // +1 to account for possible precision loss
-    // uint256 _maxEquityChange =
-    //   _sharesToWithdraw * _totalEquityBefore / IAutomatedVaultERC20(_vaultToken).totalSupply() + 1;
-    // if (_equityChanged > _maxEquityChange) {
-    //   revert AutomatedVaultManager_TooMuchEquityLoss();
-    // }
 
     uint256 _withdrawalFee;
     unchecked {
