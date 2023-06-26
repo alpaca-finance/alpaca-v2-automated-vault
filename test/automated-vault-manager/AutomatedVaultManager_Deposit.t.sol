@@ -60,6 +60,28 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
     vaultManager.deposit(vaultToken, params, sharesOut + 1);
   }
 
+  function testRevert_DepositExceedCapacity() public {
+    address vaultToken = _openDefaultVault();
+    vm.prank(DEPLOYER);
+    vaultManager.setCapacity(vaultToken, 0);
+
+    mockVaultOracleAndExecutor.setGetEquityAndDebtResult({
+      _equityBefore: 0,
+      _debtBefore: 0,
+      _equityAfter: 1,
+      _debtAfter: 0
+    });
+
+    deal(address(mockToken0), address(this), 1 ether);
+
+    AutomatedVaultManager.TokenAmount[] memory params = new AutomatedVaultManager.TokenAmount[](1);
+    params[0].token = address(mockToken0);
+    params[0].amount = 1 ether;
+    mockToken0.approve(address(vaultManager), 1 ether);
+    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_ExceedCapacity()"));
+    vaultManager.deposit(vaultToken, params, 0);
+  }
+
   function testCorrectness_WhenDeposit_TokensShouldBeTransferred_ShouldReceiveSharesEqualToEquityChanged() public {
     address vaultToken = _openDefaultVault();
     uint256 equityChanged = 1 ether;

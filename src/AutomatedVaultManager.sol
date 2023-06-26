@@ -86,6 +86,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   event LogSetWithdrawalFeeTreasury(address _withdrawalFeeTreasury);
   event LogSetWithdrawalFeeBps(address _vaultToken, uint16 _withdrawalFeeBps);
   event LogWithdrawalFee(address _vaultToken, uint256 _withdrawalFee);
+  event LogSetCapacity(address _vaultToken, uint256 _capacity);
 
   modifier collectManagementFee(address _vaultToken) {
     if (block.timestamp > vaultFeeLastCollectedAt[_vaultToken]) {
@@ -446,6 +447,11 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     vaultInfos[_vaultToken].withdrawalFeeBps = _withdrawalFeeBps;
 
     emit LogSetWithdrawalFeeBps(_vaultToken, _withdrawalFeeBps);
+  }
+
+  function setCapacity(address _vaultToken, uint256 _capacity) external onlyOwner {
+    vaultInfos[_vaultToken].capacity = _capacity;
+    emit LogSetCapacity(_vaultToken, _capacity);
   }
 
   /// @dev Valid value: withdrawalFeeBps <= 1000

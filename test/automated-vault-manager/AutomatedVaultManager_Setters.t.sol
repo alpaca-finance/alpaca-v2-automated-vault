@@ -150,3 +150,21 @@ contract AutomatedVaultManagerSetFeePerSecTest is BaseAutomatedVaultUnitTest {
     assertEq(managementFeePerSec, 12);
   }
 }
+
+contract AutomatedVaultManagerSetCapacityTest is BaseAutomatedVaultUnitTest {
+  function testRevert_SetCapacity_NonOwnerIsCaller() public {
+    vm.prank(address(1234));
+    vm.expectRevert("Ownable: caller is not the owner");
+    vaultManager.setCapacity(address(1), 1);
+  }
+
+  function testCorrectness_SetCapacity() public {
+    vm.startPrank(DEPLOYER);
+    vaultManager.setCapacity(address(1), 10);
+    (,,,, uint256 capacity,,,,) = vaultManager.vaultInfos(address(1));
+    assertEq(capacity, 10);
+    vaultManager.setCapacity(address(1), 0);
+    (,,,, capacity,,,,) = vaultManager.vaultInfos(address(1));
+    assertEq(capacity, 0);
+  }
+}
