@@ -53,6 +53,8 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
 
   uint256 public nftTokenId;
 
+  mapping(address => bytes) public cakeToTokenPath;
+
   /// Authorization
   AutomatedVaultManager public vaultManager;
 
@@ -84,6 +86,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   event LogSetTradingPerformanceFee(uint16 _prevTradingPerformanceFeeBps, uint16 _newTradingPerformanceFeeBps);
   event LogSetRewardPerformanceFee(uint16 _prevRewardPerformanceFeeBps, uint16 _newRewardPerformanceFeeBps);
   event LogSetPerformanceFeeBucket(address _prevPerformanceFeeBucket, address _newPerformanceFeeBucket);
+  event LogSetCakeToTokenPath(address _toToken, bytes _path);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -100,6 +103,8 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     address performanceFeeBucket;
     uint16 tradingPerformanceFeeBps;
     uint16 rewardPerformanceFeeBps;
+    bytes cakeToToken0Path;
+    bytes cakeToToken1Path;
   }
 
   function initialize(ConstructorParams calldata _params) external initializer {
@@ -132,6 +137,9 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     tradingPerformanceFeeBps = _params.tradingPerformanceFeeBps;
     rewardPerformanceFeeBps = _params.rewardPerformanceFeeBps;
     performanceFeeBucket = _params.performanceFeeBucket;
+
+    cakeToTokenPath[address(token0)] = _params.cakeToToken0Path;
+    cakeToTokenPath[address(token1)] = _params.cakeToToken1Path;
   }
 
   /// @dev Can't open position for pool that doesn't have CAKE reward (masterChef pid == 0).
@@ -508,17 +516,13 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
         IPancakeV3Router _router = router;
         uint256 _swapAmount = _cake.balanceOf(address(this));
         _cake.safeApprove(address(_router), _swapAmount);
-        // TODO: multi-hop swap
-        // Swap CAKE for token0 or token1
-        _router.exactInputSingle(
-          IPancakeV3Router.ExactInputSingleParams({
-            tokenIn: address(_cake),
-            tokenOut: _tokenOut,
-            fee: poolFee,
+        // Swap CAKE for token0 or token1 based on predefined v3 path
+        _router.exactInput(
+          IPancakeV3Router.ExactInputParams({
+            path: cakeToTokenPath[_tokenOut],
             recipient: address(this),
             amountIn: _swapAmount,
-            amountOutMinimum: 0,
-            sqrtPriceLimitX96: 0
+            amountOutMinimum: 0
           })
         );
       }
@@ -563,5 +567,17 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     }
     emit LogSetPerformanceFeeBucket(performanceFeeBucket, _newPerformanceFeeBucket);
     performanceFeeBucket = _newPerformanceFeeBucket;
+  }
+
+  function setCakeToTokenPath(address _toToken, bytes calldata _path) external onlyOwner {
+    // Revert if invalid length or first token is not cake or last token is not _toToken
+    if (
+      _path.length < 43 || address(bytes20(_path[:20])) != address(cake)
+        || address(bytes20(_path[_path.length - 20:])) != _toToken
+    ) {
+      revert PancakeV3Worker_InvalidParams();
+    }
+    cakeToTokenPath[_toToken] = _path;
+    emit LogSetCakeToTokenPath(_toToken, _path);
   }
 }

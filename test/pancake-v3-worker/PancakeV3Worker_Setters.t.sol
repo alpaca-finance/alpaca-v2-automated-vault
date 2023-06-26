@@ -52,4 +52,27 @@ contract PancakeV3WorkerSettersTest is PancakeV3WorkerFixture {
     worker.setPerformanceFeeBucket(address(1234));
     assertEq(worker.performanceFeeBucket(), address(1234));
   }
+
+  function testRevert_SetCakeToTokenPath_CallerIsNotOwner() public {
+    vm.prank(address(1234));
+    vm.expectRevert("Ownable: caller is not the owner");
+    worker.setCakeToTokenPath(address(1234), abi.encodePacked(address(1234), uint24(2500), address(1234)));
+  }
+
+  function testRevert_SetCakeToTokenPath_InvalidParam() public {
+    // invalid path length
+    vm.expectRevert(abi.encodeWithSignature("PancakeV3Worker_InvalidParams()"));
+    worker.setCakeToTokenPath(address(1234), abi.encodePacked(address(1234)));
+    // first token is not cake
+    vm.expectRevert(abi.encodeWithSignature("PancakeV3Worker_InvalidParams()"));
+    worker.setCakeToTokenPath(address(1234), abi.encodePacked(address(1234), uint24(2500), address(1234)));
+    // last token is not toToken
+    vm.expectRevert(abi.encodeWithSignature("PancakeV3Worker_InvalidParams()"));
+    worker.setCakeToTokenPath(address(1234), abi.encodePacked(address(cake), uint24(2500), address(0)));
+  }
+
+  function testCorrectness_SetCakeToTokenPath() public {
+    worker.setCakeToTokenPath(address(1234), abi.encodePacked(address(cake), uint24(2500), address(1234)));
+    assertEq(worker.cakeToTokenPath(address(1234)), abi.encodePacked(address(cake), uint24(2500), address(1234)));
+  }
 }

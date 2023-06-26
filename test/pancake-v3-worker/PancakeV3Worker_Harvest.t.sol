@@ -74,15 +74,12 @@ contract PancakeV3WorkerHarvestTest is PancakeV3WorkerFixture {
     uint256 _swapAmount = _harvestAmount - _cakeToBucket;
 
     cake.approve(address(pancakeV3Router), _swapAmount);
-    uint256 _token1SwapAmountOut = pancakeV3Router.exactInputSingle(
-      IPancakeV3Router.ExactInputSingleParams({
-        tokenIn: address(cake),
-        tokenOut: address(token1),
-        fee: poolFee,
+    uint256 _token1SwapAmountOut = pancakeV3Router.exactInput(
+      IPancakeV3Router.ExactInputParams({
+        path: worker.cakeToTokenPath(address(token1)),
         recipient: address(worker),
         amountIn: _swapAmount,
-        amountOutMinimum: 0,
-        sqrtPriceLimitX96: 0
+        amountOutMinimum: 0
       })
     );
     vm.stopPrank();

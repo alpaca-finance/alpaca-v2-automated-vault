@@ -32,6 +32,7 @@ contract BaseScript is Script {
   // Tokens
   address internal wbnb;
   address internal usdt;
+  address internal cake;
 
   // Pancake v3 pools
   address internal pancakeV3USDTWBNB500Pool;
@@ -56,6 +57,7 @@ contract BaseScript is Script {
     // Tokens
     wbnb = abi.decode(configJson.parseRaw(".tokens.wbnb"), (address));
     usdt = abi.decode(configJson.parseRaw(".tokens.usdt"), (address));
+    cake = abi.decode(configJson.parseRaw(".tokens.cake"), (address));
     // Pancake v3 pools
     pancakeV3USDTWBNB500Pool =
       abi.decode(configJson.parseRaw(".dependencies.pancake-v3.pools.usdt-wbnb-500"), (address));
