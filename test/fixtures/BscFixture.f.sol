@@ -35,6 +35,8 @@ contract BscFixture is Test {
   ICommonV3Pool public constant pancakeV3USDTWBNBPool = ICommonV3Pool(0x36696169C63e42cd08ce11f5deeBbCeBae652050);
   // token0 = DOGE, token1 = WBNB, fee = 2500
   ICommonV3Pool public constant pancakeV3DOGEWBNBPool = ICommonV3Pool(0xce6160bB594fC055c943F59De92ceE30b8c6B32c);
+  // token0 = CAKE, token1 = USDT, fee = 2500
+  ICommonV3Pool public constant pancakeV3CAKEUSDTPool = ICommonV3Pool(0x7f51c8AaA6B0599aBd16674e2b17FEc7a9f674A1);
 
   // Zap
   IZapV3 public constant zapV3 = IZapV3(0xC462E9a70b16009d63fE9dFe701cA5bf70cBCb55);
