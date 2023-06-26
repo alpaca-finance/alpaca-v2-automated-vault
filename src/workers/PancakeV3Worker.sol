@@ -521,7 +521,8 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
 
       if (_tokenOut != address(_cake)) {
         IPancakeV3Router _router = router;
-        uint256 _swapAmount = _cake.balanceOf(address(this));
+        // Swap reward after fee to token0 or token1
+        uint256 _swapAmount = _cakeRewards - _cachedFee;
         _cake.safeApprove(address(_router), _swapAmount);
         // Swap CAKE for token0 or token1 based on predefined v3 path
         _router.exactInput(
