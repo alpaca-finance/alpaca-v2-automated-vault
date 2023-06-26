@@ -190,12 +190,15 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
         deadline: block.timestamp
       })
     );
+
+    // Update token id
+    nftTokenId = _nftTokenId;
+    
     // Stake to PancakeMasterChefV3
     // NOTE: masterChef won't accept transfer from nft that associate with pool that doesn't have masterChef pid
     // aka no CAKE reward
     _nftPositionManager.safeTransferFrom(address(this), address(masterChef), _nftTokenId);
-    // Update token id
-    nftTokenId = _nftTokenId;
+    
 
     // Update worker ticks config
     posTickLower = _tickLower;
