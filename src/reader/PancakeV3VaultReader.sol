@@ -76,7 +76,7 @@ contract PancakeV3VaultReader is IVaultReader {
   function getVaultSharePrice(address _vaultToken)
     external
     view
-    returns (uint256 _sharePrice, uint256 _sharePriceWithMangementFee)
+    returns (uint256 _sharePrice, uint256 _sharePriceWithManagementFee)
   {
     VaultSummary memory _vautlSummary = getVaultSummary(_vaultToken);
 
@@ -115,7 +115,7 @@ contract PancakeV3VaultReader is IVaultReader {
 
     // Return value
     _sharePrice = _totalEquity * 1e18 / _vaultTotalSupply;
-    _sharePriceWithMangementFee = _totalEquity * 1e18 / (_vaultTotalSupply + _pendingManagementFee);
+    _sharePriceWithManagementFee = _totalEquity * 1e18 / (_vaultTotalSupply + _pendingManagementFee);
   }
 
   struct FeeParams {
