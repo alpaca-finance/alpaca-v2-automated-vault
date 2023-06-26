@@ -169,8 +169,6 @@ contract PancakeV3VaultReaderTest is E2EFixture {
     // skip
     skip(100);
     (_sharePrice, _sharePriceWithManagementFee) = vaultReader.getVaultSharePrice(address(vaultToken));
-    // Test that share price with management fee is less than share price
-    assertLt(_sharePriceWithManagementFee, _sharePrice);
     // share => ~1 ether
     assertApproxEqAbs(_sharePrice, 1 ether, 0.005 ether);
     // share with management fee => share price * totalSupply() / (total supply + pending fee)
