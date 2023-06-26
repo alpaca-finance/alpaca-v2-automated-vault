@@ -122,6 +122,7 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
           vaultOracle: address(pancakeV3VaultOracle),
           executor: address(pancakeV3Executor),
           minimumDeposit: MIN_DEPOSIT,
+          capacity: type(uint256).max,
           managementFeePerSec: MANAGEMENT_FEE_PER_SEC,
           withdrawalFeeBps: WITHDRAWAL_FEE,
           toleranceBps: TOLERANCE_BPS,

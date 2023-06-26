@@ -65,6 +65,7 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
         vaultOracle: address(mockVaultOracleAndExecutor),
         executor: address(mockVaultOracleAndExecutor),
         minimumDeposit: minimumDeposit,
+        capacity: type(uint256).max,
         managementFeePerSec: managementFeePerSec,
         withdrawalFeeBps: 0,
         toleranceBps: toleranceBps,

@@ -36,6 +36,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   error AutomatedVaultManager_TooLittleReceived();
   error AutomatedVaultManager_TokenNotAllowed();
   error AutomatedVaultManager_InvalidParams();
+  error AutomatedVaultManager_ExceedCapacity();
 
   struct TokenAmount {
     address token;
@@ -47,6 +48,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     address vaultOracle;
     address executor;
     uint256 minimumDeposit;
+    uint256 capacity;
     uint256 managementFeePerSec;
     uint16 withdrawalFeeBps;
     uint16 toleranceBps; // acceptable bps of equity deceased after it was manipulated
@@ -172,8 +174,11 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
 
     uint256 _equityChanged;
     {
-      (uint256 _totalEquityAfter,) =
+      (uint256 _totalEquityAfter, uint256 _debtAfter) =
         IVaultOracle(_cachedVaultInfo.vaultOracle).getEquityAndDebt(_vaultToken, _cachedVaultInfo.worker);
+      if (_totalEquityAfter + _debtAfter > _cachedVaultInfo.capacity) {
+        revert AutomatedVaultManager_ExceedCapacity();
+      }
       _equityChanged = _totalEquityAfter - _totalEquityBefore;
     }
 

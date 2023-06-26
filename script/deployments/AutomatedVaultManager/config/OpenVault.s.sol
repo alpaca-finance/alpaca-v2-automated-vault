@@ -16,6 +16,7 @@ contract DeployAutomatedVaultManagerScript is BaseScript {
       vaultOracle: 0x42f3A6c5e555a83F00208340b60aE2643CE90a62,
       executor: 0xd8BD07eDFd276AA23EB4B6806C904728B4C7DCb3,
       minimumDeposit: 1 ether,
+      capacity: type(uint256).max,
       managementFeePerSec: 0,
       withdrawalFeeBps: 0,
       toleranceBps: 9500,
