@@ -31,6 +31,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: minimumDeposit,
+        capacity: type(uint256).max,
         managementFeePerSec: managementFeePerSec,
         withdrawalFeeBps: 0,
         toleranceBps: toleranceBps,
@@ -44,6 +45,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
       address vaultWorkerOracle,
       address vaultExecutor,
       uint256 vaultMinimumDeposit,
+      uint256 vaultCapacity,
       uint256 vaultFeePerSec,
       uint16 vaultWithdrawalFeeBps,
       uint16 vaultToleranceBps,
@@ -55,6 +57,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
     assertEq(vaultToleranceBps, toleranceBps);
     assertEq(vaultMaxLeverage, maxLeverage);
     assertEq(vaultMinimumDeposit, minimumDeposit);
+    assertEq(vaultCapacity, type(uint256).max);
     assertEq(vaultFeePerSec, managementFeePerSec);
     assertEq(vaultWithdrawalFeeBps, 0);
     assertEq(vaultManager.workerExisted(worker), true);
@@ -74,6 +77,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 100 ether,
+        capacity: type(uint256).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
@@ -94,6 +98,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 0.1 ether,
+        capacity: type(uint256).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
@@ -110,6 +115,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 1 ether,
+        capacity: type(uint256).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 1,
@@ -126,6 +132,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 1 ether,
+        capacity: type(uint256).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
@@ -144,6 +151,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 1 ether,
+        capacity: type(uint256).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
@@ -163,6 +171,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 1 ether,
+        capacity: type(uint256).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
@@ -181,6 +190,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 1 ether,
+        capacity: type(uint256).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
@@ -199,6 +209,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 1 ether,
+        capacity: type(uint256).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
@@ -215,6 +226,7 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
         vaultOracle: vaultOracle,
         executor: executor,
         minimumDeposit: 1 ether,
+        capacity: type(uint256).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,

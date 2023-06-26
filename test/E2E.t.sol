@@ -90,7 +90,7 @@ contract E2ETest is E2EFixture {
       assertApproxEqRel(equityBefore * totalSharesAfter / totalSharesBefore, equityAfter, 2, "equity decreased");
     }
 
-    (,,,,, uint256 withdrawalFeeBps,,) = vaultManager.vaultInfos(address(vaultToken));
+    (,,,,,, uint256 withdrawalFeeBps,,) = vaultManager.vaultInfos(address(vaultToken));
     uint256 expectedShare = withdrawAmount * withdrawalFeeBps / MAX_BPS;
 
     // expect that withdrawal fee must be collected (if it's set)
