@@ -74,7 +74,11 @@ contract VaultReader is IVaultReader {
     _price = LibSqrtPriceX96.decodeSqrtPriceX96(_sqrtPriceX96, _token0Decimals, _token1Decimals);
   }
 
-  function getVaultSharePrice(address _vaultToken) external view returns (uint256 _sharePrice) {
+  function getVaultSharePrice(address _vaultToken)
+    external
+    view
+    returns (uint256 _sharePrice, uint256 _sharePriceWithMangementFee)
+  {
     VaultSummary memory _vautlSummary = getVaultSummary(_vaultToken);
 
     (address _worker,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
@@ -102,8 +106,13 @@ contract VaultReader is IVaultReader {
     uint256 _token1DebtValue = _vautlSummary.token1Debt * _vautlSummary.token1price / 1e18;
     uint256 _totalEquity =
       _token0PositionValue + _token1PositionValue + _cakeEquity - _token0DebtValue - _token1DebtValue;
-    _sharePrice = _totalEquity * 1e18 / ERC20(_vaultToken).totalSupply();
-    return _sharePrice;
+
+    uint256 _vaultTotalSupply = ERC20(_vaultToken).totalSupply();
+    uint256 _pendingManagementFee = automatedVaultManager.pendingManagementFee(_vaultToken);
+
+    // Return value
+    _sharePrice = _totalEquity * 1e18 / _vaultTotalSupply;
+    _sharePriceWithMangementFee = _totalEquity * 1e18 / (_vaultTotalSupply + _pendingManagementFee);
   }
 
   struct FeeParams {
