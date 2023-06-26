@@ -20,8 +20,7 @@ import { LibFixedPoint128 } from "src/libraries/LibFixedPoint128.sol";
 
 import { IVaultReader } from "src/interfaces/IVaultReader.sol";
 
-// TODO: rename to PancakeV3VaultReader?
-contract VaultReader is IVaultReader {
+contract PancakeV3VaultReader is IVaultReader {
   AutomatedVaultManager internal immutable automatedVaultManager;
   PancakeV3VaultOracle internal immutable pancakeV3VaultOracle;
   Bank internal immutable bank;

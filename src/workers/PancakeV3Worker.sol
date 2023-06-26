@@ -112,7 +112,8 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
 
     // Validate params
-    if (_params.tradingPerformanceFeeBps > MAX_BPS || _params.rewardPerformanceFeeBps > MAX_BPS) {
+    // performance fee should not be more than 30%
+    if (_params.tradingPerformanceFeeBps > 3000 || _params.rewardPerformanceFeeBps > 3000) {
       revert PancakeV3Worker_InvalidParams();
     }
     if (_params.performanceFeeBucket == address(0)) {
@@ -189,12 +190,15 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
         deadline: block.timestamp
       })
     );
+
+    // Update token id
+    nftTokenId = _nftTokenId;
+    
     // Stake to PancakeMasterChefV3
     // NOTE: masterChef won't accept transfer from nft that associate with pool that doesn't have masterChef pid
     // aka no CAKE reward
     _nftPositionManager.safeTransferFrom(address(this), address(masterChef), _nftTokenId);
-    // Update token id
-    nftTokenId = _nftTokenId;
+    
 
     // Update worker ticks config
     posTickLower = _tickLower;
@@ -422,6 +426,9 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     internal
     returns (uint256 _amount0, uint256 _amount1)
   {
+    // claim all rewards accrued before removing liquidity from LP
+    _harvest();
+
     _masterChef.decreaseLiquidity(
       IPancakeV3MasterChef.DecreaseLiquidityParams({
         tokenId: _nftTokenId,
@@ -546,7 +553,8 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   /// =================
 
   function setTradingPerformanceFee(uint16 _newTradingPerformanceFeeBps) external onlyOwner {
-    if (_newTradingPerformanceFeeBps > MAX_BPS) {
+    // performance fee should not be more than 30%
+    if (_newTradingPerformanceFeeBps > 3000) {
       revert PancakeV3Worker_InvalidParams();
     }
     emit LogSetTradingPerformanceFee(tradingPerformanceFeeBps, _newTradingPerformanceFeeBps);
@@ -554,7 +562,8 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   }
 
   function setRewardPerformanceFee(uint16 _newRewardPerformanceFeeBps) external onlyOwner {
-    if (_newRewardPerformanceFeeBps > MAX_BPS) {
+    // performance fee should not be more than 30%
+    if (_newRewardPerformanceFeeBps > 3000) {
       revert PancakeV3Worker_InvalidParams();
     }
     emit LogSetRewardPerformanceFee(rewardPerformanceFeeBps, _newRewardPerformanceFeeBps);

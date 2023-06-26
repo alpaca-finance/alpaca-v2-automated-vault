@@ -2,17 +2,17 @@
 pragma solidity 0.8.19;
 
 import "../fixtures/E2EFixture.f.sol";
-import { VaultReader, IVaultReader } from "src/reader/VaultReader.sol";
+import { PancakeV3VaultReader, IVaultReader } from "src/reader/PancakeV3VaultReader.sol";
 import { LibTickMath } from "src/libraries/LibTickMath.sol";
 import { LibSqrtPriceX96 } from "src/libraries/LibSqrtPriceX96.sol";
 import { LibLiquidityAmounts } from "src/libraries/LibLiquidityAmounts.sol";
 
-contract VaultReaderTest is E2EFixture {
-  VaultReader vaultReader;
+contract PancakeV3VaultReaderTest is E2EFixture {
+  PancakeV3VaultReader vaultReader;
   uint256 constant MAX_BPS = 10000;
 
   constructor() E2EFixture() {
-    vaultReader = new VaultReader(address(vaultManager), address(bank), address(pancakeV3VaultOracle));
+    vaultReader = new PancakeV3VaultReader(address(vaultManager), address(bank), address(pancakeV3VaultOracle));
   }
 
   function _swapExactInput(address tokenIn_, address tokenOut_, uint24 fee_, uint256 swapAmount) internal {

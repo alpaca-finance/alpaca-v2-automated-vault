@@ -2,16 +2,16 @@
 pragma solidity 0.8.19;
 
 import "script/BaseScript.sol";
-import { VaultReader } from "src/reader/VaultReader.sol";
+import { PancakeV3VaultReader } from "src/reader/PancakeV3VaultReader.sol";
 
-contract VaultReaderScript is BaseScript {
+contract DeployPancakeV3VaultReaderScript is BaseScript {
   function run() public {
     vm.startBroadcast(deployerPrivateKey);
 
-    address vaultReader = address(new VaultReader(automatedVaultManager, bank, pancakeV3VaultOracle));
+    address _vaultReader = address(new PancakeV3VaultReader(automatedVaultManager, bank, pancakeV3VaultOracle));
 
     vm.stopBroadcast();
 
-    _writeJson(vm.toString(vaultReader), ".automatedVault.vaultReader");
+    _writeJson(vm.toString(_vaultReader), ".automatedVault.vaultReader");
   }
 }

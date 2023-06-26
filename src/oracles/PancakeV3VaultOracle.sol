@@ -42,6 +42,9 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
     external
     initializer
   {
+    if (_maxPriceDiff < MAX_BPS) {
+      revert PancakeV3VaultOracle_InvalidParams();
+    }
     Ownable2StepUpgradeable.__Ownable2Step_init();
 
     positionManager = ICommonV3PositionManager(_positionManager);
