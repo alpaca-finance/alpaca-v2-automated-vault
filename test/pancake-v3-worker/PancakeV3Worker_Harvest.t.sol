@@ -43,6 +43,8 @@ contract PancakeV3WorkerHarvestTest is PancakeV3WorkerFixture {
     // Increase position by 10_000 TKN0 and 1 TKN1
     deal(address(token0), address(worker), 10_000 ether);
     deal(address(token1), address(worker), 1 ether);
+    // Assume worker somehow has cake left to test swap
+    deal(address(cake), address(worker), 1 ether);
     vm.prank(IN_SCOPE_EXECUTOR);
     worker.openPosition(TICK_LOWER, TICK_UPPER, 10_000 ether, 1 ether);
 
@@ -97,6 +99,7 @@ contract PancakeV3WorkerHarvestTest is PancakeV3WorkerFixture {
     // Assert worker Balance
     assertEq(token0.balanceOf(address(worker)), _token0CollectAmount - _token0ToBucket);
     assertEq(token1.balanceOf(address(worker)), _token1CollectAmount + _token1SwapAmountOut - _token1ToBucket);
-    assertEq(cake.balanceOf(address(worker)), 0);
+    // Invariant: Cake after harvest should remain the same
+    assertEq(cake.balanceOf(address(worker)), 1 ether);
   }
 }
