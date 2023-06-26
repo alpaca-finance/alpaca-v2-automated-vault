@@ -98,7 +98,7 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     // Add to borrowed token set
     // EnumerableSet already check for duplicate element
     vaultDebtTokens[_vaultToken].add(_token);
-    
+
     // Safe to use unchecked since amount that would cause an overflow
     // would revert on borrow or transfer anyway
     unchecked {
@@ -132,6 +132,10 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
       _debtSharesToDecrease = _cachedVaultDebtShares;
       // Round up in protocol favor: repay more
       _amount = _debtSharesToDecrease.shareToValueRoundingUp(_cachedMMDebt, _cachedTokenDebtShares);
+      // Cap to actual debt, could happen when round up
+      if (_amount > _cachedMMDebt) {
+        _amount = _cachedMMDebt;
+      }
     }
 
     // Transfer capped amount
