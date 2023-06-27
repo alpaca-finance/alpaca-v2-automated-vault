@@ -36,7 +36,7 @@ contract PCSV3Executor01 is Executor {
     uint256 _amount1AfterRepay
   );
   event LogOnUpdate(address _vaultToken, address _worker);
-  event LogSweepToWorker(address _vaultToken, address _token, uint256 _amount);
+  event LogSweepToWorker(address _token, uint256 _amount);
   event LogIncreasePosition(address _vaultToken, address _worker, uint256 _amountIn0, uint256 _amountIn1);
   event LogOpenPosition(
     address _vaultToken, address _worker, int24 _tickLower, int24 _tickUpper, uint256 _amountIn0, uint256 _amountIn1
@@ -49,13 +49,12 @@ contract PCSV3Executor01 is Executor {
   event LogRepay(address _vaultToken, address _token, uint256 _amount);
   event LogPancakeV3SwapExactInputSingle(address _vaultToken, address _worker, bool _zeroForOne, uint256 _amountIn);
 
-  function onDeposit(address _worker, address /* _vaultToken */ )
+  function onDeposit(address _worker, address _vaultToken)
     external
     override
     onlyVaultManager
     returns (bytes memory _result)
   {
-    address _vaultToken = _getCurrentVaultToken();
     ERC20 _token0 = PancakeV3Worker(_worker).token0();
     ERC20 _token1 = PancakeV3Worker(_worker).token1();
     uint256 _amountIn0 = _token0.balanceOf(address(this));
@@ -188,22 +187,21 @@ contract PCSV3Executor01 is Executor {
   {
     bank.accrueInterest(_vaultToken);
     PancakeV3Worker(_worker).harvest();
-    emit LogOnUpdate(_worker, _vaultToken);
+    emit LogOnUpdate(_vaultToken, _worker);
   }
 
   function sweepToWorker() external override onlyVaultManager {
     address _worker = _getCurrentWorker();
-    address _vaultToken = _getCurrentVaultToken();
     ICommonV3Pool _pool = PancakeV3Worker(_worker).pool();
-    _sweepTo(_vaultToken, ERC20(_pool.token0()), _worker);
-    _sweepTo(_vaultToken, ERC20(_pool.token1()), _worker);
+    _sweepTo(ERC20(_pool.token0()), _worker);
+    _sweepTo(ERC20(_pool.token1()), _worker);
   }
 
-  function _sweepTo(address _vaultToken, ERC20 _token, address _to) internal {
+  function _sweepTo(ERC20 _token, address _to) internal {
     uint256 _balance = _token.balanceOf(address(this));
     if (_balance != 0) {
       _token.safeTransfer(_to, _balance);
-      emit LogSweepToWorker(_vaultToken, address(_token), _balance);
+      emit LogSweepToWorker(address(_token), _balance);
     }
   }
 
