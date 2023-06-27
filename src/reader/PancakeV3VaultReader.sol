@@ -35,7 +35,7 @@ contract PancakeV3VaultReader is IVaultReader {
 
   function getVaultSummary(address _vaultToken) public view returns (VaultSummary memory _vaultSummary) {
     // prerequisites
-    (address _worker,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
+    (address _worker,,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
     ERC20 _token0 = PancakeV3Worker(_worker).token0();
     ERC20 _token1 = PancakeV3Worker(_worker).token1();
     uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
