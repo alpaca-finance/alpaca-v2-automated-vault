@@ -179,12 +179,4 @@ contract PancakeV3VaultReaderTest is E2EFixture {
       0.005 ether
     );
   }
-
-  function testReader() public {
-    vm.createSelectFork("local");
-    vaultReader =
-    new PancakeV3VaultReader(0x356B7e738592235Da0593F0E652C34278972C3F7, 0x4e7C950b87999a42cA63cc5492d52F93e28e5351, 0x42f3A6c5e555a83F00208340b60aE2643CE90a62);
-    (uint256 sharePrice,) = vaultReader.getVaultSharePrice(0x5dc672d3528535a97173AeD4671ccd2E5f627e44);
-    console.log(sharePrice);
-  }
 }
