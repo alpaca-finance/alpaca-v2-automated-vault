@@ -16,4 +16,9 @@ interface IVaultReader {
   }
 
   function getVaultSummary(address vaultToken) external view returns (VaultSummary memory);
+
+  function getVaultSharePrice(address _vaultToken)
+    external
+    view
+    returns (uint256 _sharePrice, uint256 _sharePriceWithManagementFee);
 }

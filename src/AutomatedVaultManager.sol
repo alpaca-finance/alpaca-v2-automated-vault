@@ -113,6 +113,10 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     withdrawalFeeTreasury = _withdrawalFeeTreasury;
   }
 
+  /// @notice Calculate pending management fee
+  /// @dev Return as share amount
+  /// @param _vaultToken an address of vault token
+  /// @return _pendingFee an amount of share pending for minting as a form of management fee
   function pendingManagementFee(address _vaultToken) public view returns (uint256 _pendingFee) {
     uint256 _lastCollectedFee = vaultFeeLastCollectedAt[_vaultToken];
 

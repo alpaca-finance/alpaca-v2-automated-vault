@@ -14,7 +14,7 @@ abstract contract BaseOracle is Ownable2StepUpgradeable {
 
   /// Errors
   error BaseOracle_PriceTooOld();
-  error BaseOracle_NegativePrice();
+  error BaseOracle_InvalidPrice();
 
   /// Events
   event LogSetMaxPriceAge(uint16 prevMaxPriceAge, uint16 maxPriceAge);
@@ -56,8 +56,8 @@ abstract contract BaseOracle is Ownable2StepUpgradeable {
         revert BaseOracle_PriceTooOld();
       }
     }
-    if (_answer < 0) {
-      revert BaseOracle_NegativePrice();
+    if (_answer <= 0) {
+      revert BaseOracle_InvalidPrice();
     }
     // Normalize to 18 decimals
     return _answer.toUint256() * (10 ** (18 - _priceFeed.decimals()));
