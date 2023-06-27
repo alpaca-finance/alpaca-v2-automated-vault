@@ -84,7 +84,7 @@ contract PancakeV3VaultReader is IVaultReader {
 
     // Stack too deep
     {
-      (address _worker,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
+      (address _worker,,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
       uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
 
       // Find pending cake equity
