@@ -45,11 +45,11 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
       address vaultWorkerOracle,
       address vaultExecutor,
       uint256 vaultMinimumDeposit,
-      uint256 vaultCapacity,
       uint256 vaultFeePerSec,
       uint16 vaultWithdrawalFeeBps,
       uint16 vaultToleranceBps,
-      uint8 vaultMaxLeverage
+      uint8 vaultMaxLeverage,
+      uint256 vaultCapacity
     ) = vaultManager.vaultInfos(vaultToken);
     assertEq(vaultWorker, worker);
     assertEq(vaultWorkerOracle, vaultOracle);
