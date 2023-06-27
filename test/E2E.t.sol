@@ -30,7 +30,7 @@ contract E2ETest is E2EFixture {
 
     AutomatedVaultManager.TokenAmount[] memory deposits = new AutomatedVaultManager.TokenAmount[](1);
     deposits[0] = AutomatedVaultManager.TokenAmount({ token: address(usdt), amount: amount });
-    vaultManager.deposit(address(vaultToken), deposits, 0);
+    vaultManager.deposit(depositor, address(vaultToken), deposits, 0);
     vm.stopPrank();
 
     // Assertions
@@ -116,7 +116,7 @@ contract E2ETest is E2EFixture {
     AutomatedVaultManager.TokenAmount[] memory deposits = new AutomatedVaultManager.TokenAmount[](1);
     deposits[0] = AutomatedVaultManager.TokenAmount({ token: address(usdt), amount: 1 ether });
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_TokenNotAllowed.selector);
-    vaultManager.deposit(address(vaultToken), deposits, 0);
+    vaultManager.deposit(address(this), address(vaultToken), deposits, 0);
   }
 
   function testRevert_Deposit_EquityIncreaseLessThanMinDeposit() public {
@@ -127,7 +127,7 @@ contract E2ETest is E2EFixture {
     AutomatedVaultManager.TokenAmount[] memory deposits = new AutomatedVaultManager.TokenAmount[](1);
     deposits[0] = AutomatedVaultManager.TokenAmount({ token: address(usdt), amount: 0.01 ether });
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_BelowMinimumDeposit.selector);
-    vaultManager.deposit(address(vaultToken), deposits, 0);
+    vaultManager.deposit(address(this), address(vaultToken), deposits, 0);
   }
 
   function testCorrectness_Withdraw_All_NoUndeployedFunds_OnlyInPosition() public {
