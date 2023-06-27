@@ -19,9 +19,8 @@ contract Gateway is Ownable {
 
   AutomatedVaultManager public vaultManager;
   IPancakeV3Router public router;
-  address public wNativeToken;
-  address public nativeRelayer;
-  address public wbnb;
+  address public wNativeToken = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+  address public nativeRelayer = 0xE1D2CA01bc88F325fF7266DD2165944f3CAf0D3D;
 
   constructor(address _vaultManager, address _router) {
     vaultManager = AutomatedVaultManager(_vaultManager);
@@ -55,10 +54,9 @@ contract Gateway is Ownable {
     returns (uint256 _amountOut)
   {
     // Validate first
-
     (address _worker,,,,,,,,) = vaultManager.vaultInfos(_vaultToken);
-    address _token0 = PancakeV3Worker(_worker).token0;
-    address _token1 = PancakeV3Worker(_worker).token1;
+    address _token0 = address(PancakeV3Worker(_worker).token0());
+    address _token1 = address(PancakeV3Worker(_worker).token1());
 
     // Revert if token out is not existing
     if (_tokenOut != _token0 && _tokenOut != _token1) {
@@ -69,7 +67,9 @@ contract Gateway is Ownable {
     ERC20(_vaultToken).safeTransferFrom(msg.sender, address(this), _shareToWithdraw);
 
     // withdraw
-    AutomatedVaultManager.TokenAmount[] memory _result = vaultManager.withdraw(_vaultToken, _shareToWithdraw, 0);
+    AutomatedVaultManager.TokenAmount[] memory _minAmountOuts;
+    AutomatedVaultManager.TokenAmount[] memory _result =
+      vaultManager.withdraw(_vaultToken, _shareToWithdraw, _minAmountOuts);
 
     // if token out is token0, then token in is token1
     address _tokenIn = _tokenOut == _token0 ? _token1 : _token0;
@@ -81,7 +81,7 @@ contract Gateway is Ownable {
       IPancakeV3Router.ExactInputSingleParams({
         tokenIn: _tokenIn,
         tokenOut: _tokenOut,
-        fee: PancakeV3Worker(_worker).poolFee,
+        fee: PancakeV3Worker(_worker).poolFee(),
         recipient: msg.sender,
         amountIn: _amountIn,
         amountOutMinimum: _minAmountOut,
@@ -96,11 +96,11 @@ contract Gateway is Ownable {
   {
     // Validate first
     (address _worker,,,,,,,,) = vaultManager.vaultInfos(_vaultToken);
-    address _token0 = PancakeV3Worker(_worker).token0;
-    address _token1 = PancakeV3Worker(_worker).token1;
+    address _token0 = address(PancakeV3Worker(_worker).token0());
+    address _token1 = address(PancakeV3Worker(_worker).token1());
 
     // Revert if token out is not existing
-    if (_token0 != wbnb && _token1 != wbnb) {
+    if (_token0 != wNativeToken && _token1 != wNativeToken) {
       revert Gateway_NativeIsNotExist();
     }
 
@@ -108,10 +108,12 @@ contract Gateway is Ownable {
     ERC20(_vaultToken).safeTransferFrom(msg.sender, address(this), _shareToWithdraw);
 
     // withdraw
-    AutomatedVaultManager.TokenAmount[] memory _result = vaultManager.withdraw(_vaultToken, _shareToWithdraw, 0);
+    AutomatedVaultManager.TokenAmount[] memory _minAmountOuts;
+    AutomatedVaultManager.TokenAmount[] memory _result =
+      vaultManager.withdraw(_vaultToken, _shareToWithdraw, _minAmountOuts);
 
-    // if token0 is wbnb, then token in is token1
-    address _tokenIn = _token0 == wbnb ? _token1 : _token0;
+    // if token0 is wNativeToken, then token in is token1
+    address _tokenIn = _token0 == wNativeToken ? _token1 : _token0;
     // if token in is token0, then amount in is amount0
     uint256 _amountIn = _tokenIn == _token0 ? _result[0].amount : _result[1].amount;
 
@@ -119,8 +121,8 @@ contract Gateway is Ownable {
     _amountOut = router.exactInputSingle(
       IPancakeV3Router.ExactInputSingleParams({
         tokenIn: _tokenIn,
-        tokenOut: wbnb,
-        fee: PancakeV3Worker(_worker).poolFee,
+        tokenOut: wNativeToken,
+        fee: PancakeV3Worker(_worker).poolFee(),
         recipient: address(this),
         amountIn: _amountIn,
         amountOutMinimum: _minAmountOut,
