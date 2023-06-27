@@ -4,32 +4,33 @@ pragma solidity 0.8.19;
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 import { ERC20 } from "@solmate/tokens/ERC20.sol";
-import { IERC20 } from "src/interfaces/IERC20.sol";
 import { SafeTransferLib } from "@solmate/utils/SafeTransferLib.sol";
-import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
+import { IPancakeV3Router } from "src/interfaces/pancake-v3/IPancakeV3Router.sol";
 import { IWNative } from "lib/alpaca-v2-money-market/solidity/contracts/interfaces/IWNative.sol";
+import { IWNativeRelayer } from "lib/alpaca-v2-money-market/solidity/contracts/interfaces/IWNativeRelayer.sol";
 import { Ownable } from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 
 contract Gateway is Ownable {
   using SafeTransferLib for ERC20;
 
+  error Gateway_InvalidAmount();
+  error Gateway_InvalidTokenOut();
+  error Gateway_NativeIsNotExist();
+
   AutomatedVaultManager public vaultManager;
   IPancakeV3Router public router;
+  address public wNativeToken;
+  address public nativeRelayer;
+  address public wbnb;
 
-  constructor(address _vaultManager, _router) {
+  constructor(address _vaultManager, address _router) {
     vaultManager = AutomatedVaultManager(_vaultManager);
     router = IPancakeV3Router(_router);
   }
 
-  // function to call deposit when user given native
-  // - wrap native
-  // - deposit wrap to avm
-
-  error invalid_deposit();
-
   function deposit(address _vaultToken, address _token, uint256 _amount, uint256 _minReceived) external {
     // pull token
-    IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
+    ERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
 
     // build deposit params
     AutomatedVaultManager.TokenAmount[] memory _depositParams = _getDepositParams(_token, _amount);
@@ -37,60 +38,104 @@ contract Gateway is Ownable {
   }
 
   function depositETH(address _vaultToken, uint256 _minReceived) external payable {
-    if (msg.value <= 0) {
-      revert invalid_deposit();
+    if (msg.value == 0) {
+      revert Gateway_InvalidAmount();
     }
     // convert native to wrap
-    IWNative(wNative).deposit{ value: msg.value }();
+    IWNative(wNativeToken).deposit{ value: msg.value }();
 
     // build deposit params
-    AutomatedVaultManager.TokenAmount[] memory _depositParams = _getDepositParams(wNative, msg.value);
+    AutomatedVaultManager.TokenAmount[] memory _depositParams = _getDepositParams(wNativeToken, msg.value);
     // deposit (check slippage inside here)
     vaultManager.deposit(msg.sender, _vaultToken, _depositParams, _minReceived);
   }
 
-  // TODO: specific token out
-  function withdrawSingleAsset(address _vaultToken, uint256 _shareToWithdraw, uint256 _minAmountOut, bool flag)
+  function withdrawSingleAsset(address _vaultToken, uint256 _shareToWithdraw, uint256 _minAmountOut, address _tokenOut)
     external
     returns (uint256 _amountOut)
   {
-    // pull token
-    IERC20(_vaultToken).safeTransferFrom(msg.sender, address(this), _shareToWithdraw);
+    // Validate first
 
     (address _worker,,,,,,,,) = vaultManager.vaultInfos(_vaultToken);
+    address _token0 = PancakeV3Worker(_worker).token0;
+    address _token1 = PancakeV3Worker(_worker).token1;
 
-    ERC20 _token0 = PancakeV3Worker(_worker).token0;
-    ERC20 _token1 = PancakeV3Worker(_worker).token1;
-    uint24 _poolFee = PancakeV3Worker(_worker).poolFee;
-    // withdraw
-    AutomatedVaultManager.TokenAmount memory _result = vaultManager.withdraw(_vaultToken, _shareToWithdraw, 0);
-    // convert token1 => token0
-
-    if (flag) {
-      _amountOut = router.exactInputSingle(
-        IPancakeV3Router.ExactInputSingleParams({
-          tokenIn: address(_token1),
-          tokenOut: address(_token0),
-          fee: _poolFee,
-          recipient: msg.sender,
-          amountIn: _result[1].amount,
-          amountOutMinimum: _minAmountOut,
-          sqrtPriceLimitX96: 0
-        })
-      );
-    } else {
-      _amountOut = router.exactInputSingle(
-        IPancakeV3Router.ExactInputSingleParams({
-          tokenIn: address(_token0),
-          tokenOut: address(_token1),
-          fee: _poolFee,
-          recipient: msg.sender,
-          amountIn: _result[0].amount,
-          amountOutMinimum: _minAmountOut,
-          sqrtPriceLimitX96: 0
-        })
-      );
+    // Revert if token out is not existing
+    if (_tokenOut != _token0 && _tokenOut != _token1) {
+      revert Gateway_InvalidTokenOut();
     }
+
+    // pull token
+    ERC20(_vaultToken).safeTransferFrom(msg.sender, address(this), _shareToWithdraw);
+
+    // withdraw
+    AutomatedVaultManager.TokenAmount[] memory _result = vaultManager.withdraw(_vaultToken, _shareToWithdraw, 0);
+
+    // if token out is token0, then token in is token1
+    address _tokenIn = _tokenOut == _token0 ? _token1 : _token0;
+    // if token in is token0, then amount in is amount0
+    uint256 _amountIn = _tokenIn == _token0 ? _result[0].amount : _result[1].amount;
+
+    // send token directly to user
+    _amountOut = router.exactInputSingle(
+      IPancakeV3Router.ExactInputSingleParams({
+        tokenIn: _tokenIn,
+        tokenOut: _tokenOut,
+        fee: PancakeV3Worker(_worker).poolFee,
+        recipient: msg.sender,
+        amountIn: _amountIn,
+        amountOutMinimum: _minAmountOut,
+        sqrtPriceLimitX96: 0
+      })
+    );
+  }
+
+  function withdrawETH(address _vaultToken, uint256 _shareToWithdraw, uint256 _minAmountOut)
+    external
+    returns (uint256 _amountOut)
+  {
+    // Validate first
+    (address _worker,,,,,,,,) = vaultManager.vaultInfos(_vaultToken);
+    address _token0 = PancakeV3Worker(_worker).token0;
+    address _token1 = PancakeV3Worker(_worker).token1;
+
+    // Revert if token out is not existing
+    if (_token0 != wbnb && _token1 != wbnb) {
+      revert Gateway_NativeIsNotExist();
+    }
+
+    // pull token
+    ERC20(_vaultToken).safeTransferFrom(msg.sender, address(this), _shareToWithdraw);
+
+    // withdraw
+    AutomatedVaultManager.TokenAmount[] memory _result = vaultManager.withdraw(_vaultToken, _shareToWithdraw, 0);
+
+    // if token0 is wbnb, then token in is token1
+    address _tokenIn = _token0 == wbnb ? _token1 : _token0;
+    // if token in is token0, then amount in is amount0
+    uint256 _amountIn = _tokenIn == _token0 ? _result[0].amount : _result[1].amount;
+
+    // send wrap to this contract
+    _amountOut = router.exactInputSingle(
+      IPancakeV3Router.ExactInputSingleParams({
+        tokenIn: _tokenIn,
+        tokenOut: wbnb,
+        fee: PancakeV3Worker(_worker).poolFee,
+        recipient: address(this),
+        amountIn: _amountIn,
+        amountOutMinimum: _minAmountOut,
+        sqrtPriceLimitX96: 0
+      })
+    );
+
+    // unwrap and send to msg.sender
+    _safeUnwrap(msg.sender, _amountOut);
+  }
+
+  function _safeUnwrap(address _to, uint256 _amount) internal {
+    ERC20(wNativeToken).safeTransfer(nativeRelayer, _amount);
+    IWNativeRelayer(nativeRelayer).withdraw(_amount);
+    SafeTransferLib.safeTransferETH(_to, _amount);
   }
 
   function _getDepositParams(address _token, uint256 _amount)
@@ -113,7 +158,7 @@ contract Gateway is Ownable {
   }
 
   function _withdraw(address _to, address _token) internal {
-    IERC20(_token).safeTransfer(_to, IERC20(_token).balanceOf(address(this)));
+    ERC20(_token).safeTransfer(_to, ERC20(_token).balanceOf(address(this)));
   }
 
   receive() external payable { }
