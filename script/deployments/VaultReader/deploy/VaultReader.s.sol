@@ -12,6 +12,6 @@ contract DeployPancakeV3VaultReaderScript is BaseScript {
 
     vm.stopBroadcast();
 
-    _writeJson(vm.toString(_vaultReader), ".automatedVault.vaultReader");
+    _writeJson(vm.toString(_vaultReader), ".automatedVault.pancake-v3-vault.pancakeV3VaultReader");
   }
 }
