@@ -149,12 +149,34 @@ contract PancakeV3VaultReaderTest is E2EFixture {
       vaultManager.manage(address(vaultToken), executorData);
     }
 
+    // Case 1: Test simple share price, share price with management fee
+    (uint256 _sharePrice, uint256 _sharePriceWithManagementFee) = vaultReader.getVaultSharePrice(address(vaultToken));
     // share price should be around 1 since we haven't done anything beside opening position
-    assertApproxEqAbs(vaultReader.getVaultSharePrice(address(vaultToken)), 1 ether, 0.005 ether);
+    assertApproxEqAbs(_sharePrice, 1 ether, 0.005 ether);
+    // Share price with management fee should be equal to share price, since we haven't set it yet
+    assertEq(_sharePriceWithManagementFee, _sharePrice);
 
-    // push position out of range
+    // Case 2: Test share price, share price with management fee after push position out of range
     _swapExactInput(address(usdt), address(wbnb), 500, 1000000 ether);
+    (_sharePrice, _sharePriceWithManagementFee) = vaultReader.getVaultSharePrice(address(vaultToken));
+    assertApproxEqAbs(_sharePrice, 1 ether, 0.005 ether);
+    assertEq(_sharePriceWithManagementFee, _sharePrice);
 
-    assertApproxEqAbs(vaultReader.getVaultSharePrice(address(vaultToken)), 1 ether, 0.005 ether);
+    // Case 3: Test share price with management fee after set management fee = 1 token / sec
+    // set rate = 1 token/sec
+    vm.prank(DEPLOYER);
+    vaultManager.setManagementFeePerSec(address(vaultToken), 1);
+    // skip
+    skip(100);
+    (_sharePrice, _sharePriceWithManagementFee) = vaultReader.getVaultSharePrice(address(vaultToken));
+    // share => ~1 ether
+    assertApproxEqAbs(_sharePrice, 1 ether, 0.005 ether);
+    // share with management fee => share price * totalSupply() / (total supply + pending fee)
+    assertApproxEqAbs(
+      _sharePriceWithManagementFee,
+      (_sharePrice * vaultToken.totalSupply())
+        / (vaultToken.totalSupply() + vaultManager.pendingManagementFee(address(vaultToken))),
+      0.005 ether
+    );
   }
 }

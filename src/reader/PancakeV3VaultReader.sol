@@ -73,36 +73,49 @@ contract PancakeV3VaultReader is IVaultReader {
     _price = LibSqrtPriceX96.decodeSqrtPriceX96(_sqrtPriceX96, _token0Decimals, _token1Decimals);
   }
 
-  function getVaultSharePrice(address _vaultToken) external view returns (uint256 _sharePrice) {
+  function getVaultSharePrice(address _vaultToken)
+    external
+    view
+    returns (uint256 _sharePrice, uint256 _sharePriceWithManagementFee)
+  {
     VaultSummary memory _vautlSummary = getVaultSummary(_vaultToken);
 
-    (address _worker,,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
-    uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
+    uint256 _totalEquity;
 
-    // Find pending cake equity
-    uint256 _cakeEquity;
+    // Stack too deep
     {
-      uint256 _pendingCake = IPancakeV3MasterChef(PancakeV3Worker(_worker).masterChef()).pendingCake(_tokenId);
-      (, int256 _cakePrice,,,) = cakePriceFeed.latestRoundData();
-      // cake price is 8 decimals, cake itself is 18 decimals
-      _cakeEquity = _pendingCake * uint256(_cakePrice) / 1e8;
+      (address _worker,,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
+      uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
+
+      // Find pending cake equity
+      uint256 _cakeEquity;
+      {
+        uint256 _pendingCake = IPancakeV3MasterChef(PancakeV3Worker(_worker).masterChef()).pendingCake(_tokenId);
+        (, int256 _cakePrice,,,) = cakePriceFeed.latestRoundData();
+        // cake price is 8 decimals, cake itself is 18 decimals
+        _cakeEquity = _pendingCake * uint256(_cakePrice) / 1e8;
+      }
+
+      // Find uncollected trading fee amount
+      (uint256 _token0TradingFee, uint256 _token1TradingFee) =
+        _getPositionFees(_tokenId, PancakeV3Worker(_worker).nftPositionManager(), PancakeV3Worker(_worker).pool());
+
+      // TODO: include pending interest after upgrade mm
+      uint256 _token0PositionValue = (_vautlSummary.token0Undeployed + _vautlSummary.token0Farmed + _token0TradingFee)
+        * _vautlSummary.token0price / 1e18;
+      uint256 _token0DebtValue = _vautlSummary.token0Debt * _vautlSummary.token0price / 1e18;
+      uint256 _token1PositionValue = (_vautlSummary.token1Undeployed + _vautlSummary.token1Farmed + _token1TradingFee)
+        * _vautlSummary.token1price / 1e18;
+      uint256 _token1DebtValue = _vautlSummary.token1Debt * _vautlSummary.token1price / 1e18;
+      _totalEquity = _token0PositionValue + _token1PositionValue + _cakeEquity - _token0DebtValue - _token1DebtValue;
     }
 
-    // Find uncollected trading fee amount
-    (uint256 _token0TradingFee, uint256 _token1TradingFee) =
-      _getPositionFees(_tokenId, PancakeV3Worker(_worker).nftPositionManager(), PancakeV3Worker(_worker).pool());
+    uint256 _vaultTotalSupply = ERC20(_vaultToken).totalSupply();
+    uint256 _pendingManagementFee = automatedVaultManager.pendingManagementFee(_vaultToken);
 
-    // TODO: include pending interest after upgrade mm
-    uint256 _token0PositionValue = (_vautlSummary.token0Undeployed + _vautlSummary.token0Farmed + _token0TradingFee)
-      * _vautlSummary.token0price / 1e18;
-    uint256 _token0DebtValue = _vautlSummary.token0Debt * _vautlSummary.token0price / 1e18;
-    uint256 _token1PositionValue = (_vautlSummary.token1Undeployed + _vautlSummary.token1Farmed + _token1TradingFee)
-      * _vautlSummary.token1price / 1e18;
-    uint256 _token1DebtValue = _vautlSummary.token1Debt * _vautlSummary.token1price / 1e18;
-    uint256 _totalEquity =
-      _token0PositionValue + _token1PositionValue + _cakeEquity - _token0DebtValue - _token1DebtValue;
-    _sharePrice = _totalEquity * 1e18 / ERC20(_vaultToken).totalSupply();
-    return _sharePrice;
+    // Return value
+    _sharePrice = _totalEquity * 1e18 / _vaultTotalSupply;
+    _sharePriceWithManagementFee = _totalEquity * 1e18 / (_vaultTotalSupply + _pendingManagementFee);
   }
 
   struct FeeParams {
