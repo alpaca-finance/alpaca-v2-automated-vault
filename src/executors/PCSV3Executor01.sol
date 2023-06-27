@@ -209,9 +209,8 @@ contract PCSV3Executor01 is Executor {
   /// Worker will revert if it doesn't have position.
   function increasePosition(uint256 _amountIn0, uint256 _amountIn1) external onlyVaultManager {
     address _worker = _getCurrentWorker();
-    address _vaultToken = _getCurrentVaultToken();
     PancakeV3Worker(_worker).increasePosition(_amountIn0, _amountIn1);
-    emit LogIncreasePosition(_vaultToken, _worker, _amountIn0, _amountIn1);
+    emit LogIncreasePosition(_getCurrentVaultToken(), _worker, _amountIn0, _amountIn1);
   }
 
   /// @notice Open new position (zap, add liquidity and deposit nft to masterchef) for worker
@@ -222,37 +221,32 @@ contract PCSV3Executor01 is Executor {
     onlyVaultManager
   {
     address _worker = _getCurrentWorker();
-    address _vaultToken = _getCurrentVaultToken();
     PancakeV3Worker(_worker).openPosition(_tickLower, _tickUpper, _amountIn0, _amountIn1);
-    emit LogOpenPosition(_vaultToken, _worker, _tickLower, _tickUpper, _amountIn0, _amountIn1);
+    emit LogOpenPosition(_getCurrentVaultToken(), _worker, _tickLower, _tickUpper, _amountIn0, _amountIn1);
   }
 
   function decreasePosition(uint128 _liquidity) external onlyVaultManager {
     address _worker = _getCurrentWorker();
-    address _vaultToken = _getCurrentVaultToken();
     PancakeV3Worker(_worker).decreasePosition(_liquidity);
-    emit LogDecreasePosition(_vaultToken, _worker, _liquidity);
+    emit LogDecreasePosition(_getCurrentVaultToken(), _worker, _liquidity);
   }
 
   function closePosition() external onlyVaultManager {
     address _worker = _getCurrentWorker();
-    address _vaultToken = _getCurrentVaultToken();
     PancakeV3Worker(_worker).closePosition();
-    emit LogClosePosition(_vaultToken, _worker);
+    emit LogClosePosition(_getCurrentVaultToken(), _worker);
   }
 
   function transferFromWorker(address _token, uint256 _amount) external onlyVaultManager {
     address _worker = _getCurrentWorker();
-    address _vaultToken = _getCurrentVaultToken();
     PancakeV3Worker(_worker).transferToExecutor(_token, _amount);
-    emit LogTransferFromWorker(_vaultToken, _worker, _amount);
+    emit LogTransferFromWorker(_getCurrentVaultToken(), _worker, _amount);
   }
 
   function transferToWorker(address _token, uint256 _amount) external onlyVaultManager {
     address _worker = _getCurrentWorker();
-    address _vaultToken = _getCurrentVaultToken();
     ERC20(_token).safeTransfer(_worker, _amount);
-    emit LogTransferToWorker(_vaultToken, _worker, _amount);
+    emit LogTransferToWorker(_getCurrentVaultToken(), _worker, _amount);
   }
 
   /// @notice Borrow token from Bank. Borrowed funds will be sent here to support borrow, swap, repay use case.
@@ -273,7 +267,6 @@ contract PCSV3Executor01 is Executor {
 
   function pancakeV3SwapExactInputSingle(bool _zeroForOne, uint256 _amountIn) external onlyVaultManager {
     address _worker = _getCurrentWorker();
-    address _vaultToken = _getCurrentVaultToken();
     ICommonV3Pool _pool = PancakeV3Worker(_worker).pool();
     _pool.swap(
       address(this),
@@ -282,7 +275,7 @@ contract PCSV3Executor01 is Executor {
       _zeroForOne ? LibTickMath.MIN_SQRT_RATIO + 1 : LibTickMath.MAX_SQRT_RATIO - 1, // no price limit
       abi.encode(_pool.token0(), _pool.token1(), _pool.fee())
     );
-    emit LogPancakeV3SwapExactInputSingle(_vaultToken, _worker, _zeroForOne, _amountIn);
+    emit LogPancakeV3SwapExactInputSingle(_getCurrentVaultToken(), _worker, _zeroForOne, _amountIn);
   }
 
   function pancakeV3SwapCallback(int256 _amount0Delta, int256 _amount1Delta, bytes calldata _data) external {
