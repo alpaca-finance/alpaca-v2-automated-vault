@@ -48,7 +48,7 @@ contract PancakeV3VaultReaderTest is E2EFixture {
 
       AutomatedVaultManager.TokenAmount[] memory deposits = new AutomatedVaultManager.TokenAmount[](1);
       deposits[0] = AutomatedVaultManager.TokenAmount({ token: _token0, amount: depositAmount });
-      vaultManager.deposit(address(vaultToken), deposits, 0);
+      vaultManager.deposit(address(this), address(vaultToken), deposits, 0);
       vm.stopPrank();
 
       // Open position with 100 USDT
@@ -130,7 +130,7 @@ contract PancakeV3VaultReaderTest is E2EFixture {
 
       AutomatedVaultManager.TokenAmount[] memory deposits = new AutomatedVaultManager.TokenAmount[](1);
       deposits[0] = AutomatedVaultManager.TokenAmount({ token: _token0, amount: depositAmount });
-      vaultManager.deposit(address(vaultToken), deposits, 0);
+      vaultManager.deposit(address(this), address(vaultToken), deposits, 0);
       vm.stopPrank();
 
       // Open position with 100 USDT

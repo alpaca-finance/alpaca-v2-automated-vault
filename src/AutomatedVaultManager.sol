@@ -151,7 +151,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     }
   }
 
-  function deposit(address _vaultToken, TokenAmount[] calldata _depositParams, uint256 _minReceive)
+  function deposit(address _depositFor, address _vaultToken, TokenAmount[] calldata _depositParams, uint256 _minReceive)
     external
     collectManagementFee(_vaultToken)
     nonReentrant
@@ -196,9 +196,9 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     if (_shareReceived < _minReceive) {
       revert AutomatedVaultManager_TooLittleReceived();
     }
-    IAutomatedVaultERC20(_vaultToken).mint(msg.sender, _shareReceived);
+    IAutomatedVaultERC20(_vaultToken).mint(_depositFor, _shareReceived);
 
-    emit LogDeposit(_vaultToken, msg.sender, _depositParams, _shareReceived);
+    emit LogDeposit(_vaultToken, _depositFor, _depositParams, _shareReceived);
   }
 
   function manage(address _vaultToken, bytes[] calldata _executorParams)
