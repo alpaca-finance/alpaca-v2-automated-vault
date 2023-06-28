@@ -175,32 +175,62 @@ contract AutomatedVaultManagerSetEmergencyPausedTest is BaseAutomatedVaultUnitTe
   function testRevert_SetEmergencyDepositPaused_NonOwnerIsCaller() public {
     vm.prank(address(1234));
     vm.expectRevert("Ownable: caller is not the owner");
-    vaultManager.setEmergencyDepositPaused(true);
+    vaultManager.setEmergencyDepositPaused(new address[](1), true);
   }
 
-  function testCorrectness_SetEmergencyDepositPaused() public {
+  function testCorrectness_SetEmergencyDepositPaused_MultipleVaults() public {
+    address _vaultToken1 = makeAddr("vaultToken1");
+    address _vaultToken2 = makeAddr("vaultToken2");
+    address[] memory _vaultTokens = new address[](2);
+    _vaultTokens[0] = _vaultToken1;
+    _vaultTokens[1] = _vaultToken2;
+
+    // unset vaults should be false by default
+    assertFalse(vaultManager.emergencyDepositPaused(_vaultToken1));
+    assertFalse(vaultManager.emergencyDepositPaused(_vaultToken2));
+
     vm.startPrank(DEPLOYER);
-    vaultManager.setEmergencyDepositPaused(true);
-    assertTrue(vaultManager.emergencyDepositPaused());
-    vaultManager.setEmergencyDepositPaused(false);
-    assertFalse(vaultManager.emergencyDepositPaused());
+    // should be true
+    vaultManager.setEmergencyDepositPaused(_vaultTokens, true);
+    assertTrue(vaultManager.emergencyDepositPaused(_vaultToken1));
+    assertTrue(vaultManager.emergencyDepositPaused(_vaultToken2));
+
+    // should be false
+    vaultManager.setEmergencyDepositPaused(_vaultTokens, false);
+    assertFalse(vaultManager.emergencyDepositPaused(_vaultToken1));
+    assertFalse(vaultManager.emergencyDepositPaused(_vaultToken2));
     vm.stopPrank();
   }
 
   // Withdraw paused
-  
+
   function testRevert_SetEmergencyWithdrawPaused_NonOwnerIsCaller() public {
     vm.prank(address(1234));
     vm.expectRevert("Ownable: caller is not the owner");
-    vaultManager.setEmergencyWithdrawPaused(true);
+    vaultManager.setEmergencyWithdrawPaused(new address[](1), true);
   }
 
-  function testCorrectness_SetEmergencyWithdrawPaused() public {
+  function testCorrectness_SetEmergencyWithdrawPaused_MultipleVaults() public {
+    address _vaultToken1 = makeAddr("vaultToken1");
+    address _vaultToken2 = makeAddr("vaultToken2");
+    address[] memory _vaultTokens = new address[](2);
+    _vaultTokens[0] = _vaultToken1;
+    _vaultTokens[1] = _vaultToken2;
+
+    // unset vaults should be false by default
+    assertFalse(vaultManager.emergencyWithdrawPaused(_vaultToken1));
+    assertFalse(vaultManager.emergencyWithdrawPaused(_vaultToken2));
+
     vm.startPrank(DEPLOYER);
-    vaultManager.setEmergencyWithdrawPaused(true);
-    assertTrue(vaultManager.emergencyWithdrawPaused());
-    vaultManager.setEmergencyWithdrawPaused(false);
-    assertFalse(vaultManager.emergencyWithdrawPaused());
+    // should be true
+    vaultManager.setEmergencyWithdrawPaused(_vaultTokens, true);
+    assertTrue(vaultManager.emergencyWithdrawPaused(_vaultToken1));
+    assertTrue(vaultManager.emergencyWithdrawPaused(_vaultToken2));
+
+    // should be false
+    vaultManager.setEmergencyWithdrawPaused(_vaultTokens, false);
+    assertFalse(vaultManager.emergencyWithdrawPaused(_vaultToken1));
+    assertFalse(vaultManager.emergencyWithdrawPaused(_vaultToken2));
     vm.stopPrank();
   }
 }
