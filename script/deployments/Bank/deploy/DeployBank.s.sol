@@ -6,7 +6,7 @@ import "script/BaseScript.sol";
 import { Bank } from "src/Bank.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-contract DeployMoneyMarketForTestScript is BaseScript {
+contract DeployBankScript is BaseScript {
   function run() public {
     address _moneyMarket = moneyMarket;
     address _automatedVaultManager = automatedVaultManager;
