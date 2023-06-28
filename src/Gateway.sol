@@ -13,7 +13,7 @@ import { Ownable } from "lib/openzeppelin-contracts/contracts/access/Ownable.sol
 contract Gateway is Ownable {
   using SafeTransferLib for ERC20;
 
-  error Gateway_InvalidAmount();
+  error Gateway_InvalidInput();
   error Gateway_InvalidTokenOut();
   error Gateway_NativeIsNotExist();
   error Gateway_TooLittleReceived();
@@ -28,7 +28,14 @@ contract Gateway is Ownable {
     router = IPancakeV3Router(_router);
   }
 
-  function deposit(address _vaultToken, address _token, uint256 _amount, uint256 _minReceived) external {
+  function deposit(address _vaultToken, address _token, uint256 _amount, uint256 _minReceived)
+    external
+    returns (bytes memory _result)
+  {
+    if (_token == address(0) || _amount == 0) {
+      revert Gateway_InvalidInput();
+    }
+
     // pull token
     ERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
 
@@ -37,12 +44,12 @@ contract Gateway is Ownable {
 
     // build deposit params
     AutomatedVaultManager.TokenAmount[] memory _depositParams = _getDepositParams(_token, _amount);
-    vaultManager.deposit(msg.sender, _vaultToken, _depositParams, _minReceived);
+    _result = vaultManager.deposit(msg.sender, _vaultToken, _depositParams, _minReceived);
   }
 
-  function depositETH(address _vaultToken, uint256 _minReceived) external payable {
+  function depositETH(address _vaultToken, uint256 _minReceived) external payable returns (bytes memory _result) {
     if (msg.value == 0) {
-      revert Gateway_InvalidAmount();
+      revert Gateway_InvalidInput();
     }
     // convert native to wrap
     IWNative(wNativeToken).deposit{ value: msg.value }();
@@ -53,7 +60,7 @@ contract Gateway is Ownable {
     // build deposit params
     AutomatedVaultManager.TokenAmount[] memory _depositParams = _getDepositParams(wNativeToken, msg.value);
     // deposit (check slippage inside here)
-    vaultManager.deposit(msg.sender, _vaultToken, _depositParams, _minReceived);
+    _result = vaultManager.deposit(msg.sender, _vaultToken, _depositParams, _minReceived);
   }
 
   function withdrawSingleAsset(address _vaultToken, uint256 _shareToWithdraw, uint256 _minAmountOut, address _tokenOut)

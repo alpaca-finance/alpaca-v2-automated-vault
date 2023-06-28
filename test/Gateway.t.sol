@@ -10,22 +10,24 @@ import { Gateway } from "src/Gateway.sol";
 contract GatewayTest is E2EFixture {
   Gateway internal gateway;
 
-  constructor() E2EFixture() { }
-
-  function setUp() public {
+  constructor() E2EFixture() {
     gateway = new Gateway(address(vaultManager), address(pancakeV3Router));
   }
 
   function _depositGateway(address _depositor, IERC20 _token, uint256 _amount) internal {
     deal(address(_token), _depositor, _amount);
 
+    uint256 _depositorBalanceBefore = _token.balanceOf(_depositor);
+
     vm.startPrank(_depositor);
     _token.approve(address(gateway), _amount);
     gateway.deposit(address(vaultToken), address(_token), _amount, 0);
     vm.stopPrank();
 
-    // worker deposit token balance should equal deposit amount
-    assertEq(_token.balanceOf(address(workerUSDTWBNB)), _amount);
+    uint256 _depositorBalanceAfter = _token.balanceOf(_depositor);
+
+    // user balance must be deducted
+    assertEq(_depositorBalanceBefore - _depositorBalanceAfter, _amount);
     // gateway must have nothing
     assertEq(_token.balanceOf(address(gateway)), 0);
   }
@@ -33,12 +35,16 @@ contract GatewayTest is E2EFixture {
   function _depositNativeGateway(address _depositor, uint256 _amount) internal {
     deal(_depositor, _amount);
 
+    uint256 _depositorBalanceBefore = _depositor.balance;
+
     vm.startPrank(_depositor);
     gateway.depositETH{ value: _amount }(address(vaultToken), 0);
     vm.stopPrank();
 
-    // worker wbnb token balance should equal deposit amount
-    assertEq(wbnb.balanceOf(address(workerUSDTWBNB)), _amount);
+    uint256 _depositorBalanceAfter = _depositor.balance;
+
+    // user balance must be deducted
+    assertEq(_depositorBalanceBefore - _depositorBalanceAfter, _amount);
     // gateway must have nothing
     assertEq(address(gateway).balance, 0);
   }
@@ -52,8 +58,10 @@ contract GatewayTest is E2EFixture {
     vm.stopPrank();
 
     uint256 _balanceTokenOutAfter = IERC20(_tokenOut).balanceOf(_caller);
+
     // assert user token balance
     assertEq(_balanceTokenOutAfter - _balanceTokenOutBefore, _amountOut);
+
     // gateway must have nothing
     assertEq(wbnb.balanceOf(address(gateway)), 0);
     assertEq(usdt.balanceOf(address(gateway)), 0);
@@ -70,42 +78,54 @@ contract GatewayTest is E2EFixture {
     uint256 _balanceNativeAfter = address(_caller).balance;
     // assert user native balance
     assertEq(_balanceNativeAfter - _balanceNativeBefore, _amountOut);
+
     // gateway must have nothing
+    assertEq(wbnb.balanceOf(address(gateway)), 0);
+    assertEq(usdt.balanceOf(address(gateway)), 0);
     assertEq(address(gateway).balance, 0);
   }
 
   function testCorrectness_DepositToken_withGateway_ShouldWork() external {
+    uint256 _amount = 1 ether;
+
     // 1. deposit wbnb = 1 ether, worker should have 1 wbnb
-    _depositGateway(address(this), wbnb, 1 ether);
+    _depositGateway(address(this), wbnb, _amount);
+
+    assertEq(wbnb.balanceOf(address(workerUSDTWBNB)), _amount);
+    assertEq(usdt.balanceOf(address(workerUSDTWBNB)), 0);
+
     // 2. deposit usdt = 1 ether, worker should have 1 usdt
-    _depositGateway(address(this), usdt, 1 ether);
+    _depositGateway(address(this), usdt, _amount);
+    assertEq(wbnb.balanceOf(address(workerUSDTWBNB)), _amount);
+    assertEq(usdt.balanceOf(address(workerUSDTWBNB)), _amount);
   }
 
   function testCorrectness_DepositNative_withGateway_ShouldWork() external {
     // 1. deposit bnb = 1 ether, worker should have 1 wbnb
-    _depositNativeGateway(address(this), 1 ether);
+    uint256 _amount = 1 ether;
+    _depositNativeGateway(address(this), _amount);
+
+    assertEq(wbnb.balanceOf(address(workerUSDTWBNB)), _amount);
+    assertEq(usdt.balanceOf(address(workerUSDTWBNB)), 0);
   }
 
   function testCorrectness_WithdrawToken_withGateway_ShouldWork() external {
-    // assume 1 bnb ~= 326 usdt
-    // 1. deposit wbnb = 1 ether, usdt = 326 ether. expect withdraw and token out is "wbnb" should work
+    // 1. deposit wbnb = 1 ether. expect withdraw and token out is "wbnb" should work
     _depositGateway(address(this), wbnb, 1 ether);
-    _depositGateway(address(this), usdt, 326 ether);
     uint256 _share = vaultToken.balanceOf(address(this));
     _withdrawGateway(address(this), _share, address(wbnb));
 
-    // 2. deposit wbnb = 1 ether, usdt = 326 ether. expect withdraw and token out is "usdt" should work
-    _depositGateway(address(this), wbnb, 1 ether);
-    _depositGateway(address(this), usdt, 326 ether);
+    // 2. deposit usdt = 1 ether. expect withdraw and token out is "usdt" should work
+    _depositGateway(address(this), usdt, 1 ether);
     _share = vaultToken.balanceOf(address(this));
     _withdrawGateway(address(this), _share, address(usdt));
 
-    // 3. deposit wbnb = 0 ether, usdt = 326 ether. expect withdraw and token out is "wbnb" should work
-    _depositGateway(address(this), usdt, 326 ether);
+    // 3. deposit usdt = 1 ether. expect withdraw and token out is "wbnb" should work
+    _depositGateway(address(this), usdt, 1 ether);
     _share = vaultToken.balanceOf(address(this));
     _withdrawGateway(address(this), _share, address(wbnb));
 
-    // 4. deposit wbnb = 1 ether, usdt = 0 ether. expect withdraw and token out is "usdt" should work
+    // 4. deposit wbnb = 1 ether. expect withdraw and token out is "usdt" should work
     _depositGateway(address(this), wbnb, 1 ether);
     _share = vaultToken.balanceOf(address(this));
     _withdrawGateway(address(this), _share, address(usdt));
@@ -121,9 +141,47 @@ contract GatewayTest is E2EFixture {
     IWNativeRelayer(relayer).setCallerOk(_callers, true);
 
     // 1. deposit wbnb = 1 ether, expect withdraw and bnb balance should equal 1 ether
-    _depositNativeGateway(address(this), 1 ether);
+    uint256 _amount = 1 ether;
+    _depositNativeGateway(address(this), _amount);
     uint256 _share = vaultToken.balanceOf(address(this));
     _withdrawNativeGateway(address(this), _share);
+
+    // bnb balance should equal 1 ether
+    assertEq(address(this).balance, _amount);
+  }
+
+  function testRevert_Deposit_InvalidInput() external {
+    // deposit token = address(0)
+    vm.expectRevert(abi.encodeWithSelector(Gateway.Gateway_InvalidInput.selector));
+    gateway.deposit(address(vaultToken), address(0), 1 ether, 0);
+
+    // erc20 token amount = 0
+    vm.expectRevert(abi.encodeWithSelector(Gateway.Gateway_InvalidInput.selector));
+    gateway.deposit(address(vaultToken), address(wbnb), 0, 0);
+
+    // native
+    vm.expectRevert(abi.encodeWithSelector(Gateway.Gateway_InvalidInput.selector));
+    gateway.depositETH{ value: 0 }(address(vaultToken), 0);
+  }
+
+  function testRevert_WhenWithdraw_WithInvalidToken() external {
+    // withdraw revert when token out is not in token0, token1
+    _depositGateway(address(this), wbnb, 1 ether);
+    _depositGateway(address(this), usdt, 1 ether);
+    uint256 _share = vaultToken.balanceOf(address(this));
+    vaultToken.approve(address(gateway), _share);
+    vm.expectRevert(abi.encodeWithSelector(Gateway.Gateway_InvalidTokenOut.selector));
+    gateway.withdrawSingleAsset(address(vaultToken), _share, 0, address(cake));
+
+    // withdraw native on vault that have no wbnb pool (TODO)
+  }
+
+  function testRevert_WhenWithdrawAmountOut_IsLessThan_MinReceive() external {
+    _depositGateway(address(this), wbnb, 1 ether);
+    uint256 _share = vaultToken.balanceOf(address(this));
+    vaultToken.approve(address(gateway), _share);
+    vm.expectRevert(abi.encodeWithSelector(Gateway.Gateway_TooLittleReceived.selector));
+    gateway.withdrawSingleAsset(address(vaultToken), _share, 350 ether, address(usdt));
   }
 
   receive() external payable { }
