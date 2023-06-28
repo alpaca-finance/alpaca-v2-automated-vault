@@ -62,10 +62,6 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   address public managementFeeTreasury;
   address public withdrawalFeeTreasury;
 
-  // vault's ERC20 address => bool flag
-  mapping(address => bool) public emergencyDepositPaused; // flag for pausing deposit
-  mapping(address => bool) public emergencyWithdrawPaused; // flag for pausing withdraw
-
   // vault's ERC20 address => vault info
   mapping(address => VaultInfo) public vaultInfos;
   mapping(address => mapping(address => bool)) isManager;
@@ -75,6 +71,10 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   /// @dev execution scope to tell downstream contracts (Bank, Worker, etc.)
   /// that current executor is acting on behalf of vault and can be trusted
   address public EXECUTOR_IN_SCOPE;
+
+  // vault's ERC20 address => bool flag
+  mapping(address => bool) public emergencyDepositPaused; // flag for pausing deposit
+  mapping(address => bool) public emergencyWithdrawPaused; // flag for pausing withdraw
 
   event LogOpenVault(address indexed _vaultToken, VaultInfo _vaultInfo);
   event LogDeposit(address indexed _vaultToken, address indexed _user, TokenAmount[] _deposits, uint256 _shareReceived);
