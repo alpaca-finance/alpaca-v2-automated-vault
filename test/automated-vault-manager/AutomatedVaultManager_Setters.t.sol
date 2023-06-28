@@ -168,3 +168,39 @@ contract AutomatedVaultManagerSetCapacityTest is BaseAutomatedVaultUnitTest {
     assertEq(capacity, 0);
   }
 }
+
+contract AutomatedVaultManagerSetEmergencyPausedTest is BaseAutomatedVaultUnitTest {
+  // Deposit paused
+
+  function testRevert_SetEmergencyDepositPaused_NonOwnerIsCaller() public {
+    vm.prank(address(1234));
+    vm.expectRevert("Ownable: caller is not the owner");
+    vaultManager.setEmergencyDepositPaused(true);
+  }
+
+  function testCorrectness_SetEmergencyDepositPaused() public {
+    vm.startPrank(DEPLOYER);
+    vaultManager.setEmergencyDepositPaused(true);
+    assertTrue(vaultManager.emergencyDepositPaused());
+    vaultManager.setEmergencyDepositPaused(false);
+    assertFalse(vaultManager.emergencyDepositPaused());
+    vm.stopPrank();
+  }
+
+  // Withdraw paused
+  
+  function testRevert_SetEmergencyWithdrawPaused_NonOwnerIsCaller() public {
+    vm.prank(address(1234));
+    vm.expectRevert("Ownable: caller is not the owner");
+    vaultManager.setEmergencyWithdrawPaused(true);
+  }
+
+  function testCorrectness_SetEmergencyWithdrawPaused() public {
+    vm.startPrank(DEPLOYER);
+    vaultManager.setEmergencyWithdrawPaused(true);
+    assertTrue(vaultManager.emergencyWithdrawPaused());
+    vaultManager.setEmergencyWithdrawPaused(false);
+    assertFalse(vaultManager.emergencyWithdrawPaused());
+    vm.stopPrank();
+  }
+}

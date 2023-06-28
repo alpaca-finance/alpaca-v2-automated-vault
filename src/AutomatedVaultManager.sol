@@ -37,6 +37,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   error AutomatedVaultManager_TokenNotAllowed();
   error AutomatedVaultManager_InvalidParams();
   error AutomatedVaultManager_ExceedCapacity();
+  error AutomatedVaultManager_EmergencyPaused();
 
   struct TokenAmount {
     address token;
@@ -60,6 +61,9 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   address public vaultTokenImplementation;
   address public managementFeeTreasury;
   address public withdrawalFeeTreasury;
+
+  bool public emergencyDepositPaused; // flag for pausing deposit
+  bool public emergencyWithdrawPaused; // flag for pausing withdraw
 
   // vault's ERC20 address => vault info
   mapping(address => VaultInfo) public vaultInfos;
@@ -87,6 +91,8 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   event LogSetWithdrawalFeeBps(address _vaultToken, uint16 _withdrawalFeeBps);
   event LogWithdrawalFee(address _vaultToken, uint256 _withdrawalFee);
   event LogSetCapacity(address _vaultToken, uint256 _capacity);
+  event LogSetEmergencyDepositPaused(address indexed _caller, bool _isPaused);
+  event LogSetEmergencyWithdrawPaused(address indexed _caller, bool _isPaused);
 
   modifier collectManagementFee(address _vaultToken) {
     if (block.timestamp > vaultFeeLastCollectedAt[_vaultToken]) {
@@ -157,6 +163,10 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     nonReentrant
     returns (bytes memory _result)
   {
+    if (emergencyDepositPaused) {
+      revert AutomatedVaultManager_EmergencyPaused();
+    }
+
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
 
     _pullTokens(_vaultToken, _cachedVaultInfo.executor, _depositParams);
@@ -269,6 +279,10 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     nonReentrant
     returns (AutomatedVaultManager.TokenAmount[] memory _results)
   {
+    if (emergencyWithdrawPaused) {
+      revert AutomatedVaultManager_EmergencyPaused();
+    }
+
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
 
     // Revert if withdraw shares more than balance
@@ -456,6 +470,16 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   function setCapacity(address _vaultToken, uint256 _capacity) external onlyOwner {
     vaultInfos[_vaultToken].capacity = _capacity;
     emit LogSetCapacity(_vaultToken, _capacity);
+  }
+
+  function setEmergencyDepositPaused(bool _isPaused) external onlyOwner {
+    emergencyDepositPaused = _isPaused;
+    emit LogSetEmergencyDepositPaused(msg.sender, _isPaused);
+  }
+
+  function setEmergencyWithdrawPaused(bool _isPaused) external onlyOwner {
+    emergencyWithdrawPaused = _isPaused;
+    emit LogSetEmergencyWithdrawPaused(msg.sender, _isPaused);
   }
 
   /// @dev Valid value: withdrawalFeeBps <= 1000

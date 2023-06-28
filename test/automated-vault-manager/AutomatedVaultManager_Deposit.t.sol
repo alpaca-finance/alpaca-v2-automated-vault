@@ -15,6 +15,16 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
     vaultManager.deposit(address(this), address(0), _depositParams, 0);
   }
 
+  function testRevert_WhenDepositIsEmergencyPaused() public {
+    vm.prank(DEPLOYER);
+    vaultManager.setEmergencyDepositPaused(true);
+
+    address vaultToken = _openDefaultVault();
+    AutomatedVaultManager.TokenAmount[] memory _depositParams = new AutomatedVaultManager.TokenAmount[](0);
+    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_EmergencyPaused()"));
+    vaultManager.deposit(address(this), address(vaultToken), _depositParams, 0);
+  }
+
   function testRevert_WhenDepositTokenThatIsNotAllowed() public {
     address vaultToken = _openDefaultVault();
     vm.prank(DEPLOYER);
