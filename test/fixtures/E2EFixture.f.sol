@@ -131,6 +131,7 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
       )
     );
     vaultManager.setAllowToken(address(vaultToken), address(usdt), true);
+    vaultManager.setAllowToken(address(vaultToken), address(wbnb), true);
     vaultManager.setVaultManager(address(vaultToken), MANAGER, true);
 
     vm.stopPrank();
