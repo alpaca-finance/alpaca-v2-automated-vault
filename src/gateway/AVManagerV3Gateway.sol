@@ -10,18 +10,14 @@ import { LibTickMath } from "src/libraries/LibTickMath.sol";
 import { IWNative } from "src/libraries/IWNative.sol";
 
 // interfaces
+import { IAVManagerV3Gateway } from "src/gateway/IAVManagerV3Gateway.sol";
 import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
 import { IPancakeV3Router } from "src/interfaces/pancake-v3/IPancakeV3Router.sol";
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 
-contract AVManagerV3Gateway {
+contract AVManagerV3Gateway is IAVManagerV3Gateway {
   using SafeTransferLib for ERC20;
-
-  error AVManagerV3Gateway_InvalidInput();
-  error AVManagerV3Gateway_InvalidAddress();
-  error AVManagerV3Gateway_TooLittleReceived();
-  error AVManagerV3Gateway_NotPool();
 
   AutomatedVaultManager public immutable vaultManager;
   IPancakeV3Router public immutable router;
