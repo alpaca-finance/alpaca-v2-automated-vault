@@ -7,7 +7,7 @@ import { SafeTransferLib } from "@solmate/utils/SafeTransferLib.sol";
 
 // libraries
 import { LibTickMath } from "src/libraries/LibTickMath.sol";
-import { IWNative } from "lib/alpaca-v2-money-market/solidity/contracts/interfaces/IWNative.sol";
+import { IWNative } from "src/libraries/IWNative.sol";
 
 // interfaces
 import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
@@ -25,14 +25,15 @@ contract AVManagerV3Gateway {
 
   AutomatedVaultManager public immutable vaultManager;
   IPancakeV3Router public immutable router;
-  address public constant wNativeToken = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+  address public immutable wNativeToken;
 
-  constructor(address _vaultManager, address _router) {
+  constructor(address _vaultManager, address _router, address _wNativeToken) {
     if (_vaultManager == address(0) || _router == address(0)) {
       revert AVManagerV3Gateway_InvalidAddress();
     }
     vaultManager = AutomatedVaultManager(_vaultManager);
     router = IPancakeV3Router(_router);
+    wNativeToken = _wNativeToken;
   }
 
   function deposit(address _vaultToken, address _token, uint256 _amount, uint256 _minReceived)
@@ -78,7 +79,8 @@ contract AVManagerV3Gateway {
     // withdraw
     _result = _withdraw(_vaultToken, _shareToWithdraw, _minAmountOut);
     // check native
-    for (uint256 _i; _i < _result.length;) {
+    uint256 _length = _result.length;
+    for (uint256 _i; _i < _length;) {
       if (_result[_i].token == wNativeToken) {
         IWNative(wNativeToken).withdraw(_result[_i].amount);
         SafeTransferLib.safeTransferETH(msg.sender, _result[_i].amount);

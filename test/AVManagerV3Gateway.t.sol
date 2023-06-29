@@ -10,7 +10,7 @@ contract AVManagerV3GatewayTest is E2EFixture {
   address public constant wNativeToken = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
 
   constructor() E2EFixture() {
-    avManagerV3Gateway = new AVManagerV3Gateway(address(vaultManager), address(pancakeV3Router));
+    avManagerV3Gateway = new AVManagerV3Gateway(address(vaultManager), address(pancakeV3Router), wNativeToken);
   }
 
   function _depositGateway(address _depositor, IERC20 _token, uint256 _amount) internal {
@@ -198,10 +198,6 @@ contract AVManagerV3GatewayTest is E2EFixture {
     assertEq(USER_ALICE.balance, _amount);
     assertEq(wbnb.balanceOf(USER_ALICE), 0);
     assertEq(usdt.balanceOf(USER_ALICE), _amount);
-  }
-
-  function testRevert_WhenWithdraw_WithInvalidToken() external {
-    // withdraw native on vault that have no wbnb pool (TODO)
   }
 
   function testRevert_WhenWithdrawAmountOut_IsLessThan_MinReceive() external {
