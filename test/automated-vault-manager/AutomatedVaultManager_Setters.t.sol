@@ -169,16 +169,16 @@ contract AutomatedVaultManagerSetCapacityTest is BaseAutomatedVaultUnitTest {
   }
 }
 
-contract AutomatedVaultManagerSetEmergencyPausedTest is BaseAutomatedVaultUnitTest {
+contract AutomatedVaultManagerSetIsPausedTest is BaseAutomatedVaultUnitTest {
   // Deposit paused
 
-  function testRevert_SetEmergencyDepositPaused_NonOwnerIsCaller() public {
+  function testRevert_SetIsDepositPaused_NonOwnerIsCaller() public {
     vm.prank(address(1234));
     vm.expectRevert("Ownable: caller is not the owner");
-    vaultManager.setEmergencyDepositPaused(new address[](1), true);
+    vaultManager.setIsDepositPaused(new address[](1), true);
   }
 
-  function testCorrectness_SetEmergencyDepositPaused_MultipleVaults() public {
+  function testCorrectness_SetIsDepositPaused_MultipleVaults() public {
     address _vaultToken1 = makeAddr("vaultToken1");
     address _vaultToken2 = makeAddr("vaultToken2");
     address[] memory _vaultTokens = new address[](2);
@@ -186,31 +186,31 @@ contract AutomatedVaultManagerSetEmergencyPausedTest is BaseAutomatedVaultUnitTe
     _vaultTokens[1] = _vaultToken2;
 
     // unset vaults should be false by default
-    assertFalse(vaultManager.emergencyDepositPaused(_vaultToken1));
-    assertFalse(vaultManager.emergencyDepositPaused(_vaultToken2));
+    assertFalse(vaultManager.isDepositPaused(_vaultToken1));
+    assertFalse(vaultManager.isDepositPaused(_vaultToken2));
 
     vm.startPrank(DEPLOYER);
     // should be true
-    vaultManager.setEmergencyDepositPaused(_vaultTokens, true);
-    assertTrue(vaultManager.emergencyDepositPaused(_vaultToken1));
-    assertTrue(vaultManager.emergencyDepositPaused(_vaultToken2));
+    vaultManager.setIsDepositPaused(_vaultTokens, true);
+    assertTrue(vaultManager.isDepositPaused(_vaultToken1));
+    assertTrue(vaultManager.isDepositPaused(_vaultToken2));
 
     // should be false
-    vaultManager.setEmergencyDepositPaused(_vaultTokens, false);
-    assertFalse(vaultManager.emergencyDepositPaused(_vaultToken1));
-    assertFalse(vaultManager.emergencyDepositPaused(_vaultToken2));
+    vaultManager.setIsDepositPaused(_vaultTokens, false);
+    assertFalse(vaultManager.isDepositPaused(_vaultToken1));
+    assertFalse(vaultManager.isDepositPaused(_vaultToken2));
     vm.stopPrank();
   }
 
   // Withdraw paused
 
-  function testRevert_SetEmergencyWithdrawPaused_NonOwnerIsCaller() public {
+  function testRevert_SetIsWithdrawPaused_NonOwnerIsCaller() public {
     vm.prank(address(1234));
     vm.expectRevert("Ownable: caller is not the owner");
-    vaultManager.setEmergencyWithdrawPaused(new address[](1), true);
+    vaultManager.setIsWithdrawPaused(new address[](1), true);
   }
 
-  function testCorrectness_SetEmergencyWithdrawPaused_MultipleVaults() public {
+  function testCorrectness_SetIsWithdrawPaused_MultipleVaults() public {
     address _vaultToken1 = makeAddr("vaultToken1");
     address _vaultToken2 = makeAddr("vaultToken2");
     address[] memory _vaultTokens = new address[](2);
@@ -218,19 +218,19 @@ contract AutomatedVaultManagerSetEmergencyPausedTest is BaseAutomatedVaultUnitTe
     _vaultTokens[1] = _vaultToken2;
 
     // unset vaults should be false by default
-    assertFalse(vaultManager.emergencyWithdrawPaused(_vaultToken1));
-    assertFalse(vaultManager.emergencyWithdrawPaused(_vaultToken2));
+    assertFalse(vaultManager.isWithdrawPaused(_vaultToken1));
+    assertFalse(vaultManager.isWithdrawPaused(_vaultToken2));
 
     vm.startPrank(DEPLOYER);
     // should be true
-    vaultManager.setEmergencyWithdrawPaused(_vaultTokens, true);
-    assertTrue(vaultManager.emergencyWithdrawPaused(_vaultToken1));
-    assertTrue(vaultManager.emergencyWithdrawPaused(_vaultToken2));
+    vaultManager.setIsWithdrawPaused(_vaultTokens, true);
+    assertTrue(vaultManager.isWithdrawPaused(_vaultToken1));
+    assertTrue(vaultManager.isWithdrawPaused(_vaultToken2));
 
     // should be false
-    vaultManager.setEmergencyWithdrawPaused(_vaultTokens, false);
-    assertFalse(vaultManager.emergencyWithdrawPaused(_vaultToken1));
-    assertFalse(vaultManager.emergencyWithdrawPaused(_vaultToken2));
+    vaultManager.setIsWithdrawPaused(_vaultTokens, false);
+    assertFalse(vaultManager.isWithdrawPaused(_vaultToken1));
+    assertFalse(vaultManager.isWithdrawPaused(_vaultToken2));
     vm.stopPrank();
   }
 }

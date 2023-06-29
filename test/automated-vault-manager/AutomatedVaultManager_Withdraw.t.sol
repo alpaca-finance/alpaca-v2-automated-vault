@@ -20,7 +20,7 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     _vaultTokens[0] = _vaultToken;
 
     vm.prank(DEPLOYER);
-    vaultManager.setEmergencyWithdrawPaused(_vaultTokens, true);
+    vaultManager.setIsWithdrawPaused(_vaultTokens, true);
 
     AutomatedVaultManager.TokenAmount[] memory _minAmountOuts;
     vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_EmergencyPaused()"));

@@ -21,7 +21,7 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
     _vaultTokens[0] = _vaultToken;
 
     vm.prank(DEPLOYER);
-    vaultManager.setEmergencyDepositPaused(_vaultTokens, true);
+    vaultManager.setIsDepositPaused(_vaultTokens, true);
 
     AutomatedVaultManager.TokenAmount[] memory _depositParams = new AutomatedVaultManager.TokenAmount[](0);
     vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_EmergencyPaused()"));

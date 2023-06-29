@@ -73,8 +73,8 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   address public EXECUTOR_IN_SCOPE;
 
   // vault's ERC20 address => bool flag
-  mapping(address => bool) public emergencyDepositPaused; // flag for pausing deposit
-  mapping(address => bool) public emergencyWithdrawPaused; // flag for pausing withdraw
+  mapping(address => bool) public isDepositPaused; // flag for pausing deposit
+  mapping(address => bool) public isWithdrawPaused; // flag for pausing withdraw
 
   event LogOpenVault(address indexed _vaultToken, VaultInfo _vaultInfo);
   event LogDeposit(address indexed _vaultToken, address indexed _user, TokenAmount[] _deposits, uint256 _shareReceived);
@@ -92,8 +92,8 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   event LogSetWithdrawalFeeBps(address _vaultToken, uint16 _withdrawalFeeBps);
   event LogWithdrawalFee(address _vaultToken, uint256 _withdrawalFee);
   event LogSetCapacity(address _vaultToken, uint256 _capacity);
-  event LogSetEmergencyDepositPaused(address _vaultToken, bool _isPaused);
-  event LogSetEmergencyWithdrawPaused(address _vaultToken, bool _isPaused);
+  event LogSetIsDepositPaused(address _vaultToken, bool _isPaused);
+  event LogSetIsWithdrawPaused(address _vaultToken, bool _isPaused);
 
   modifier collectManagementFee(address _vaultToken) {
     if (block.timestamp > vaultFeeLastCollectedAt[_vaultToken]) {
@@ -164,7 +164,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     nonReentrant
     returns (bytes memory _result)
   {
-    if (emergencyDepositPaused[_vaultToken]) {
+    if (isDepositPaused[_vaultToken]) {
       revert AutomatedVaultManager_EmergencyPaused();
     }
 
@@ -280,7 +280,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     nonReentrant
     returns (AutomatedVaultManager.TokenAmount[] memory _results)
   {
-    if (emergencyWithdrawPaused[_vaultToken]) {
+    if (isWithdrawPaused[_vaultToken]) {
       revert AutomatedVaultManager_EmergencyPaused();
     }
 
@@ -473,24 +473,24 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     emit LogSetCapacity(_vaultToken, _capacity);
   }
 
-  function setEmergencyDepositPaused(address[] calldata _vaultTokens, bool _isPaused) external onlyOwner {
+  function setIsDepositPaused(address[] calldata _vaultTokens, bool _isPaused) external onlyOwner {
     uint256 _len = _vaultTokens.length;
     for (uint256 _i; _i < _len;) {
       address _vaultToken = _vaultTokens[_i];
-      emergencyDepositPaused[_vaultToken] = _isPaused;
-      emit LogSetEmergencyDepositPaused(_vaultToken, _isPaused);
+      isDepositPaused[_vaultToken] = _isPaused;
+      emit LogSetIsDepositPaused(_vaultToken, _isPaused);
       unchecked {
         ++_i;
       }
     }
   }
 
-  function setEmergencyWithdrawPaused(address[] calldata _vaultTokens, bool _isPaused) external onlyOwner {
+  function setIsWithdrawPaused(address[] calldata _vaultTokens, bool _isPaused) external onlyOwner {
     uint256 _len = _vaultTokens.length;
     for (uint256 _i; _i < _len;) {
       address _vaultToken = _vaultTokens[_i];
-      emergencyWithdrawPaused[_vaultToken] = _isPaused;
-      emit LogSetEmergencyWithdrawPaused(_vaultToken, _isPaused);
+      isWithdrawPaused[_vaultToken] = _isPaused;
+      emit LogSetIsWithdrawPaused(_vaultToken, _isPaused);
       unchecked {
         ++_i;
       }
