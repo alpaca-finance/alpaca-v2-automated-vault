@@ -49,11 +49,11 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     address vaultOracle;
     address executor;
     uint256 minimumDeposit;
-    uint256 capacity;
     uint256 managementFeePerSec;
     uint16 withdrawalFeeBps;
     uint16 toleranceBps; // acceptable bps of equity deceased after it was manipulated
     uint8 maxLeverage;
+    uint256 capacity;
   }
 
   uint256 constant MAX_PERCENTAGE_PER_SEC = 10e16 / uint256(365 days); // (10% / (365 * 24 * 60 * 60))

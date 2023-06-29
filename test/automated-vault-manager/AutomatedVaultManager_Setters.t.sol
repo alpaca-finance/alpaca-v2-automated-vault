@@ -67,13 +67,13 @@ contract AutomatedVaultManagerSetToleranceBpsTest is BaseAutomatedVaultUnitTest 
   function testCorrectness_SetToleranceBps() public {
     vm.startPrank(DEPLOYER);
     vaultManager.setToleranceBps(address(1), 9501);
-    (,,,,,,, uint16 toleranceBps,) = vaultManager.vaultInfos(address(1));
+    (,,,,,, uint16 toleranceBps,,) = vaultManager.vaultInfos(address(1));
     assertEq(toleranceBps, 9501);
     vaultManager.setToleranceBps(address(1), 9900);
-    (,,,,,,, toleranceBps,) = vaultManager.vaultInfos(address(1));
+    (,,,,,, toleranceBps,,) = vaultManager.vaultInfos(address(1));
     assertEq(toleranceBps, 9900);
     vaultManager.setToleranceBps(address(1), 10000);
-    (,,,,,,, toleranceBps,) = vaultManager.vaultInfos(address(1));
+    (,,,,,, toleranceBps,,) = vaultManager.vaultInfos(address(1));
     assertEq(toleranceBps, 10000);
   }
 }
@@ -96,13 +96,13 @@ contract AutomatedVaultManagerSetMaxLeverageTest is BaseAutomatedVaultUnitTest {
   function testCorrectness_SetMaxLeverage() public {
     vm.startPrank(DEPLOYER);
     vaultManager.setMaxLeverage(address(1), 1);
-    (,,,,,,,, uint8 maxLeverage) = vaultManager.vaultInfos(address(1));
+    (,,,,,,, uint8 maxLeverage,) = vaultManager.vaultInfos(address(1));
     assertEq(maxLeverage, 1);
     vaultManager.setMaxLeverage(address(1), 5);
-    (,,,,,,,, maxLeverage) = vaultManager.vaultInfos(address(1));
+    (,,,,,,, maxLeverage,) = vaultManager.vaultInfos(address(1));
     assertEq(maxLeverage, 5);
     vaultManager.setMaxLeverage(address(1), 10);
-    (,,,,,,,, maxLeverage) = vaultManager.vaultInfos(address(1));
+    (,,,,,,, maxLeverage,) = vaultManager.vaultInfos(address(1));
     assertEq(maxLeverage, 10);
   }
 }
@@ -143,10 +143,10 @@ contract AutomatedVaultManagerSetFeePerSecTest is BaseAutomatedVaultUnitTest {
   function testCorrectness_SetFeePerSec() public {
     vm.startPrank(DEPLOYER);
     vaultManager.setManagementFeePerSec(address(1), 10);
-    (,,,,, uint256 managementFeePerSec,,,) = vaultManager.vaultInfos(address(1));
+    (,,,, uint256 managementFeePerSec,,,,) = vaultManager.vaultInfos(address(1));
     assertEq(managementFeePerSec, 10);
     vaultManager.setManagementFeePerSec(address(1), 12);
-    (,,,,, managementFeePerSec,,,) = vaultManager.vaultInfos(address(1));
+    (,,,, managementFeePerSec,,,,) = vaultManager.vaultInfos(address(1));
     assertEq(managementFeePerSec, 12);
   }
 }
@@ -161,10 +161,10 @@ contract AutomatedVaultManagerSetCapacityTest is BaseAutomatedVaultUnitTest {
   function testCorrectness_SetCapacity() public {
     vm.startPrank(DEPLOYER);
     vaultManager.setCapacity(address(1), 10);
-    (,,,, uint256 capacity,,,,) = vaultManager.vaultInfos(address(1));
+    (,,,,,,,, uint256 capacity) = vaultManager.vaultInfos(address(1));
     assertEq(capacity, 10);
     vaultManager.setCapacity(address(1), 0);
-    (,,,, capacity,,,,) = vaultManager.vaultInfos(address(1));
+    (,,,,,,,, capacity) = vaultManager.vaultInfos(address(1));
     assertEq(capacity, 0);
   }
 }

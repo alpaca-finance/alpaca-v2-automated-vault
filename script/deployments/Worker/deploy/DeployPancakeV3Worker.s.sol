@@ -10,12 +10,24 @@ contract DeployPancakeV3WorkerScript is BaseScript {
   function run() public {
     vm.startBroadcast(deployerPrivateKey);
 
-    _deployWorker(pancakeV3USDTWBNB500Pool, 1_000, 1_000);
+    _deployWorker(
+      pancakeV3USDTWBNB500Pool,
+      1_000,
+      1_000,
+      abi.encodePacked(address(cake), uint24(2500), address(usdt)),
+      abi.encodePacked(address(cake), uint24(2500), address(wbnb))
+    );
 
     vm.stopBroadcast();
   }
 
-  function _deployWorker(address pool, uint16 tradingPerformanceFeeBps, uint16 rewardPerformanceFeeBps) internal {
+  function _deployWorker(
+    address pool,
+    uint16 tradingPerformanceFeeBps,
+    uint16 rewardPerformanceFeeBps,
+    bytes memory cakeToToken0Path,
+    bytes memory cakeToToken1Path
+  ) internal {
     // Deploy implementation
     address workerImplementation = address(new PancakeV3Worker());
 
@@ -32,8 +44,8 @@ contract DeployPancakeV3WorkerScript is BaseScript {
         performanceFeeBucket: performanceFeeBucket,
         tradingPerformanceFeeBps: tradingPerformanceFeeBps,
         rewardPerformanceFeeBps: rewardPerformanceFeeBps,
-        cakeToToken0Path: abi.encodePacked(address(cake), uint24(2500), address(usdt)),
-        cakeToToken1Path: abi.encodePacked(address(cake), uint24(2500), address(wbnb))
+        cakeToToken0Path: cakeToToken0Path,
+        cakeToToken1Path: cakeToToken1Path
       })
     );
     address workerProxy = address(
