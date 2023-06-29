@@ -14,6 +14,19 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     vaultManager.withdraw(address(0), 0, minAmountOuts);
   }
 
+  function testRevert_WhenWithdrawIsEmergencyPaused() public {
+    address _vaultToken = _openDefaultVault();
+    address[] memory _vaultTokens = new address[](1);
+    _vaultTokens[0] = _vaultToken;
+
+    vm.prank(DEPLOYER);
+    vaultManager.setIsWithdrawPaused(_vaultTokens, true);
+
+    AutomatedVaultManager.TokenAmount[] memory _minAmountOuts;
+    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_EmergencyPaused()"));
+    vaultManager.withdraw(_vaultToken, 1, _minAmountOuts);
+  }
+
   function testRevert_WhenWithdrawSharesExceedBalance() public {
     address vaultToken = _openDefaultVault();
 

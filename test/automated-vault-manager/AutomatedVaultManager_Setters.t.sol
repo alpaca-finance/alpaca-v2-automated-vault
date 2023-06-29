@@ -168,3 +168,69 @@ contract AutomatedVaultManagerSetCapacityTest is BaseAutomatedVaultUnitTest {
     assertEq(capacity, 0);
   }
 }
+
+contract AutomatedVaultManagerSetIsPausedTest is BaseAutomatedVaultUnitTest {
+  // Deposit paused
+
+  function testRevert_SetIsDepositPaused_NonOwnerIsCaller() public {
+    vm.prank(address(1234));
+    vm.expectRevert("Ownable: caller is not the owner");
+    vaultManager.setIsDepositPaused(new address[](1), true);
+  }
+
+  function testCorrectness_SetIsDepositPaused_MultipleVaults() public {
+    address _vaultToken1 = makeAddr("vaultToken1");
+    address _vaultToken2 = makeAddr("vaultToken2");
+    address[] memory _vaultTokens = new address[](2);
+    _vaultTokens[0] = _vaultToken1;
+    _vaultTokens[1] = _vaultToken2;
+
+    // unset vaults should be false by default
+    assertFalse(vaultManager.isDepositPaused(_vaultToken1));
+    assertFalse(vaultManager.isDepositPaused(_vaultToken2));
+
+    vm.startPrank(DEPLOYER);
+    // should be true
+    vaultManager.setIsDepositPaused(_vaultTokens, true);
+    assertTrue(vaultManager.isDepositPaused(_vaultToken1));
+    assertTrue(vaultManager.isDepositPaused(_vaultToken2));
+
+    // should be false
+    vaultManager.setIsDepositPaused(_vaultTokens, false);
+    assertFalse(vaultManager.isDepositPaused(_vaultToken1));
+    assertFalse(vaultManager.isDepositPaused(_vaultToken2));
+    vm.stopPrank();
+  }
+
+  // Withdraw paused
+
+  function testRevert_SetIsWithdrawPaused_NonOwnerIsCaller() public {
+    vm.prank(address(1234));
+    vm.expectRevert("Ownable: caller is not the owner");
+    vaultManager.setIsWithdrawPaused(new address[](1), true);
+  }
+
+  function testCorrectness_SetIsWithdrawPaused_MultipleVaults() public {
+    address _vaultToken1 = makeAddr("vaultToken1");
+    address _vaultToken2 = makeAddr("vaultToken2");
+    address[] memory _vaultTokens = new address[](2);
+    _vaultTokens[0] = _vaultToken1;
+    _vaultTokens[1] = _vaultToken2;
+
+    // unset vaults should be false by default
+    assertFalse(vaultManager.isWithdrawPaused(_vaultToken1));
+    assertFalse(vaultManager.isWithdrawPaused(_vaultToken2));
+
+    vm.startPrank(DEPLOYER);
+    // should be true
+    vaultManager.setIsWithdrawPaused(_vaultTokens, true);
+    assertTrue(vaultManager.isWithdrawPaused(_vaultToken1));
+    assertTrue(vaultManager.isWithdrawPaused(_vaultToken2));
+
+    // should be false
+    vaultManager.setIsWithdrawPaused(_vaultTokens, false);
+    assertFalse(vaultManager.isWithdrawPaused(_vaultToken1));
+    assertFalse(vaultManager.isWithdrawPaused(_vaultToken2));
+    vm.stopPrank();
+  }
+}
