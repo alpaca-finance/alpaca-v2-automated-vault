@@ -21,7 +21,6 @@ contract AVManagerV3Gateway is Ownable {
 
   error AVManagerV3Gateway_InvalidInput();
   error AVManagerV3Gateway_InvalidAddress();
-  error AVManagerV3Gateway_NativeIsNotExist();
   error AVManagerV3Gateway_TooLittleReceived();
   error AVManagerV3Gateway_NotPool();
 

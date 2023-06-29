@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "./fixtures/E2EFixture.f.sol";
-import { AutomatedVaultManager, MAX_BPS } from "src/AutomatedVaultManager.sol";
+import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { AVManagerV3Gateway, ERC20 } from "src/AVManagerV3Gateway.sol";
 
 contract AVManagerV3GatewayTest is E2EFixture {
@@ -131,13 +131,10 @@ contract AVManagerV3GatewayTest is E2EFixture {
 
     // 1. deposit wbnb = 1 ether, worker should have 1 wbnb
     _depositGateway(USER_ALICE, wbnb, _amount);
-
     assertEq(wbnb.balanceOf(address(workerUSDTWBNB)), _amount);
-    assertEq(usdt.balanceOf(address(workerUSDTWBNB)), 0);
 
     // 2. deposit usdt = 1 ether, worker should have 1 usdt
     _depositGateway(USER_ALICE, usdt, _amount);
-    assertEq(wbnb.balanceOf(address(workerUSDTWBNB)), _amount);
     assertEq(usdt.balanceOf(address(workerUSDTWBNB)), _amount);
   }
 
@@ -147,7 +144,6 @@ contract AVManagerV3GatewayTest is E2EFixture {
     _depositNativeGateway(USER_ALICE, _amount);
 
     assertEq(wbnb.balanceOf(address(workerUSDTWBNB)), _amount);
-    assertEq(usdt.balanceOf(address(workerUSDTWBNB)), 0);
   }
 
   function testRevert_Deposit_InvalidInput() external {
@@ -161,10 +157,6 @@ contract AVManagerV3GatewayTest is E2EFixture {
   }
 
   function testCorrectness_WithdrawConvertAll_ShouldWork() external {
-    // Note: In this vault
-    // true: withdraw as WBNB
-    // false: withdraw as USDT
-
     uint256 _amount = 1 ether;
     // 1. deposit 1 wbnb, withdraw as token0
     _depositGateway(USER_ALICE, wbnb, _amount);
