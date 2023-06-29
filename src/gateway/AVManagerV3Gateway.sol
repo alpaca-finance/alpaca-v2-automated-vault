@@ -164,14 +164,14 @@ contract AVManagerV3Gateway is IAVManagerV3Gateway {
       )
     );
 
-    if (msg.sender == _pool) {
-      if (_amount0Delta > 0) {
-        ERC20(_token0).safeTransfer(msg.sender, uint256(_amount0Delta));
-      } else {
-        ERC20(_token1).safeTransfer(msg.sender, uint256(_amount1Delta));
-      }
-    } else {
+    if (msg.sender != _pool) {
       revert AVManagerV3Gateway_NotPool();
+    }
+
+    if (_amount0Delta > 0) {
+      ERC20(_token0).safeTransfer(msg.sender, uint256(_amount0Delta));
+    } else {
+      ERC20(_token1).safeTransfer(msg.sender, uint256(_amount1Delta));
     }
   }
 
