@@ -3,14 +3,15 @@ pragma solidity 0.8.19;
 
 import "./fixtures/E2EFixture.f.sol";
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
-import { AVManagerV3Gateway, ERC20 } from "src/AVManagerV3Gateway.sol";
+import { AVManagerV3Gateway, ERC20 } from "src/gateway/AVManagerV3Gateway.sol";
+import { IAVManagerV3Gateway } from "src/interfaces/IAVManagerV3Gateway.sol";
 
 contract AVManagerV3GatewayTest is E2EFixture {
   AVManagerV3Gateway internal avManagerV3Gateway;
   address public constant wNativeToken = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
 
   constructor() E2EFixture() {
-    avManagerV3Gateway = new AVManagerV3Gateway(address(vaultManager), address(pancakeV3Router), wNativeToken);
+    avManagerV3Gateway = new AVManagerV3Gateway(address(vaultManager), wNativeToken);
   }
 
   function _depositGateway(address _depositor, IERC20 _token, uint256 _amount) internal {
@@ -148,11 +149,11 @@ contract AVManagerV3GatewayTest is E2EFixture {
 
   function testRevert_Deposit_InvalidInput() external {
     // erc20 token amount = 0
-    vm.expectRevert(abi.encodeWithSelector(AVManagerV3Gateway.AVManagerV3Gateway_InvalidInput.selector));
+    vm.expectRevert(abi.encodeWithSelector(IAVManagerV3Gateway.AVManagerV3Gateway_InvalidInput.selector));
     avManagerV3Gateway.deposit(address(vaultToken), address(wbnb), 0, 0);
 
     // native
-    vm.expectRevert(abi.encodeWithSelector(AVManagerV3Gateway.AVManagerV3Gateway_InvalidInput.selector));
+    vm.expectRevert(abi.encodeWithSelector(IAVManagerV3Gateway.AVManagerV3Gateway_InvalidInput.selector));
     avManagerV3Gateway.depositETH{ value: 0 }(address(vaultToken), 0);
   }
 
@@ -209,7 +210,7 @@ contract AVManagerV3GatewayTest is E2EFixture {
     // withdrawConvertAll
     vm.startPrank(USER_ALICE);
     vaultToken.approve(address(avManagerV3Gateway), _share);
-    vm.expectRevert(abi.encodeWithSelector(AVManagerV3Gateway.AVManagerV3Gateway_TooLittleReceived.selector));
+    vm.expectRevert(abi.encodeWithSelector(IAVManagerV3Gateway.AVManagerV3Gateway_TooLittleReceived.selector));
     avManagerV3Gateway.withdrawConvertAll(address(vaultToken), _share, true, 350 ether);
     vm.stopPrank();
   }
