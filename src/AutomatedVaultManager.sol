@@ -37,6 +37,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   error AutomatedVaultManager_TokenNotAllowed();
   error AutomatedVaultManager_InvalidParams();
   error AutomatedVaultManager_ExceedCapacity();
+  error AutomatedVaultManager_EmergencyPaused();
 
   struct TokenAmount {
     address token;
@@ -48,11 +49,11 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     address vaultOracle;
     address executor;
     uint256 minimumDeposit;
-    uint256 capacity;
     uint256 managementFeePerSec;
     uint16 withdrawalFeeBps;
     uint16 toleranceBps; // acceptable bps of equity deceased after it was manipulated
     uint8 maxLeverage;
+    uint256 capacity;
   }
 
   uint256 constant MAX_PERCENTAGE_PER_SEC = 10e16 / uint256(365 days); // (10% / (365 * 24 * 60 * 60))
@@ -71,6 +72,10 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   /// that current executor is acting on behalf of vault and can be trusted
   address public EXECUTOR_IN_SCOPE;
 
+  // vault's ERC20 address => bool flag
+  mapping(address => bool) public isDepositPaused; // flag for pausing deposit
+  mapping(address => bool) public isWithdrawPaused; // flag for pausing withdraw
+
   event LogOpenVault(address indexed _vaultToken, VaultInfo _vaultInfo);
   event LogDeposit(address indexed _vaultToken, address indexed _user, TokenAmount[] _deposits, uint256 _shareReceived);
   event LogWithdraw(address indexed _vaultToken, address indexed _user, uint256 _sharesWithdrawn);
@@ -87,6 +92,8 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   event LogSetWithdrawalFeeBps(address _vaultToken, uint16 _withdrawalFeeBps);
   event LogWithdrawalFee(address _vaultToken, uint256 _withdrawalFee);
   event LogSetCapacity(address _vaultToken, uint256 _capacity);
+  event LogSetIsDepositPaused(address _vaultToken, bool _isPaused);
+  event LogSetIsWithdrawPaused(address _vaultToken, bool _isPaused);
 
   modifier collectManagementFee(address _vaultToken) {
     if (block.timestamp > vaultFeeLastCollectedAt[_vaultToken]) {
@@ -157,6 +164,10 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     nonReentrant
     returns (bytes memory _result)
   {
+    if (isDepositPaused[_vaultToken]) {
+      revert AutomatedVaultManager_EmergencyPaused();
+    }
+
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
 
     _pullTokens(_vaultToken, _cachedVaultInfo.executor, _depositParams);
@@ -269,6 +280,10 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     nonReentrant
     returns (AutomatedVaultManager.TokenAmount[] memory _results)
   {
+    if (isWithdrawPaused[_vaultToken]) {
+      revert AutomatedVaultManager_EmergencyPaused();
+    }
+
     VaultInfo memory _cachedVaultInfo = _getVaultInfo(_vaultToken);
 
     // Revert if withdraw shares more than balance
@@ -456,6 +471,30 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   function setCapacity(address _vaultToken, uint256 _capacity) external onlyOwner {
     vaultInfos[_vaultToken].capacity = _capacity;
     emit LogSetCapacity(_vaultToken, _capacity);
+  }
+
+  function setIsDepositPaused(address[] calldata _vaultTokens, bool _isPaused) external onlyOwner {
+    uint256 _len = _vaultTokens.length;
+    for (uint256 _i; _i < _len;) {
+      address _vaultToken = _vaultTokens[_i];
+      isDepositPaused[_vaultToken] = _isPaused;
+      emit LogSetIsDepositPaused(_vaultToken, _isPaused);
+      unchecked {
+        ++_i;
+      }
+    }
+  }
+
+  function setIsWithdrawPaused(address[] calldata _vaultTokens, bool _isPaused) external onlyOwner {
+    uint256 _len = _vaultTokens.length;
+    for (uint256 _i; _i < _len;) {
+      address _vaultToken = _vaultTokens[_i];
+      isWithdrawPaused[_vaultToken] = _isPaused;
+      emit LogSetIsWithdrawPaused(_vaultToken, _isPaused);
+      unchecked {
+        ++_i;
+      }
+    }
   }
 
   /// @dev Valid value: withdrawalFeeBps <= 1000

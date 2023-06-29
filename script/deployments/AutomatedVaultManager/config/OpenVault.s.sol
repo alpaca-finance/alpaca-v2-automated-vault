@@ -6,14 +6,14 @@ import "script/BaseScript.sol";
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-contract DeployAutomatedVaultManagerScript is BaseScript {
+contract OpenVaultScript is BaseScript {
   function run() public {
     string memory _name = "Market Neutral USDT-BNB-500 PCS2";
     string memory _symbol = "N-USDT-BNB-500-PCS2";
 
     AutomatedVaultManager.VaultInfo memory vaultInfo = AutomatedVaultManager.VaultInfo({
       worker: 0x4a0cb84D2DD2bc0Aa5CC256EF6Ec3A4e1b83E74c,
-      vaultOracle: 0x42f3A6c5e555a83F00208340b60aE2643CE90a62,
+      vaultOracle: pancakeV3VaultOracle,
       executor: 0xd8BD07eDFd276AA23EB4B6806C904728B4C7DCb3,
       minimumDeposit: 1 ether,
       capacity: type(uint256).max,
