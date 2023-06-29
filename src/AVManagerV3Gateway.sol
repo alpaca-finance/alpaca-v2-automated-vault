@@ -8,7 +8,6 @@ import { SafeTransferLib } from "@solmate/utils/SafeTransferLib.sol";
 // libraries
 import { LibTickMath } from "src/libraries/LibTickMath.sol";
 import { IWNative } from "lib/alpaca-v2-money-market/solidity/contracts/interfaces/IWNative.sol";
-import { Ownable } from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 
 // interfaces
 import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
@@ -16,7 +15,7 @@ import { IPancakeV3Router } from "src/interfaces/pancake-v3/IPancakeV3Router.sol
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 
-contract AVManagerV3Gateway is Ownable {
+contract AVManagerV3Gateway {
   using SafeTransferLib for ERC20;
 
   error AVManagerV3Gateway_InvalidInput();
@@ -189,23 +188,6 @@ contract AVManagerV3Gateway is Ownable {
     ERC20(_vaultToken).safeTransferFrom(msg.sender, address(this), _shareToWithdraw);
     // withdraw
     _result = vaultManager.withdraw(_vaultToken, _shareToWithdraw, _minAmountOuts);
-  }
-
-  /// @notice Withdraw ERC20 from this contract
-  /// @param _to An destination address
-  /// @param _tokens A list of withdraw tokens
-  function ownerWithdraw(address _to, address[] calldata _tokens) external onlyOwner {
-    uint256 _length = _tokens.length;
-    for (uint256 _i; _i < _length;) {
-      _ownerWithdraw(_to, _tokens[_i]);
-      unchecked {
-        ++_i;
-      }
-    }
-  }
-
-  function _ownerWithdraw(address _to, address _token) internal {
-    ERC20(_token).safeTransfer(_to, ERC20(_token).balanceOf(address(this)));
   }
 
   receive() external payable { }
