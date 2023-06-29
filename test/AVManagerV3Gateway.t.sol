@@ -7,6 +7,7 @@ import { AVManagerV3Gateway, ERC20 } from "src/AVManagerV3Gateway.sol";
 
 contract AVManagerV3GatewayTest is E2EFixture {
   AVManagerV3Gateway internal avManagerV3Gateway;
+  address public constant wNativeToken = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
 
   constructor() E2EFixture() {
     avManagerV3Gateway = new AVManagerV3Gateway(address(vaultManager), address(pancakeV3Router));
@@ -63,25 +64,37 @@ contract AVManagerV3GatewayTest is E2EFixture {
     assertEq(address(avManagerV3Gateway).balance, 0);
   }
 
-  function _withdrawGateway(address _caller, uint256 _share, bool _zeroForOne) internal returns (uint256 _amountOut) {
+  function _withdrawConvertAll(address _caller, uint256 _share, bool _zeroForOne, uint256 _minAmountOut) internal {
     (address _worker,,,,,,,,) = vaultManager.vaultInfos(address(vaultToken));
     ERC20 _tokenOut = _zeroForOne ? PancakeV3Worker(_worker).token1() : PancakeV3Worker(_worker).token0();
+    uint256 _userTokenOutBalanceBefore;
+    // Check if wrap native
+    if (address(_tokenOut) == wNativeToken) {
+      _userTokenOutBalanceBefore = _caller.balance;
+    } else {
+      _userTokenOutBalanceBefore = _tokenOut.balanceOf(_caller);
+    }
 
     uint256 _userVaultShareBefore = vaultToken.balanceOf(_caller);
     uint256 _totalVaultTokenBefore = vaultToken.totalSupply();
-    uint256 _userTokOutBalanceBefore = _tokenOut.balanceOf(_caller);
 
     vm.startPrank(_caller);
     vaultToken.approve(address(avManagerV3Gateway), _share);
-    _amountOut = avManagerV3Gateway.withdrawConvertAll(address(vaultToken), _share, _zeroForOne, 0);
+    uint256 _amountOut = avManagerV3Gateway.withdrawConvertAll(address(vaultToken), _share, _zeroForOne, _minAmountOut);
     vm.stopPrank();
 
     uint256 _userVaultShareAfter = vaultToken.balanceOf(_caller);
     uint256 _totalVaultTokenAfter = vaultToken.totalSupply();
-    uint256 _userTokOutBalanceAfter = _tokenOut.balanceOf(_caller);
+    uint256 _userTokenOutBalanceAfter;
+    // Check if wrap native
+    if (address(_tokenOut) == wNativeToken) {
+      _userTokenOutBalanceAfter = _caller.balance;
+    } else {
+      _userTokenOutBalanceAfter = _tokenOut.balanceOf(_caller);
+    }
 
     // user token out balance should increase
-    assertEq(_userTokOutBalanceAfter - _userTokOutBalanceBefore, _amountOut);
+    assertEq(_userTokenOutBalanceAfter - _userTokenOutBalanceBefore, _amountOut);
 
     // user's decreasing share ~= vaultToken's decreasing share (assume management fee = 0)
     assertEq(_userVaultShareBefore - _userVaultShareAfter, _totalVaultTokenBefore - _totalVaultTokenAfter);
@@ -91,43 +104,39 @@ contract AVManagerV3GatewayTest is E2EFixture {
     assertEq(usdt.balanceOf(address(avManagerV3Gateway)), 0);
   }
 
-  function _withdrawNativeGateway(address _caller, uint256 _share) internal {
-    uint256 _balanceNativeBefore = address(_caller).balance;
+  function _withdrawMinimize(address _caller, uint256 _share, AutomatedVaultManager.TokenAmount[] memory _minAmountOuts)
+    internal
+  {
     uint256 _userVaultShareBefore = vaultToken.balanceOf(_caller);
     uint256 _totalVaultTokenBefore = vaultToken.totalSupply();
 
     vm.startPrank(_caller);
     vaultToken.approve(address(avManagerV3Gateway), _share);
-    uint256 _amountOut = avManagerV3Gateway.withdrawETH(address(vaultToken), _share, 0);
+    AutomatedVaultManager.TokenAmount[] memory _result =
+      avManagerV3Gateway.withdrawMinimize(address(vaultToken), _share, _minAmountOuts);
     vm.stopPrank();
-
-    uint256 _balanceNativeAfter = address(_caller).balance;
     uint256 _userVaultShareAfter = vaultToken.balanceOf(_caller);
     uint256 _totalVaultTokenAfter = vaultToken.totalSupply();
 
     // user's decreasing share ~= vaultToken's decreasing share (assume management fee = 0)
     assertEq(_userVaultShareBefore - _userVaultShareAfter, _totalVaultTokenBefore - _totalVaultTokenAfter);
 
-    // assert user native balance
-    assertEq(_balanceNativeAfter - _balanceNativeBefore, _amountOut);
-
     // avManagerV3Gateway must have nothing
     assertEq(wbnb.balanceOf(address(avManagerV3Gateway)), 0);
     assertEq(usdt.balanceOf(address(avManagerV3Gateway)), 0);
-    assertEq(address(avManagerV3Gateway).balance, 0);
   }
 
   function testCorrectness_DepositToken_withGateway_ShouldWork() external {
     uint256 _amount = 1 ether;
 
     // 1. deposit wbnb = 1 ether, worker should have 1 wbnb
-    _depositGateway(address(this), wbnb, _amount);
+    _depositGateway(USER_ALICE, wbnb, _amount);
 
     assertEq(wbnb.balanceOf(address(workerUSDTWBNB)), _amount);
     assertEq(usdt.balanceOf(address(workerUSDTWBNB)), 0);
 
     // 2. deposit usdt = 1 ether, worker should have 1 usdt
-    _depositGateway(address(this), usdt, _amount);
+    _depositGateway(USER_ALICE, usdt, _amount);
     assertEq(wbnb.balanceOf(address(workerUSDTWBNB)), _amount);
     assertEq(usdt.balanceOf(address(workerUSDTWBNB)), _amount);
   }
@@ -135,44 +144,10 @@ contract AVManagerV3GatewayTest is E2EFixture {
   function testCorrectness_DepositNative_withGateway_ShouldWork() external {
     // 1. deposit bnb = 1 ether, worker should have 1 wbnb
     uint256 _amount = 1 ether;
-    _depositNativeGateway(address(this), _amount);
+    _depositNativeGateway(USER_ALICE, _amount);
 
     assertEq(wbnb.balanceOf(address(workerUSDTWBNB)), _amount);
     assertEq(usdt.balanceOf(address(workerUSDTWBNB)), 0);
-  }
-
-  function testCorrectness_WithdrawToken_withGateway_ShouldWork() external {
-    // Note: In this vault
-    // true: withdraw as WBNB
-    // false: withdraw as USDT
-
-    // 1. deposit wbnb = 1 ether. expect withdraw and token out is "wbnb" should work
-    _depositGateway(address(this), wbnb, 1 ether);
-    uint256 _share = vaultToken.balanceOf(address(this));
-    _withdrawGateway(address(this), _share, true);
-
-    // 2. deposit usdt = 1 ether. expect withdraw and token out is "usdt" should work
-    _depositGateway(address(this), usdt, 1 ether);
-    _share = vaultToken.balanceOf(address(this));
-    _withdrawGateway(address(this), _share, false);
-
-    // 3. deposit usdt = 1 ether. expect withdraw and token out is "wbnb" should work
-    _depositGateway(address(this), usdt, 1 ether);
-    _share = vaultToken.balanceOf(address(this));
-    _withdrawGateway(address(this), _share, true);
-
-    // 4. deposit wbnb = 1 ether. expect withdraw and token out is "usdt" should work
-    _depositGateway(address(this), wbnb, 1 ether);
-    _share = vaultToken.balanceOf(address(this));
-    _withdrawGateway(address(this), _share, false);
-  }
-
-  function testCorrectness_WithdrawNative_withGateway_ShouldWork() external {
-    // 1. deposit wbnb = 1 ether, expect withdraw and bnb balance should equal 1 ether
-    uint256 _amount = 1 ether;
-    _depositNativeGateway(address(this), _amount);
-    uint256 _share = vaultToken.balanceOf(address(this));
-    _withdrawNativeGateway(address(this), _share);
   }
 
   function testRevert_Deposit_InvalidInput() external {
@@ -185,22 +160,70 @@ contract AVManagerV3GatewayTest is E2EFixture {
     avManagerV3Gateway.depositETH{ value: 0 }(address(vaultToken), 0);
   }
 
+  function testCorrectness_WithdrawConvertAll_ShouldWork() external {
+    // Note: In this vault
+    // true: withdraw as WBNB
+    // false: withdraw as USDT
+
+    uint256 _amount = 1 ether;
+    // 1. deposit 1 wbnb, withdraw as token0
+    _depositGateway(USER_ALICE, wbnb, _amount);
+    uint256 _share = vaultToken.balanceOf(USER_ALICE);
+    _withdrawConvertAll(USER_ALICE, _share, false, 0);
+
+    // 2. deposit 1 wbnb, withdraw as token1
+    _depositGateway(USER_ALICE, wbnb, _amount);
+    _share = vaultToken.balanceOf(USER_ALICE);
+    _withdrawConvertAll(USER_ALICE, _share, true, 0);
+
+    // 3. deposit wbnb, usdt. withdraw as token0
+    _depositGateway(USER_ALICE, wbnb, _amount);
+    _depositGateway(USER_ALICE, usdt, _amount);
+    _share = vaultToken.balanceOf(USER_ALICE);
+    _withdrawConvertAll(USER_ALICE, _share, false, 0);
+
+    // 4. deposit wbnb, usdt. withdraw as token1
+    _depositGateway(USER_ALICE, wbnb, _amount);
+    _depositGateway(USER_ALICE, usdt, _amount);
+    _share = vaultToken.balanceOf(USER_ALICE);
+    _withdrawConvertAll(USER_ALICE, _share, true, 0);
+  }
+
+  function testCorrectness_WithdrawMinimize_ShouldWork() external {
+    uint256 _amount = 1 ether;
+
+    // deposit 1 wbnb, 1 usdt
+    _depositGateway(USER_ALICE, wbnb, _amount);
+    _depositGateway(USER_ALICE, usdt, _amount);
+    uint256 _share = vaultToken.balanceOf(USER_ALICE);
+    AutomatedVaultManager.TokenAmount[] memory _minAmountOuts;
+    _withdrawMinimize(USER_ALICE, _share, _minAmountOuts);
+
+    // Expect
+    // native bnb = 1 ether
+    // wbnb = 0 (should not have token here)
+    // usdt = 1 ether
+    assertEq(USER_ALICE.balance, _amount);
+    assertEq(wbnb.balanceOf(USER_ALICE), 0);
+    assertEq(usdt.balanceOf(USER_ALICE), _amount);
+  }
+
   function testRevert_WhenWithdraw_WithInvalidToken() external {
     // withdraw native on vault that have no wbnb pool (TODO)
   }
 
   function testRevert_WhenWithdrawAmountOut_IsLessThan_MinReceive() external {
-    _depositGateway(address(this), wbnb, 1 ether);
-    uint256 _share = vaultToken.balanceOf(address(this));
-    vaultToken.approve(address(avManagerV3Gateway), _share);
+    _depositGateway(USER_ALICE, wbnb, 1 ether);
+    uint256 _share = vaultToken.balanceOf(USER_ALICE);
 
-    // withdrawToken
+    // withdrawMinimize was tested by from AutomatedVaultManager.withdraw
+
+    // withdrawConvertAll
+    vm.startPrank(USER_ALICE);
+    vaultToken.approve(address(avManagerV3Gateway), _share);
     vm.expectRevert(abi.encodeWithSelector(AVManagerV3Gateway.AVManagerV3Gateway_TooLittleReceived.selector));
     avManagerV3Gateway.withdrawConvertAll(address(vaultToken), _share, true, 350 ether);
-
-    // withdrawNative
-    vm.expectRevert(abi.encodeWithSelector(AVManagerV3Gateway.AVManagerV3Gateway_TooLittleReceived.selector));
-    avManagerV3Gateway.withdrawETH(address(vaultToken), _share, 2 ether);
+    vm.stopPrank();
   }
 
   receive() external payable { }

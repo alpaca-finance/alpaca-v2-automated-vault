@@ -72,12 +72,26 @@ contract AVManagerV3Gateway is Ownable {
     _result = vaultManager.deposit(msg.sender, _vaultToken, _depositParams, _minReceived);
   }
 
-  function withdrawMinimizeTrading(
+  function withdrawMinimize(
     address _vaultToken,
     uint256 _shareToWithdraw,
-    AutomatedVaultManager.TokenAmount[] memory _minAmountOut
+    AutomatedVaultManager.TokenAmount[] calldata _minAmountOut
   ) external returns (AutomatedVaultManager.TokenAmount[] memory _result) {
+    // withdraw
     _result = _withdraw(_vaultToken, _shareToWithdraw, _minAmountOut);
+    // check native
+    for (uint256 _i; _i < _result.length;) {
+      if (_result[_i].token == wNativeToken) {
+        IWNative(wNativeToken).withdraw(_result[_i].amount);
+        SafeTransferLib.safeTransferETH(msg.sender, _result[_i].amount);
+      } else {
+        ERC20(_result[_i].token).safeTransfer(msg.sender, _result[_i].amount);
+      }
+
+      unchecked {
+        ++_i;
+      }
+    }
   }
 
   function withdrawConvertAll(address _vaultToken, uint256 _shareToWithdraw, bool _zeroForOne, uint256 _minAmountOut)
@@ -85,8 +99,10 @@ contract AVManagerV3Gateway is Ownable {
     returns (uint256 _amountOut)
   {
     AutomatedVaultManager.TokenAmount[] memory _minAmountOuts;
+    // withdraw
     _withdraw(_vaultToken, _shareToWithdraw, _minAmountOuts);
 
+    // dump token0 <> token1
     (address _worker,,,,,,,,) = vaultManager.vaultInfos(_vaultToken);
     ERC20 _token0 = PancakeV3Worker(_worker).token0();
     ERC20 _token1 = PancakeV3Worker(_worker).token1();
@@ -118,52 +134,14 @@ contract AVManagerV3Gateway is Ownable {
       revert AVManagerV3Gateway_TooLittleReceived();
     }
 
-    _tokenOut.safeTransfer(msg.sender, _amountOut);
-  }
-
-  function withdrawETH(address _vaultToken, uint256 _shareToWithdraw, uint256 _minAmountOut)
-    external
-    returns (uint256 _amountOut)
-  {
-    AutomatedVaultManager.TokenAmount[] memory _minAmountOuts;
-    _withdraw(_vaultToken, _shareToWithdraw, _minAmountOuts);
-
-    (address _worker,,,,,,,,) = vaultManager.vaultInfos(_vaultToken);
-    ICommonV3Pool _pool = PancakeV3Worker(_worker).pool();
-    ERC20 _token0 = PancakeV3Worker(_worker).token0();
-    ERC20 _token1 = PancakeV3Worker(_worker).token1();
-
-    bool _zeroForOne;
-    uint256 _amountIn;
-
-    if (address(_token0) == wNativeToken) {
-      _zeroForOne = false;
-      _amountIn = _token1.balanceOf(address(this));
-    } else if (address(_token1) == wNativeToken) {
-      _zeroForOne = true;
-      _amountIn = _token0.balanceOf(address(this));
+    // check native
+    // transfer to user
+    if (address(_tokenOut) == wNativeToken) {
+      IWNative(wNativeToken).withdraw(_amountOut);
+      SafeTransferLib.safeTransferETH(msg.sender, _amountOut);
     } else {
-      revert AVManagerV3Gateway_NativeIsNotExist();
+      _tokenOut.safeTransfer(msg.sender, _amountOut);
     }
-
-    // skip swap when amount = 0
-    if (_amountIn > 0) {
-      _pool.swap(
-        address(this),
-        _zeroForOne,
-        int256(_amountIn),
-        _zeroForOne ? LibTickMath.MIN_SQRT_RATIO + 1 : LibTickMath.MAX_SQRT_RATIO - 1,
-        abi.encode(address(_token0), address(_token1), _pool.fee())
-      );
-    }
-
-    _amountOut = ERC20(wNativeToken).balanceOf(address(this));
-    if (_amountOut < _minAmountOut) {
-      revert AVManagerV3Gateway_TooLittleReceived();
-    }
-
-    // unwrap and send to msg.sender
-    _safeUnwrap(msg.sender, _amountOut);
   }
 
   function _getDepositParams(address _token, uint256 _amount)
@@ -203,15 +181,10 @@ contract AVManagerV3Gateway is Ownable {
     }
   }
 
-  function _safeUnwrap(address _to, uint256 _amount) internal {
-    IWNative(wNativeToken).withdraw(_amount);
-    SafeTransferLib.safeTransferETH(_to, _amount);
-  }
-
   function _withdraw(
     address _vaultToken,
     uint256 _shareToWithdraw,
-    AutomatedVaultManager.TokenAmount[] calldata _minAmountOuts
+    AutomatedVaultManager.TokenAmount[] memory _minAmountOuts
   ) internal returns (AutomatedVaultManager.TokenAmount[] memory _result) {
     // pull token
     ERC20(_vaultToken).safeTransferFrom(msg.sender, address(this), _shareToWithdraw);
