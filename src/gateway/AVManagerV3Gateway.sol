@@ -10,9 +10,8 @@ import { LibTickMath } from "src/libraries/LibTickMath.sol";
 import { IWNative } from "src/libraries/IWNative.sol";
 
 // interfaces
-import { IAVManagerV3Gateway } from "src/gateway/IAVManagerV3Gateway.sol";
+import { IAVManagerV3Gateway } from "src/interfaces/IAVManagerV3Gateway.sol";
 import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
-import { IPancakeV3Router } from "src/interfaces/pancake-v3/IPancakeV3Router.sol";
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 
@@ -20,15 +19,13 @@ contract AVManagerV3Gateway is IAVManagerV3Gateway {
   using SafeTransferLib for ERC20;
 
   AutomatedVaultManager public immutable vaultManager;
-  IPancakeV3Router public immutable router;
   address public immutable wNativeToken;
 
-  constructor(address _vaultManager, address _router, address _wNativeToken) {
-    if (_vaultManager == address(0) || _router == address(0)) {
+  constructor(address _vaultManager, address _wNativeToken) {
+    if (_vaultManager == address(0)) {
       revert AVManagerV3Gateway_InvalidAddress();
     }
     vaultManager = AutomatedVaultManager(_vaultManager);
-    router = IPancakeV3Router(_router);
     wNativeToken = _wNativeToken;
   }
 
@@ -166,6 +163,7 @@ contract AVManagerV3Gateway is IAVManagerV3Gateway {
         )
       )
     );
+
     if (msg.sender == _pool) {
       if (_amount0Delta > 0) {
         ERC20(_token0).safeTransfer(msg.sender, uint256(_amount0Delta));
