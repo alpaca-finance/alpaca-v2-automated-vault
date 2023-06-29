@@ -19,7 +19,7 @@
     "pancake-v3-vault": {
       "vaultOracle": {
         "proxy": "0x42f3A6c5e555a83F00208340b60aE2643CE90a62",
-        "implementation": "0x420EB436d3F1df55104B156E38564cB6F543f050"
+        "implementation": "0x85A507cB2E767afEec2C0028D6c3855A6E146235"
       },
       "executor01": {
         "proxy": "0xd8BD07eDFd276AA23EB4B6806C904728B4C7DCb3",
