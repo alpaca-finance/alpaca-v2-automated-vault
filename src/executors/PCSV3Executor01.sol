@@ -77,6 +77,7 @@ contract PCSV3Executor01 is Executor {
     external
     override
     onlyVaultManager
+    onlyOutOfExecutionScope
     returns (AutomatedVaultManager.TokenAmount[] memory _results)
   {
     uint256 _totalShares = ERC20(_vaultToken).totalSupply();
