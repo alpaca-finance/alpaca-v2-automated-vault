@@ -77,9 +77,6 @@ contract AVManagerV3Gateway_DepositTest is BaseAVManagerV3Gateway {
     uint256 _amount = 1 ether;
     deal(USER_ALICE, _amount);
 
-    uint256 _vaultTotalSupplyBefore = ERC20(vaultToken).totalSupply();
-    uint256 _userShareBefore = ERC20(vaultToken).balanceOf(USER_ALICE);
-
     mockVaultOracleAndExecutor.setGetEquityAndDebtResult({
       _equityBefore: 0,
       _debtBefore: 0,
@@ -91,15 +88,6 @@ contract AVManagerV3Gateway_DepositTest is BaseAVManagerV3Gateway {
     vm.expectRevert(abi.encodeWithSelector(AutomatedVaultManager.AutomatedVaultManager_TooLittleReceived.selector));
     avManagerV3Gateway.depositETH{ value: _amount }(vaultToken, _amount + 1 ether);
     vm.stopPrank();
-
-    uint256 _vaultTotalSupplyAfter = ERC20(vaultToken).totalSupply();
-    uint256 _userShareAfter = ERC20(vaultToken).balanceOf(USER_ALICE);
-
-    assertEq(_vaultTotalSupplyAfter - _vaultTotalSupplyBefore, _userShareAfter - _userShareBefore);
-
-    assertEq(address(avManagerV3Gateway).balance, 0);
-    assertEq(wbnb.balanceOf(address(avManagerV3Gateway)), 0);
-    assertEq(usdt.balanceOf(address(avManagerV3Gateway)), 0);
   }
 
   function testRevert_Deposit_InvalidInput() external {

@@ -17,11 +17,11 @@ import { IAVManagerV3Gateway } from "src/interfaces/IAVManagerV3Gateway.sol";
 import { DeployHelper } from "test/helpers/DeployHelper.sol";
 
 contract BaseAVManagerV3Gateway is Test, BscFixture, ProtocolActorFixture {
-  AutomatedVaultManager vaultManager;
-  MockVaultOracleAndExecutor mockVaultOracleAndExecutor;
+  AutomatedVaultManager internal vaultManager;
+  MockVaultOracleAndExecutor internal mockVaultOracleAndExecutor;
   AVManagerV3Gateway internal avManagerV3Gateway;
-  address mockWorker = makeAddr("mockWorker");
-  address managementFeeTreasury = makeAddr("managementFeeTreasury");
+  address internal mockWorker = makeAddr("mockWorker");
+  address internal managementFeeTreasury = makeAddr("managementFeeTreasury");
 
   uint256 internal constant DEFAULT_MINIMUM_DEPOSIT = 1 ether;
   uint256 internal constant DEFAULT_FEE_PER_SEC = 0;

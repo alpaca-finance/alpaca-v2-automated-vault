@@ -111,14 +111,6 @@ contract AVManagerV3GatewayWithdrawTest is BaseAVManagerV3Gateway {
     assertEq(address(avManagerV3Gateway).balance, 0);
   }
 
-  // testCorrectness_WithdrawConvertAll_zeroForOne_ShouldWork {
-
-  //   zeroForOne = true
-
-  //     // user balance
-  //   token0 balance
-  // }
-
   function testCorrectness_WithdrawMinimize_ShouldWork() external {
     // prepare
     AutomatedVaultManager.TokenAmount[] memory withdrawResults = new AutomatedVaultManager.TokenAmount[](2);
