@@ -66,7 +66,8 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
   /// @notice Get value of a nft position. Tokens value are determined by Chainlink price feeds
   /// and compared against pool's sqrtPriceX96 to protect against price manipulation.
   /// Revert on price deviation above threshold defined.
-  /// Note that there is minor precision loss during conversion of sqrtPriceX96.
+  /// Note that there is minor precision loss during conversion of sqrtPriceX96. The loss is further amplified by tick range.
+  /// The narrower the range, the higher the precision loss.
   /// @param _pool Pool address that `_tokenId` belongs to
   /// @param _tokenId Nft's tokenId
   /// @return _valueUSD USD value of liquidity that nft holds. In 18 decimals.
@@ -172,5 +173,40 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
       + IERC20(_token1).balanceOf(_pancakeV3Worker) * _token1OraclePrice / (10 ** IERC20(_token1).decimals());
 
     return (_posValUSD + _tokenValUSD - _debtValUSD, _debtValUSD);
+  }
+
+  /// @notice Exposure = position + undeployed - debt
+  function getExposure(address _vaultToken, address _pancakeV3Worker) external view returns (int256 _exposure) {
+    // Load position data
+    (,, address _token0, address _token1,, int24 _tickLower, int24 _tickUpper, uint128 _liquidity,,,,) =
+      positionManager.positions(PancakeV3Worker(_pancakeV3Worker).nftTokenId());
+    // Find volatile token to base exposure on
+    bool _isToken0Base = PancakeV3Worker(_pancakeV3Worker).isToken0Base();
+    address _volatileToken = _isToken0Base ? _token1 : _token0;
+
+    // Get amount in farm position
+    uint256 _farmAmount;
+    {
+      // Might consider using pool price to avoid precision loss
+      // (uint160 _poolSqrtPriceX96,,,,,,) = PancakeV3Worker(_pancakeV3Worker).pool().slot0();
+      // Get prices
+      uint256 _oraclePriceE18 = _safeGetTokenPriceE18(_token0) * 1e18 / _safeGetTokenPriceE18(_token1);
+      uint160 _oracleSqrtPriceX96 =
+        LibSqrtPriceX96.encodeSqrtPriceX96(_oraclePriceE18, IERC20(_token0).decimals(), IERC20(_token1).decimals());
+      (uint256 _oracleAmount0, uint256 _oracleAmount1) = LibLiquidityAmounts.getAmountsForLiquidity(
+        // _poolSqrtPriceX96,
+        _oracleSqrtPriceX96,
+        LibTickMath.getSqrtRatioAtTick(_tickLower),
+        LibTickMath.getSqrtRatioAtTick(_tickUpper),
+        _liquidity
+      );
+      _farmAmount = _isToken0Base ? _oracleAmount1 : _oracleAmount0;
+    }
+    // Get undeployed amount
+    uint256 _undeployedAmount = IERC20(_volatileToken).balanceOf(_pancakeV3Worker);
+    // Get debt amount
+    (, uint256 _debtAmount) = bank.getVaultDebt(_vaultToken, _volatileToken);
+
+    _exposure = int256(_farmAmount + _undeployedAmount) - int256(_debtAmount);
   }
 }
