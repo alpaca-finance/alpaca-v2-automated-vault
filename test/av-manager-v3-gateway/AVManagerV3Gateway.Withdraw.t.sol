@@ -123,7 +123,11 @@ contract AVManagerV3GatewayWithdrawTest is BaseAVManagerV3Gateway {
     deal(withdrawResults[1].token, address(vaultManager), withdrawResults[1].amount);
 
     // withdraw
-    AutomatedVaultManager.TokenAmount[] memory _minAmountOuts;
+    AutomatedVaultManager.TokenAmount[] memory _minAmountOuts = new AutomatedVaultManager.TokenAmount[](2);
+    _minAmountOuts[0].token = address(wbnb);
+    _minAmountOuts[0].amount = 0;
+    _minAmountOuts[1].token = address(usdt);
+    _minAmountOuts[1].amount = 0;
     vm.startPrank(USER_ALICE);
     ERC20(vaultToken).approve(address(avManagerV3Gateway), _amountToWithdraw);
     avManagerV3Gateway.withdrawMinimize(vaultToken, _amountToWithdraw, _minAmountOuts);
