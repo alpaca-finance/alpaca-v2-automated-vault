@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import "@forge-std/StdCheats.sol";
 import { IERC20 } from "src/interfaces/IERC20.sol";
-import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
 
 contract MockPancakeV3Worker is StdCheats {
   address public exeuctor;
