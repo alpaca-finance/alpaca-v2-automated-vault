@@ -26,6 +26,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   using SafeTransferLib for ERC20;
   using LibShareUtil for uint256;
 
+  error AutomatedVaultManager_InvalidMinAmountOut();
   error AutomatedVaultManager_VaultNotExist(address _vaultToken);
   error AutomatedVaultManager_WithdrawExceedBalance();
   error AutomatedVaultManager_Unauthorized();
@@ -340,20 +341,20 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     {
       uint256 _len = _results.length;
       uint256 _minAmountOutsLen = _minAmountOuts.length;
+      if (_minAmountOutsLen < _len) {
+        revert AutomatedVaultManager_InvalidMinAmountOut();
+      }
       address _token;
       uint256 _amount;
       for (uint256 _i; _i < _len;) {
         _token = _results[_i].token;
         _amount = _results[_i].amount;
+
         // Check slippage
-        for (uint256 _j; _j < _minAmountOutsLen;) {
-          if (_minAmountOuts[_j].token == _token && _minAmountOuts[_j].amount > _amount) {
-            revert AutomatedVaultManager_ExceedSlippage();
-          }
-          unchecked {
-            ++_j;
-          }
+        if (_amount < _minAmountOuts[_i].amount) {
+          revert AutomatedVaultManager_ExceedSlippage();
         }
+
         ERC20(_token).safeTransfer(msg.sender, _amount);
         unchecked {
           ++_i;
