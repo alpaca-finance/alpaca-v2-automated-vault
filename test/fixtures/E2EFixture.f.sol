@@ -94,6 +94,7 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
             vaultManager: address(vaultManager),
             positionManager: address(pancakeV3PositionManager),
             pool: address(pancakeV3USDTWBNBPool),
+            isToken0Base: true,
             router: address(pancakeV3Router),
             masterChef: address(pancakeV3MasterChef),
             zapV3: address(zapV3),

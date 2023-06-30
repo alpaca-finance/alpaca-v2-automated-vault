@@ -12,6 +12,7 @@ contract DeployPancakeV3WorkerScript is BaseScript {
 
     _deployWorker(
       pancakeV3USDTWBNB500Pool,
+      true,
       1_000,
       1_000,
       abi.encodePacked(address(cake), uint24(2500), address(usdt)),
@@ -23,6 +24,7 @@ contract DeployPancakeV3WorkerScript is BaseScript {
 
   function _deployWorker(
     address pool,
+    bool isToken0Base,
     uint16 tradingPerformanceFeeBps,
     uint16 rewardPerformanceFeeBps,
     bytes memory cakeToToken0Path,
@@ -38,6 +40,7 @@ contract DeployPancakeV3WorkerScript is BaseScript {
         vaultManager: automatedVaultManager,
         positionManager: pancakeV3PositionManager,
         pool: pool,
+        isToken0Base: isToken0Base,
         router: pancakeV3Router,
         masterChef: pancakeV3MasterChef,
         zapV3: zapV3,
