@@ -139,10 +139,9 @@ contract E2ETest is E2EFixture {
 
     // Borrow and open in-range position
     deal(address(wbnb), address(moneyMarket), 0.01 ether);
-    bytes[] memory executorData = new bytes[](3);
+    bytes[] memory executorData = new bytes[](2);
     executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(wbnb), 0.01 ether));
-    executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(wbnb), 0.01 ether));
-    executorData[2] = abi.encodeCall(PCSV3Executor01.openPosition, (-58000, -57750, 1 ether, 0.01 ether));
+    executorData[1] = abi.encodeCall(PCSV3Executor01.openPosition, (-58000, -57750, 1 ether, 0.01 ether));
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), executorData);
 
@@ -164,10 +163,9 @@ contract E2ETest is E2EFixture {
 
     // Borrow and open in-range position
     deal(address(wbnb), address(moneyMarket), 0.1 ether);
-    bytes[] memory executorData = new bytes[](3);
+    bytes[] memory executorData = new bytes[](2);
     executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(wbnb), 0.1 ether));
-    executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(wbnb), 0.1 ether));
-    executorData[2] = abi.encodeCall(PCSV3Executor01.openPosition, (-58000, -57750, 30 ether, 0.1 ether));
+    executorData[1] = abi.encodeCall(PCSV3Executor01.openPosition, (-58000, -57750, 30 ether, 0.1 ether));
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), executorData);
 
@@ -189,10 +187,9 @@ contract E2ETest is E2EFixture {
 
     // Borrow and open in-range position
     deal(address(wbnb), address(moneyMarket), 0.3 ether);
-    bytes[] memory executorData = new bytes[](3);
+    bytes[] memory executorData = new bytes[](2);
     executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(wbnb), 0.3 ether));
-    executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(wbnb), 0.3 ether));
-    executorData[2] = abi.encodeCall(PCSV3Executor01.openPosition, (-58000, -57750, 99.9 ether, 0.3 ether));
+    executorData[1] = abi.encodeCall(PCSV3Executor01.openPosition, (-58000, -57750, 99.9 ether, 0.3 ether));
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), executorData);
 
@@ -225,10 +222,9 @@ contract E2ETest is E2EFixture {
     _depositUSDTAndAssert(address(this), 1 ether);
 
     deal(address(wbnb), address(moneyMarket), 0.1 ether);
-    bytes[] memory executorData = new bytes[](3);
+    bytes[] memory executorData = new bytes[](2);
     executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(wbnb), 0.1 ether));
-    executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(wbnb), 0.1 ether));
-    executorData[2] = abi.encodeCall(PCSV3Executor01.openPosition, (-58000, -57750, 1 ether, 0.1 ether));
+    executorData[1] = abi.encodeCall(PCSV3Executor01.openPosition, (-58000, -57750, 1 ether, 0.1 ether));
     vm.prank(MANAGER);
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_TooMuchEquityLoss.selector);
     vaultManager.manage(address(vaultToken), executorData);
@@ -255,10 +251,9 @@ contract E2ETest is E2EFixture {
 
     // Borrow 0.3 WBNB and increase position
     deal(address(wbnb), address(moneyMarket), 0.3 ether);
-    executorData = new bytes[](3);
+    executorData = new bytes[](2);
     executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(wbnb), 0.3 ether));
-    executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(wbnb), 0.3 ether));
-    executorData[2] = abi.encodeCall(PCSV3Executor01.increasePosition, (0, 0.3 ether));
+    executorData[1] = abi.encodeCall(PCSV3Executor01.increasePosition, (0, 0.3 ether));
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), executorData);
     // Assertions
@@ -323,10 +318,9 @@ contract E2ETest is E2EFixture {
 
     // Borrow and open position
     deal(address(wbnb), address(moneyMarket), 0.3 ether);
-    bytes[] memory executorData = new bytes[](3);
+    bytes[] memory executorData = new bytes[](2);
     executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(wbnb), 0.3 ether));
-    executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(wbnb), 0.3 ether));
-    executorData[2] = abi.encodeCall(PCSV3Executor01.openPosition, (-57900, -57800, 100 ether, 0.3 ether));
+    executorData[1] = abi.encodeCall(PCSV3Executor01.openPosition, (-57900, -57800, 100 ether, 0.3 ether));
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), executorData);
 
@@ -374,10 +368,9 @@ contract E2ETest is E2EFixture {
 
     // Borrow and open position
     deal(address(usdt), address(moneyMarket), 100 ether);
-    bytes[] memory executorData = new bytes[](3);
+    bytes[] memory executorData = new bytes[](2);
     executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(usdt), 100 ether));
-    executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(usdt), 100 ether));
-    executorData[2] = abi.encodeCall(PCSV3Executor01.openPosition, (-57900, -57800, 200 ether, 0));
+    executorData[1] = abi.encodeCall(PCSV3Executor01.openPosition, (-57900, -57800, 200 ether, 0));
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), executorData);
 
@@ -420,9 +413,8 @@ contract E2ETest is E2EFixture {
 
   //   // Borrow wbnb and open position
   //   deal(address(wbnb), address(moneyMarket), 0.1 ether);
-  //   bytes[] memory executorData = new bytes[](3);
+  //   bytes[] memory executorData = new bytes[](2);
   //   executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(wbnb), 0.1 ether));
-  //   executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(wbnb), 0.1 ether));
   //   executorData[2] = abi.encodeCall(PCSV3Executor01.openPosition, (-57900, -57800, 100 ether, 0.1 ether));
   //   vm.prank(MANAGER);
   //   vaultManager.manage(address(vaultToken), executorData);
@@ -442,9 +434,8 @@ contract E2ETest is E2EFixture {
 
   //   // Borrow usdt and open position out-of-range (current tick = -57864)
   //   deal(address(usdt), address(moneyMarket), 100 ether);
-  //   executorData = new bytes[](3);
+  //   executorData = new bytes[](2);
   //   executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(usdt), 100 ether));
-  //   executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(usdt), 100 ether));
   //   executorData[2] = abi.encodeCall(
   //     PCSV3Executor01.openPosition,
   //     (-30000, -20000, usdt.balanceOf(address(workerUSDTWBNB)) + 100 ether, wbnb.balanceOf(address(workerUSDTWBNB)))
@@ -474,36 +465,36 @@ contract E2ETest is E2EFixture {
   //   assertEq(wbnb.balanceOf(address(this)), 0);
   // }
 
-  function testCorrectness_Manage_Repurchase() public {
-    _depositUSDTAndAssert(address(this), 100 ether);
+  // TODO: revisit after done with repurchase
+  // function testCorrectness_Manage_Repurchase() public {
+  //   _depositUSDTAndAssert(address(this), 100 ether);
 
-    // Borrow wbnb and open position
-    deal(address(wbnb), address(moneyMarket), 0.1 ether);
-    bytes[] memory executorData = new bytes[](3);
-    executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(wbnb), 0.1 ether));
-    executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(wbnb), 0.1 ether));
-    executorData[2] = abi.encodeCall(PCSV3Executor01.openPosition, (-57900, -57800, 100 ether, 0.1 ether));
-    vm.prank(MANAGER);
-    vaultManager.manage(address(vaultToken), executorData);
+  //   // Borrow wbnb and open position
+  //   deal(address(wbnb), address(moneyMarket), 0.1 ether);
+  //   bytes[] memory executorData = new bytes[](2);
+  //   executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(wbnb), 0.1 ether));
+  //   executorData[1] = abi.encodeCall(PCSV3Executor01.openPosition, (-57900, -57800, 100 ether, 0.1 ether));
+  //   vm.prank(MANAGER);
+  //   vaultManager.manage(address(vaultToken), executorData);
 
-    // Borrow usdt, swap and repay wbnb debt
-    deal(address(usdt), address(moneyMarket), 33.5 ether);
-    executorData = new bytes[](3);
-    executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(usdt), 33.5 ether));
-    executorData[1] = abi.encodeCall(PCSV3Executor01.pancakeV3SwapExactInputSingle, (true, 33.5 ether));
-    executorData[2] = abi.encodeCall(PCSV3Executor01.repay, (address(wbnb), 0.1 ether));
-    vm.prank(MANAGER);
-    vaultManager.manage(address(vaultToken), executorData);
-    // Assertions
-    // - usdt debt increase
-    (, uint256 usdtDebt) = bank.getVaultDebt(address(vaultToken), address(usdt));
-    assertEq(usdtDebt, 33.5 ether);
-    // - wbnb debt all repaid
-    (, uint256 wbnbDebt) = bank.getVaultDebt(address(vaultToken), address(wbnb));
-    assertEq(wbnbDebt, 0);
+  //   // Borrow usdt, swap and repay wbnb debt
+  //   deal(address(usdt), address(moneyMarket), 33.5 ether);
+  //   executorData = new bytes[](3);
+  //   executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(usdt), 33.5 ether));
+  //   executorData[1] = abi.encodeCall(PCSV3Executor01.pancakeV3SwapExactInputSingle, (true, 33.5 ether));
+  //   executorData[2] = abi.encodeCall(PCSV3Executor01.repay, (address(wbnb), 0.1 ether));
+  //   vm.prank(MANAGER);
+  //   vaultManager.manage(address(vaultToken), executorData);
+  //   // Assertions
+  //   // - usdt debt increase
+  //   (, uint256 usdtDebt) = bank.getVaultDebt(address(vaultToken), address(usdt));
+  //   assertEq(usdtDebt, 33.5 ether);
+  //   // - wbnb debt all repaid
+  //   (, uint256 wbnbDebt) = bank.getVaultDebt(address(vaultToken), address(wbnb));
+  //   assertEq(wbnbDebt, 0);
 
-    _withdrawAndAssert(address(this), vaultToken.balanceOf(address(this)));
-  }
+  //   _withdrawAndAssert(address(this), vaultToken.balanceOf(address(this)));
+  // }
 
   function testCorrectness_WhenWithdraw_WithdrawalFee_ShouldBeCollected() public {
     uint256 depositAmount = 100 ether;

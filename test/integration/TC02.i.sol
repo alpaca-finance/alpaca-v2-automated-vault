@@ -64,7 +64,6 @@ contract TC02 is PancakeV3WorkerExecutorBankIntegrationFixture {
     deal(address(usdt), address(workerUSDTWBNB), 150_000 ether);
     deal(address(wbnb), address(mockMoneyMarket), 333 ether);
     executor.borrow(address(wbnb), 333 ether);
-    executor.transferToWorker(address(wbnb), 333 ether);
     executor.openPosition(-57870, -57860, 150_000 ether, 333 ether);
     // Mimic vault manager minting shares when deposit
     deal(address(mockVaultUSDTWBNBToken), address(this), 1 ether, true);
