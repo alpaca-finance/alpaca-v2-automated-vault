@@ -65,12 +65,12 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     address vaultToken = _openDefaultVault();
     deal(vaultToken, address(this), sharesToWithdraw, true);
 
-    AutomatedVaultManager.TokenAmount[] memory withdrawResults = new AutomatedVaultManager.TokenAmount[](1);
+    AutomatedVaultManager.TokenAmount[] memory withdrawResults = new AutomatedVaultManager.TokenAmount[](2);
     withdrawResults[0].token = address(mockToken0);
     withdrawResults[0].amount = 0.9 ether;
     mockVaultOracleAndExecutor.setOnTokenAmount(withdrawResults);
 
-    AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](1);
+    AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](2);
     minAmountOuts[0].token = address(mockToken0);
     minAmountOuts[0].amount = 1 ether;
     // should revert: amount = 1 ether, actualAmount = 0.9 ether
@@ -97,7 +97,11 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     uint256 token0Before = mockToken0.balanceOf(address(this));
     uint256 token1Before = mockToken1.balanceOf(address(this));
 
-    AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](1);
+    AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](2);
+    minAmountOuts[0].token = address(mockToken0);
+    minAmountOuts[0].amount = 0;
+    minAmountOuts[1].token = address(mockToken1);
+    minAmountOuts[1].amount = 0;
     vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
 
     // Assertions
@@ -142,7 +146,11 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     uint256 _time = block.timestamp + _timePassed;
     vm.warp(_time);
 
-    AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](1);
+    AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](2);
+    minAmountOuts[0].token = address(mockToken0);
+    minAmountOuts[0].amount = 0;
+    minAmountOuts[1].token = address(mockToken1);
+    minAmountOuts[1].amount = 0;
     vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
 
     // state after
@@ -178,12 +186,82 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     vaultManager.setWithdrawalFeeBps(vaultToken, withdrawalFeeBps);
     vm.stopPrank();
 
-    AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](1);
+    AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](2);
+    minAmountOuts[0].token = address(mockToken0);
+    minAmountOuts[0].amount = 0;
+    minAmountOuts[1].token = address(mockToken1);
+    minAmountOuts[1].amount = 0;
     vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
 
     // expect withdrawal fee = (withdraw amount * fee bps) / max bps
     uint256 expectWithdrawalFee = (sharesToWithdraw * withdrawalFeeBps) / 10000;
     // withdrawal fee must be minted to treasury
     assertEq(IERC20(vaultToken).balanceOf(WITHDRAWAL_FEE_TREASURY), expectWithdrawalFee);
+  }
+
+  function testRevert_InvalidMinAmount_ShouldRevert() external {
+    uint256 sharesToWithdraw = 1 ether;
+
+    address vaultToken = _openDefaultVault();
+    deal(vaultToken, address(this), sharesToWithdraw, true);
+
+    AutomatedVaultManager.TokenAmount[] memory withdrawResults = new AutomatedVaultManager.TokenAmount[](2);
+    withdrawResults[0].token = address(mockToken0);
+    withdrawResults[0].amount = 1 ether;
+    withdrawResults[1].token = address(mockToken1);
+    withdrawResults[1].amount = 2 ether;
+    mockVaultOracleAndExecutor.setOnTokenAmount(withdrawResults);
+    deal(withdrawResults[0].token, address(vaultManager), withdrawResults[0].amount);
+    deal(withdrawResults[1].token, address(vaultManager), withdrawResults[1].amount);
+
+    // Case 1: Invalid min amount out length
+    AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](1);
+    minAmountOuts[0].token = address(mockToken0);
+    minAmountOuts[0].amount = 0;
+    vm.expectRevert(abi.encodeWithSelector(AutomatedVaultManager.AutomatedVaultManager_InvalidMinAmountOut.selector));
+    vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
+
+    // Case 1: Invalid min amount out address
+    minAmountOuts = new AutomatedVaultManager.TokenAmount[](2);
+    minAmountOuts[0].token = address(0);
+    minAmountOuts[0].amount = 0;
+    minAmountOuts[1].token = address(0);
+    minAmountOuts[1].amount = 0;
+    vm.expectRevert(abi.encodeWithSelector(AutomatedVaultManager.AutomatedVaultManager_TokenMismatch.selector));
+    vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
+  }
+
+  function testCorrectness_whenMinAmountOutLength_IsMoreThanWithdrawResultLength_ShouldWork() external {
+    uint256 sharesToWithdraw = 1 ether;
+
+    address vaultToken = _openDefaultVault();
+    deal(vaultToken, address(this), sharesToWithdraw, true);
+
+    AutomatedVaultManager.TokenAmount[] memory withdrawResults = new AutomatedVaultManager.TokenAmount[](2);
+    withdrawResults[0].token = address(mockToken0);
+    withdrawResults[0].amount = 1 ether;
+    withdrawResults[1].token = address(mockToken1);
+    withdrawResults[1].amount = 2 ether;
+    mockVaultOracleAndExecutor.setOnTokenAmount(withdrawResults);
+    deal(withdrawResults[0].token, address(vaultManager), withdrawResults[0].amount);
+    deal(withdrawResults[1].token, address(vaultManager), withdrawResults[1].amount);
+
+    uint256 sharesBefore = IERC20(vaultToken).balanceOf(address(this));
+    uint256 token0Before = mockToken0.balanceOf(address(this));
+    uint256 token1Before = mockToken1.balanceOf(address(this));
+
+    AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](3);
+    minAmountOuts[0].token = address(mockToken0);
+    minAmountOuts[0].amount = 0;
+    minAmountOuts[1].token = address(mockToken1);
+    minAmountOuts[1].amount = 0;
+    vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
+
+    // Assertions
+    // - user shares burned by sharesToWithdraw
+    // - user receive tokens sent from executor
+    assertEq(sharesBefore - IERC20(vaultToken).balanceOf(address(this)), sharesToWithdraw);
+    assertEq(mockToken0.balanceOf(address(this)) - token0Before, withdrawResults[0].amount);
+    assertEq(mockToken1.balanceOf(address(this)) - token1Before, withdrawResults[1].amount);
   }
 }

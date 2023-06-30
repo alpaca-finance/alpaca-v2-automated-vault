@@ -52,7 +52,11 @@ contract E2ETest is E2EFixture {
       (uint256 equityBefore,) = pancakeV3VaultOracle.getEquityAndDebt(address(vaultToken), address(workerUSDTWBNB));
       uint256 totalSharesBefore = vaultToken.totalSupply() + vaultManager.pendingManagementFee(address(vaultToken));
 
-      AutomatedVaultManager.TokenAmount[] memory minAmountOuts;
+      AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](2);
+      minAmountOuts[0].token = address(usdt);
+      minAmountOuts[0].amount = 0;
+      minAmountOuts[1].token = address(wbnb);
+      minAmountOuts[1].amount = 0;
       vm.prank(withdrawFor);
       vaultManager.withdraw(address(vaultToken), withdrawAmount, minAmountOuts);
 
