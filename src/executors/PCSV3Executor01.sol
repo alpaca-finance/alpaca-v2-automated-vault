@@ -46,6 +46,7 @@ contract PCSV3Executor01 is Executor {
   event LogTransferFromWorker(address _vaultToken, address _worker, uint256 _amount);
   event LogBorrow(address _vaultToken, address _token, uint256 _amount);
   event LogRepay(address _vaultToken, address _token, uint256 _amount);
+  event LogRepurchase(address _vaultToken, address _borrowToken, uint256 _borrowAmount, uint256 _repayAmount);
 
   function onDeposit(address _worker, address _vaultToken)
     external
@@ -265,9 +266,16 @@ contract PCSV3Executor01 is Executor {
     ERC20 _token0 = PancakeV3Worker(_worker).token0();
     ERC20 _token1 = PancakeV3Worker(_worker).token1();
     bool _zeroForOne;
-    if (_borrowToken == address(_token0)) _zeroForOne = true;
-    else if (_borrowToken == address(_token1)) _zeroForOne = false;
-    else revert Executor_InvalidParams();
+    address _repayToken;
+    if (_borrowToken == address(_token0)) {
+      _zeroForOne = true;
+      _repayToken = address(_token1);
+    } else if (_borrowToken == address(_token1)) {
+      _zeroForOne = false;
+      _repayToken = address(_token0);
+    } else {
+      revert Executor_InvalidParams();
+    }
 
     // Borrow
     bank.borrowOnBehalfOf(_vaultToken, _borrowToken, _borrowAmount);
@@ -284,8 +292,10 @@ contract PCSV3Executor01 is Executor {
     uint256 _swapAmountOut = uint256(_zeroForOne ? _amount1 : _amount0);
 
     // Repay
-    ERC20(_borrowToken).safeApprove(address(bank), _swapAmountOut);
-    bank.repayOnBehalfOf(_vaultToken, _borrowToken, _swapAmountOut);
+    ERC20(_repayToken).safeApprove(address(bank), _swapAmountOut);
+    bank.repayOnBehalfOf(_vaultToken, _repayToken, _swapAmountOut);
+
+    emit LogRepurchase(_vaultToken, _borrowToken, _borrowAmount, _swapAmountOut);
   }
 
   function pancakeV3SwapCallback(int256 _amount0Delta, int256 _amount1Delta, bytes calldata _data) external {
