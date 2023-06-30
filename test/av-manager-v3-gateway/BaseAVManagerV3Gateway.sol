@@ -12,7 +12,6 @@ import { MockVaultOracleAndExecutor } from "test/mocks/MockVaultOracleAndExecuto
 import { AutomatedVaultERC20 } from "src/AutomatedVaultERC20.sol";
 import { AVManagerV3Gateway, ERC20 } from "src/gateway/AVManagerV3Gateway.sol";
 import { IAVManagerV3Gateway } from "src/interfaces/IAVManagerV3Gateway.sol";
-import { MockPancakeV3Worker } from "test/mocks/MockPancakeV3Worker.sol";
 
 // helpers
 import { DeployHelper } from "test/helpers/DeployHelper.sol";
@@ -21,8 +20,7 @@ contract BaseAVManagerV3Gateway is Test, BscFixture, ProtocolActorFixture {
   AutomatedVaultManager vaultManager;
   MockVaultOracleAndExecutor mockVaultOracleAndExecutor;
   AVManagerV3Gateway internal avManagerV3Gateway;
-  MockPancakeV3Worker mockWorker;
-  // address mockWorker = makeAddr("mockWorker");
+  address mockWorker = makeAddr("mockWorker");
   address managementFeeTreasury = makeAddr("managementFeeTreasury");
 
   uint256 internal constant DEFAULT_MINIMUM_DEPOSIT = 1 ether;
@@ -32,8 +30,6 @@ contract BaseAVManagerV3Gateway is Test, BscFixture, ProtocolActorFixture {
 
   constructor() BscFixture() ProtocolActorFixture() {
     vm.createSelectFork("bsc_mainnet", BscFixture.FORK_BLOCK_NUMBER_1);
-
-    mockWorker = new MockPancakeV3Worker(address(usdt),address(wbnb), 0, address(0));
 
     vm.startPrank(DEPLOYER);
     vaultManager = AutomatedVaultManager(

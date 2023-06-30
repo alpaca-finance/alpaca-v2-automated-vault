@@ -9,8 +9,6 @@ contract MockPancakeV3Worker is StdCheats {
   address public exeuctor;
   address public token0;
   address public token1;
-  ICommonV3Pool public pool;
-  uint24 public fee;
   uint256 public nftTokenId;
 
   uint256 private decreasedToken0;
@@ -30,14 +28,6 @@ contract MockPancakeV3Worker is StdCheats {
   function setDecreasedTokens(uint256 amount0, uint256 amount1) external {
     decreasedToken0 = amount0;
     decreasedToken1 = amount1;
-  }
-
-  function setFee(uint24 _fee) external {
-    fee = _fee;
-  }
-
-  function setPool(address _pool) external {
-    pool = ICommonV3Pool(_pool);
   }
 
   function decreasePosition(uint128 /* _liquidity */ ) external returns (uint256, uint256) {
