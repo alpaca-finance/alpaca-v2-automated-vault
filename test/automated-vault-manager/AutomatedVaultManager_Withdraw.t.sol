@@ -227,9 +227,7 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     minAmountOuts[0].amount = 0;
     minAmountOuts[1].token = address(0);
     minAmountOuts[1].amount = 0;
-    vm.expectRevert(
-      abi.encodeWithSelector(AutomatedVaultManager.AutomatedVaultManager_InvalidMinAmountOutAddress.selector)
-    );
+    vm.expectRevert(abi.encodeWithSelector(AutomatedVaultManager.AutomatedVaultManager_TokenMismatch.selector));
     vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
   }
 
