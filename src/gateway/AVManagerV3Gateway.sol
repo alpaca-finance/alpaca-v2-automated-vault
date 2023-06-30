@@ -91,15 +91,20 @@ contract AVManagerV3Gateway is IAVManagerV3Gateway {
     external
     returns (uint256 _amountOut)
   {
-    AutomatedVaultManager.TokenAmount[] memory _minAmountOuts;
-    // withdraw
-    _withdraw(_vaultToken, _shareToWithdraw, _minAmountOuts);
-
     // dump token0 <> token1
     (address _worker,,,,,,,,) = vaultManager.vaultInfos(_vaultToken);
     ERC20 _token0 = PancakeV3Worker(_worker).token0();
     ERC20 _token1 = PancakeV3Worker(_worker).token1();
     ICommonV3Pool _pool = PancakeV3Worker(_worker).pool();
+
+    AutomatedVaultManager.TokenAmount[] memory _minAmountOuts = new AutomatedVaultManager.TokenAmount[](2);
+    _minAmountOuts[0].token = address(_token0);
+    _minAmountOuts[0].amount = 0;
+    _minAmountOuts[1].token = address(_token1);
+    _minAmountOuts[1].amount = 0;
+
+    // withdraw
+    _withdraw(_vaultToken, _shareToWithdraw, _minAmountOuts);
 
     ERC20 _tokenOut;
     uint256 _amountIn;
