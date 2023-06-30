@@ -340,8 +340,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     // Tokens should be transferred from executor to here during `onWithdraw`
     {
       uint256 _len = _results.length;
-      uint256 _minAmountOutsLen = _minAmountOuts.length;
-      if (_minAmountOutsLen < _len) {
+      if (_minAmountOuts.length < _len) {
         revert AutomatedVaultManager_InvalidMinAmountOut();
       }
       address _token;
