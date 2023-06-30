@@ -46,7 +46,6 @@ contract PCSV3Executor01 is Executor {
   event LogTransferFromWorker(address _vaultToken, address _worker, uint256 _amount);
   event LogBorrow(address _vaultToken, address _token, uint256 _amount);
   event LogRepay(address _vaultToken, address _token, uint256 _amount);
-  event LogPancakeV3SwapExactInputSingle(address _vaultToken, address _worker, bool _zeroForOne, uint256 _amountIn);
 
   function onDeposit(address _worker, address _vaultToken)
     external
@@ -258,17 +257,35 @@ contract PCSV3Executor01 is Executor {
     emit LogRepay(_vaultToken, _token, _amount);
   }
 
-  function pancakeV3SwapExactInputSingle(bool _zeroForOne, uint256 _amountIn) external onlyVaultManager {
+  /// @notice Adjust vault exposure by borrowing a token, swap to another and repay.
+  function repurchase(address _borrowToken, uint256 _borrowAmount) external onlyVaultManager {
+    // Check
+    address _vaultToken = _getCurrentVaultToken();
     address _worker = _getCurrentWorker();
+    ERC20 _token0 = PancakeV3Worker(_worker).token0();
+    ERC20 _token1 = PancakeV3Worker(_worker).token1();
+    bool _zeroForOne;
+    if (_borrowToken == address(_token0)) _zeroForOne = true;
+    else if (_borrowToken == address(_token1)) _zeroForOne = false;
+    else revert Executor_InvalidParams();
+
+    // Borrow
+    bank.borrowOnBehalfOf(_vaultToken, _borrowToken, _borrowAmount);
+
+    // Swap
     ICommonV3Pool _pool = PancakeV3Worker(_worker).pool();
-    _pool.swap(
+    (int256 _amount0, int256 _amount1) = _pool.swap(
       address(this),
       _zeroForOne,
-      int256(_amountIn), // positive = exact input
+      int256(_borrowAmount), // positive = exact input
       _zeroForOne ? LibTickMath.MIN_SQRT_RATIO + 1 : LibTickMath.MAX_SQRT_RATIO - 1, // no price limit
-      abi.encode(_pool.token0(), _pool.token1(), _pool.fee())
+      abi.encode(address(_token0), address(_token1), _pool.fee())
     );
-    emit LogPancakeV3SwapExactInputSingle(_getCurrentVaultToken(), _worker, _zeroForOne, _amountIn);
+    uint256 _swapAmountOut = uint256(_zeroForOne ? _amount1 : _amount0);
+
+    // Repay
+    ERC20(_borrowToken).safeApprove(address(bank), _swapAmountOut);
+    bank.repayOnBehalfOf(_vaultToken, _borrowToken, _swapAmountOut);
   }
 
   function pancakeV3SwapCallback(int256 _amount0Delta, int256 _amount1Delta, bytes calldata _data) external {
