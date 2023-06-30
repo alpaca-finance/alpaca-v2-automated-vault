@@ -62,4 +62,8 @@ abstract contract BaseOracle is Ownable2StepUpgradeable {
     // Normalize to 18 decimals
     return _answer.toUint256() * (10 ** (18 - _priceFeed.decimals()));
   }
+
+  function getTokenPrice(address _token) external view returns (uint256 _price) {
+    _price = _safeGetTokenPriceE18(_token);
+  }
 }
