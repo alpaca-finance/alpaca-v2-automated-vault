@@ -98,6 +98,10 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     uint256 token1Before = mockToken1.balanceOf(address(this));
 
     AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](2);
+    minAmountOuts[0].token = address(mockToken0);
+    minAmountOuts[0].amount = 0;
+    minAmountOuts[1].token = address(mockToken1);
+    minAmountOuts[1].amount = 0;
     vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
 
     // Assertions
@@ -143,6 +147,10 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     vm.warp(_time);
 
     AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](2);
+    minAmountOuts[0].token = address(mockToken0);
+    minAmountOuts[0].amount = 0;
+    minAmountOuts[1].token = address(mockToken1);
+    minAmountOuts[1].amount = 0;
     vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
 
     // state after
@@ -179,6 +187,10 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     vm.stopPrank();
 
     AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](2);
+    minAmountOuts[0].token = address(mockToken0);
+    minAmountOuts[0].amount = 0;
+    minAmountOuts[1].token = address(mockToken1);
+    minAmountOuts[1].amount = 0;
     vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
 
     // expect withdrawal fee = (withdraw amount * fee bps) / max bps
@@ -187,7 +199,7 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     assertEq(IERC20(vaultToken).balanceOf(WITHDRAWAL_FEE_TREASURY), expectWithdrawalFee);
   }
 
-  function testRevert_whenMinAmountOutLength_IsLessThanWithdrawResultLength_ShouldRevert() external {
+  function testRevert_InvalidMinAmount_ShouldRevert() external {
     uint256 sharesToWithdraw = 1 ether;
 
     address vaultToken = _openDefaultVault();
@@ -202,8 +214,22 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     deal(withdrawResults[0].token, address(vaultManager), withdrawResults[0].amount);
     deal(withdrawResults[1].token, address(vaultManager), withdrawResults[1].amount);
 
+    // Case 1: Invalid min amount out length
     AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](1);
+    minAmountOuts[0].token = address(mockToken0);
+    minAmountOuts[0].amount = 0;
     vm.expectRevert(abi.encodeWithSelector(AutomatedVaultManager.AutomatedVaultManager_InvalidMinAmountOut.selector));
+    vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
+
+    // Case 1: Invalid min amount out address
+    minAmountOuts = new AutomatedVaultManager.TokenAmount[](2);
+    minAmountOuts[0].token = address(0);
+    minAmountOuts[0].amount = 0;
+    minAmountOuts[1].token = address(0);
+    minAmountOuts[1].amount = 0;
+    vm.expectRevert(
+      abi.encodeWithSelector(AutomatedVaultManager.AutomatedVaultManager_InvalidMinAmountOutAddress.selector)
+    );
     vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
   }
 
@@ -227,6 +253,10 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     uint256 token1Before = mockToken1.balanceOf(address(this));
 
     AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](3);
+    minAmountOuts[0].token = address(mockToken0);
+    minAmountOuts[0].amount = 0;
+    minAmountOuts[1].token = address(mockToken1);
+    minAmountOuts[1].amount = 0;
     vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
 
     // Assertions

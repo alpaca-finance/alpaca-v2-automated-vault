@@ -27,6 +27,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   using LibShareUtil for uint256;
 
   error AutomatedVaultManager_InvalidMinAmountOut();
+  error AutomatedVaultManager_InvalidMinAmountOutAddress();
   error AutomatedVaultManager_VaultNotExist(address _vaultToken);
   error AutomatedVaultManager_WithdrawExceedBalance();
   error AutomatedVaultManager_Unauthorized();
@@ -348,6 +349,11 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
       for (uint256 _i; _i < _len;) {
         _token = _results[_i].token;
         _amount = _results[_i].amount;
+
+        // revert result token != min amount token
+        if (_token != _minAmountOuts[_i].token) {
+          revert AutomatedVaultManager_InvalidMinAmountOutAddress();
+        }
 
         // Check slippage
         if (_amount < _minAmountOuts[_i].amount) {
