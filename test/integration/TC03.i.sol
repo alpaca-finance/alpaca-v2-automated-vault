@@ -83,7 +83,6 @@ contract TC03 is PancakeV3WorkerExecutorBankIntegrationFixture {
     // We have to borrow 222236699054462729 WBNB to make it balance when add to -57900, -57700 range
     deal(address(wbnb), address(mockMoneyMarket), 222236699054462729);
     executor.borrow(address(wbnb), 222236699054462729);
-    executor.transferToWorker(address(wbnb), 222236699054462729);
 
     //
     // Step 3a: vault manager close out of range position

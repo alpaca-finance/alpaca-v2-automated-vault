@@ -25,12 +25,9 @@ contract ManageScript is BaseScript {
     bytes[] memory executorData = new bytes[](5);
     executorData[0] = _getBorrowTokenBytes(usdt, _usdtToBorrow);
     executorData[1] = _getBorrowTokenBytes(wbnb, _wbnbToBorrow);
-    executorData[2] = _getTransferToWorkerBytes(usdt, _usdtToBorrow);
-    executorData[3] = _getTransferToWorkerBytes(wbnb, _wbnbToBorrow);
-    executorData[4] = _getOpenPositionBytes(
+    executorData[2] = _getOpenPositionBytes(
       _tickLower, _tickUpper, (_usdtToBorrow + _usdtWorkerBalance), (_wbnbToBorrow + _wbnbWorkerBalance)
     );
-
 
     vm.startBroadcast(deployerPrivateKey);
 
@@ -49,10 +46,6 @@ contract ManageScript is BaseScript {
 
   function _getBorrowTokenBytes(address _token, uint256 _amount) internal pure returns (bytes memory _data) {
     _data = abi.encodeCall(PCSV3Executor01.borrow, (_token, _amount));
-  }
-
-  function _getTransferToWorkerBytes(address _token, uint256 _amount) internal pure returns (bytes memory _data) {
-    _data = abi.encodeCall(PCSV3Executor01.transferToWorker, (_token, _amount));
   }
 
   function _getClosePositionBytes() internal pure returns (bytes memory _data) {
