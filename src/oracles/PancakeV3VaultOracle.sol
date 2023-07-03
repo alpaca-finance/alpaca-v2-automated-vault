@@ -187,20 +187,15 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
     // Get amount in farm position
     uint256 _farmAmount;
     {
-      // Might consider using pool price to avoid precision loss
-      // (uint160 _poolSqrtPriceX96,,,,,,) = PancakeV3Worker(_pancakeV3Worker).pool().slot0();
-      // Get prices
-      uint256 _oraclePriceE18 = _safeGetTokenPriceE18(_token0) * 1e18 / _safeGetTokenPriceE18(_token1);
-      uint160 _oracleSqrtPriceX96 =
-        LibSqrtPriceX96.encodeSqrtPriceX96(_oraclePriceE18, IERC20(_token0).decimals(), IERC20(_token1).decimals());
-      (uint256 _oracleAmount0, uint256 _oracleAmount1) = LibLiquidityAmounts.getAmountsForLiquidity(
-        // _poolSqrtPriceX96,
-        _oracleSqrtPriceX96,
+      // Use pool price to calculate amount
+      (uint160 _poolSqrtPriceX96,,,,,,) = PancakeV3Worker(_pancakeV3Worker).pool().slot0();
+      (uint256 _amount0, uint256 _amount1) = LibLiquidityAmounts.getAmountsForLiquidity(
+        _poolSqrtPriceX96,
         LibTickMath.getSqrtRatioAtTick(_tickLower),
         LibTickMath.getSqrtRatioAtTick(_tickUpper),
         _liquidity
       );
-      _farmAmount = _isToken0Base ? _oracleAmount1 : _oracleAmount0;
+      _farmAmount = _isToken0Base ? _amount1 : _amount0;
     }
     // Get undeployed amount
     uint256 _undeployedAmount = IERC20(_volatileToken).balanceOf(_pancakeV3Worker);
