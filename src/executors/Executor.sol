@@ -33,17 +33,6 @@ abstract contract Executor is Multicall, Initializable, Ownable2StepUpgradeable 
     _disableInitializers();
   }
 
-  function initialize(address _vaultManager, address _bank) external initializer {
-    // Sanity check
-    AutomatedVaultManager(_vaultManager).vaultTokenImplementation();
-    if (_vaultManager != IBank(_bank).vaultManager()) {
-      revert Executor_InvalidParams();
-    }
-
-    vaultManager = _vaultManager;
-    bank = IBank(_bank);
-  }
-
   function setExecutionScope(address _worker, address _vaultToken) external onlyVaultManager {
     CURRENT_WORKER = _worker;
     CURRENT_VAULT_TOKEN = _vaultToken;

@@ -110,7 +110,10 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
 
     pancakeV3Executor = IExecutor(
       DeployHelper.deployUpgradeable(
-        "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", address(vaultManager), address(bank))
+        "PCSV3Executor01",
+        abi.encodeWithSignature(
+          "initialize(address,address,address)", address(vaultManager), address(bank), address(pancakeV3VaultOracle)
+        )
       )
     );
 

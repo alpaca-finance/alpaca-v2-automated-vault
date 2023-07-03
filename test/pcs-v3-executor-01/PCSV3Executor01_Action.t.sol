@@ -18,6 +18,7 @@ contract PCSV3Executor01ActionTest is Test {
   address mockVaultManager = makeAddr("mockVaultManager");
   address mockBank = makeAddr("mockBank");
   address mockVaultToken = makeAddr("mockVaultToken");
+  address mockVaultOracle = makeAddr("mockVaultOracle");
   MockERC20 mockToken0;
   MockERC20 mockToken1;
 
@@ -25,9 +26,11 @@ contract PCSV3Executor01ActionTest is Test {
     // Mock for sanity check
     vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
     vm.mockCall(mockBank, abi.encodeWithSignature("vaultManager()"), abi.encode(mockVaultManager));
+    vm.mockCall(mockVaultOracle, abi.encodeWithSignature("maxPriceAge()"), abi.encode(0));
     executor = PCSV3Executor01(
       DeployHelper.deployUpgradeable(
-        "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, mockBank)
+        "PCSV3Executor01",
+        abi.encodeWithSignature("initialize(address,address,address)", mockVaultManager, mockBank, mockVaultOracle)
       )
     );
 
@@ -212,9 +215,11 @@ contract PCSV3Executor01RepurchaseForkTest is PCSV3Executor01ActionTest, BscFixt
     // Mock for sanity check
     vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
     vm.mockCall(mockBank, abi.encodeWithSignature("vaultManager()"), abi.encode(mockVaultManager));
+    vm.mockCall(mockVaultOracle, abi.encodeWithSignature("maxPriceAge()"), abi.encode(0));
     executor = PCSV3Executor01(
       DeployHelper.deployUpgradeable(
-        "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, mockBank)
+        "PCSV3Executor01",
+        abi.encodeWithSignature("initialize(address,address,address)", mockVaultManager, mockBank, mockVaultOracle)
       )
     );
   }
@@ -236,6 +241,7 @@ contract PCSV3Executor01RepurchaseForkTest is PCSV3Executor01ActionTest, BscFixt
     vm.mockCall(mockWorker, abi.encodeWithSignature("token0()"), abi.encode(address(usdt)));
     vm.mockCall(mockWorker, abi.encodeWithSignature("token1()"), abi.encode(address(wbnb)));
     vm.mockCall(mockWorker, abi.encodeWithSignature("pool()"), abi.encode(address(pancakeV3USDTWBNBPool)));
+    vm.mockCall(mockWorker, abi.encodeWithSignature("isToken0Base()"), abi.encode(true));
 
     vm.expectCall(mockBank, abi.encodeWithSignature("borrowOnBehalfOf(address,address,uint256)"), 1);
     vm.expectCall(mockBank, abi.encodeWithSignature("repayOnBehalfOf(address,address,uint256)"), 1);

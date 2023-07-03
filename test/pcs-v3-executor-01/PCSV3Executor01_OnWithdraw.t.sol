@@ -22,6 +22,7 @@ contract PCSV3Executor01OnWithdrawTest is Test {
   address mockVaultManager = makeAddr("mockVaultManager");
   address mockVaultToken = makeAddr("mockVaultToken");
   address mockPositionManager = makeAddr("mockPositionManager");
+  address mockVaultOracle = makeAddr("mockVaultOracle");
   MockERC20 mockToken0;
   MockERC20 mockToken1;
 
@@ -30,9 +31,11 @@ contract PCSV3Executor01OnWithdrawTest is Test {
     // Mock for sanity check
     vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
     vm.mockCall(mockBank, abi.encodeWithSignature("vaultManager()"), abi.encode(mockVaultManager));
+    vm.mockCall(mockVaultOracle, abi.encodeWithSignature("maxPriceAge()"), abi.encode(0));
     executor = PCSV3Executor01(
       DeployHelper.deployUpgradeable(
-        "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, mockBank)
+        "PCSV3Executor01",
+        abi.encodeWithSignature("initialize(address,address,address)", mockVaultManager, mockBank, mockVaultOracle)
       )
     );
 
@@ -172,6 +175,7 @@ contract PCSV3Executor01OnWithdrawForkTest is BscFixture {
   address mockVaultManager = makeAddr("mockVaultManager");
   address mockVaultToken = makeAddr("mockVaultToken");
   address mockPositionManager = makeAddr("mockPositionManager");
+  address mockVaultOracle = makeAddr("mockVaultOracle");
 
   constructor() BscFixture() {
     vm.createSelectFork("bsc_mainnet", BscFixture.FORK_BLOCK_NUMBER_1);
@@ -180,9 +184,11 @@ contract PCSV3Executor01OnWithdrawForkTest is BscFixture {
     // Mock for sanity check
     vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
     vm.mockCall(mockBank, abi.encodeWithSignature("vaultManager()"), abi.encode(mockVaultManager));
+    vm.mockCall(mockVaultOracle, abi.encodeWithSignature("maxPriceAge()"), abi.encode(0));
     executor = PCSV3Executor01(
       DeployHelper.deployUpgradeable(
-        "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, mockBank)
+        "PCSV3Executor01",
+        abi.encodeWithSignature("initialize(address,address,address)", mockVaultManager, mockBank, mockVaultOracle)
       )
     );
   }
