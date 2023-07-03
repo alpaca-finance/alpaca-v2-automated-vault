@@ -472,23 +472,23 @@ contract E2ETest is E2EFixture {
     deal(address(wbnb), address(moneyMarket), 0.1 ether);
     bytes[] memory executorData = new bytes[](2);
     executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (address(wbnb), 0.1 ether));
-    executorData[1] = abi.encodeCall(PCSV3Executor01.openPosition, (-57900, -57800, 100 ether, 0.1 ether));
+    executorData[1] = abi.encodeCall(PCSV3Executor01.openPosition, (-57900, -57700, 100 ether, 0.1 ether));
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), executorData);
 
     // Borrow usdt, swap and repay wbnb debt
-    deal(address(usdt), address(moneyMarket), 33.5 ether);
+    deal(address(usdt), address(moneyMarket), 1 ether);
     executorData = new bytes[](1);
-    executorData[0] = abi.encodeCall(PCSV3Executor01.repurchase, (address(usdt), 33.5 ether));
+    executorData[0] = abi.encodeCall(PCSV3Executor01.repurchase, (address(usdt), 1 ether));
     vm.prank(MANAGER);
     vaultManager.manage(address(vaultToken), executorData);
     // Assertions
     // - usdt debt increase
     (, uint256 usdtDebt) = bank.getVaultDebt(address(vaultToken), address(usdt));
-    assertEq(usdtDebt, 33.5 ether);
-    // - wbnb debt all repaid
+    assertEq(usdtDebt, 1 ether);
+    // - wbnb debt repaid
     (, uint256 wbnbDebt) = bank.getVaultDebt(address(vaultToken), address(wbnb));
-    assertEq(wbnbDebt, 0);
+    assertEq(wbnbDebt, 0.1 ether - 3068419127879438); // 3068419127879438 is usdt to wbnb swap output
 
     _withdrawAndAssert(address(this), vaultToken.balanceOf(address(this)));
   }

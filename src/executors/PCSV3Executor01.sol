@@ -25,6 +25,7 @@ contract PCSV3Executor01 is Executor {
   error PCSV3Executor01_PositionAlreadyExist();
   error PCSV3Executor01_PositionNotExist();
   error PCSV3Executor01_NotPool();
+  error PCSV3Executor01_BadExposure();
 
   event LogOnDeposit(address _vaultToken, address _worker, uint256 _amountIn0, uint256 _amountIn1);
   event LogOnWithdraw(
@@ -285,12 +286,10 @@ contract PCSV3Executor01 is Executor {
     bool _zeroForOne;
     address _repayToken;
     bool _increaseExposure;
-    // uint256 _exposureBefore;
     if (_borrowToken == address(_token0)) {
       _zeroForOne = true;
       _repayToken = address(_token1);
       _increaseExposure = PancakeV3Worker(_worker).isToken0Base();
-      // _exposureBefore =
     } else if (_borrowToken == address(_token1)) {
       _zeroForOne = false;
       _repayToken = address(_token0);
@@ -298,6 +297,7 @@ contract PCSV3Executor01 is Executor {
     } else {
       revert Executor_InvalidParams();
     }
+    int256 _exposureBefore = vaultOracle.getExposure(_vaultToken, _worker);
 
     // Borrow
     bank.borrowOnBehalfOf(_vaultToken, _borrowToken, _borrowAmount);
@@ -311,12 +311,21 @@ contract PCSV3Executor01 is Executor {
       _zeroForOne ? LibTickMath.MIN_SQRT_RATIO + 1 : LibTickMath.MAX_SQRT_RATIO - 1, // no price limit
       abi.encode(address(_token0), address(_token1), _pool.fee())
     );
-    uint256 _swapAmountOut = uint256(_zeroForOne ? _amount1 : _amount0);
+    uint256 _swapAmountOut = uint256(_zeroForOne ? -_amount1 : -_amount0);
 
-    // Check vault delta exposure
-    // If borrow token is base, then delta exposure is swapAmountOut (repay volatile token with swapAmountOut, increasing exposure)
-    // If borrow token is not base, then delta exposure is -borrowAmount (borrow volatile token, reducing exposure)
-    int256 _deltaExposure = _increaseExposure ? int256(_swapAmountOut) : -int256(_borrowAmount);
+    {
+      // Check vault delta exposure
+      // If borrow token is base, then delta exposure is swapAmountOut (repay volatile token with swapAmountOut, increasing exposure)
+      // If borrow token is not base, then delta exposure is -borrowAmount (borrow volatile token, reducing exposure)
+      int256 _deltaExposure = _increaseExposure ? int256(_swapAmountOut) : -int256(_borrowAmount);
+      // Revert if exposure deviate further from 0 or causing exposure to flip sign
+      if (
+        _exposureBefore == 0 || (_exposureBefore > 0 && (_deltaExposure > 0 || _exposureBefore + _deltaExposure < 0))
+          || (_exposureBefore < 0 && (_deltaExposure < 0 || _exposureBefore + _deltaExposure > 0))
+      ) {
+        revert PCSV3Executor01_BadExposure();
+      }
+    }
 
     // Repay
     ERC20(_repayToken).safeApprove(address(bank), _swapAmountOut);
