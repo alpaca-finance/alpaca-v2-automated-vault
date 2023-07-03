@@ -8,10 +8,10 @@ contract DeployAVManagerV3GatewayScript is BaseScript {
   function run() public {
     vm.startBroadcast(deployerPrivateKey);
 
-    address avManagerV3Gateway = address(new AVManagerV3Gateway(automatedVaultManager, wbnb));
+    address _avManagerV3Gateway = address(new AVManagerV3Gateway(automatedVaultManager, wbnb));
 
     vm.stopBroadcast();
 
-    _writeJson(vm.toString(_vaultReader), ".automatedVault.avManagerV3Gateway");
+    _writeJson(vm.toString(_avManagerV3Gateway), ".automatedVault.avManagerV3Gateway");
   }
 }
