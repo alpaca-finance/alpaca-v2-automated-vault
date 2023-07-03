@@ -17,6 +17,7 @@ abstract contract Executor is Multicall, Initializable, Ownable2StepUpgradeable 
   error Executor_NoCurrentWorker();
   error Executor_NoCurrentVaultToken();
   error Executor_InvalidParams();
+  error Executor_InExecutionScope();
 
   address public vaultManager;
   IBank public bank;
@@ -24,7 +25,16 @@ abstract contract Executor is Multicall, Initializable, Ownable2StepUpgradeable 
   address private CURRENT_VAULT_TOKEN;
 
   modifier onlyVaultManager() {
-    if (msg.sender != vaultManager) revert Executor_NotVaultManager();
+    if (msg.sender != vaultManager) {
+      revert Executor_NotVaultManager();
+    }
+    _;
+  }
+
+  modifier onlyOutOfExecutionScope() {
+    if (CURRENT_WORKER != address(0) || CURRENT_VAULT_TOKEN != address(0)) {
+      revert Executor_InExecutionScope();
+    }
     _;
   }
 
