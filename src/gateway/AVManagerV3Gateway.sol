@@ -22,9 +22,10 @@ contract AVManagerV3Gateway is IAVManagerV3Gateway {
   address public immutable wNativeToken;
 
   constructor(address _vaultManager, address _wNativeToken) {
-    if (_vaultManager == address(0) || _wNativeToken == address(0)) {
-      revert AVManagerV3Gateway_InvalidAddress();
-    }
+    // sanity check
+    AutomatedVaultManager(_vaultManager).vaultTokenImplementation();
+    ERC20(_wNativeToken).decimals();
+
     vaultManager = AutomatedVaultManager(_vaultManager);
     wNativeToken = _wNativeToken;
   }
