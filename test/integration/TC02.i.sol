@@ -54,7 +54,11 @@ contract TC02 is PancakeV3WorkerExecutorBankIntegrationFixture {
 
     // Mock vault manager executor in scope
     vm.mockCall(mockVaultManager, abi.encodeWithSignature("EXECUTOR_IN_SCOPE()"), abi.encode(address(executor)));
+    // ***************************************
     // Set worker and vault token for executor
+    //  - close executor execution scope after do multicall
+    //    to mimic `AutomatedVaultManager.manage()`
+    // ***************************************
     executor.setExecutionScope(address(workerUSDTWBNB), address(mockVaultUSDTWBNBToken));
 
     //
@@ -64,7 +68,6 @@ contract TC02 is PancakeV3WorkerExecutorBankIntegrationFixture {
     deal(address(usdt), address(workerUSDTWBNB), 150_000 ether);
     deal(address(wbnb), address(mockMoneyMarket), 333 ether);
     executor.borrow(address(wbnb), 333 ether);
-    executor.transferToWorker(address(wbnb), 333 ether);
     executor.openPosition(-57870, -57860, 150_000 ether, 333 ether);
     // Mimic vault manager minting shares when deposit
     deal(address(mockVaultUSDTWBNBToken), address(this), 1 ether, true);
@@ -87,6 +90,10 @@ contract TC02 is PancakeV3WorkerExecutorBankIntegrationFixture {
     );
     changePrank(mockVaultManager);
     vm.revertTo(beforeCollectTradingFee);
+    // ***************************************
+    // Close `Executor` execution scope
+    // ***************************************
+    executor.setExecutionScope(address(0), address(0));
 
     //
     // Step 2: vault manager call onUpdate

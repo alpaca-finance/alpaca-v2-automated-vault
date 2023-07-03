@@ -59,10 +59,9 @@ contract PancakeV3VaultReaderTest is E2EFixture {
 
       // Borrow 0.3 WBNB and increase position
       deal(_token1, address(moneyMarket), 0.3 ether);
-      executorData = new bytes[](3);
+      executorData = new bytes[](2);
       executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (_token1, 0.3 ether));
-      executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (_token1, 0.3 ether));
-      executorData[2] = abi.encodeCall(PCSV3Executor01.increasePosition, (0, 0.3 ether));
+      executorData[1] = abi.encodeCall(PCSV3Executor01.increasePosition, (0, 0.3 ether));
       vm.prank(MANAGER);
       vaultManager.manage(address(vaultToken), executorData);
     }
@@ -141,10 +140,9 @@ contract PancakeV3VaultReaderTest is E2EFixture {
 
       // Borrow 0.3 WBNB and increase position
       deal(_token1, address(moneyMarket), 0.3 ether);
-      executorData = new bytes[](3);
+      executorData = new bytes[](2);
       executorData[0] = abi.encodeCall(PCSV3Executor01.borrow, (_token1, 0.3 ether));
-      executorData[1] = abi.encodeCall(PCSV3Executor01.transferToWorker, (_token1, 0.3 ether));
-      executorData[2] = abi.encodeCall(PCSV3Executor01.increasePosition, (0, 0.3 ether));
+      executorData[1] = abi.encodeCall(PCSV3Executor01.increasePosition, (0, 0.3 ether));
       vm.prank(MANAGER);
       vaultManager.manage(address(vaultToken), executorData);
     }

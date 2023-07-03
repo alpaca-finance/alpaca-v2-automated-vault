@@ -44,7 +44,6 @@ contract PCSV3Executor01 is Executor {
   event LogDecreasePosition(address _vaultToken, address _worker, uint128 _liquidity);
   event LogClosePosition(address _vaultToken, address _worker);
   event LogTransferFromWorker(address _vaultToken, address _worker, uint256 _amount);
-  event LogTransferToWorker(address _vaultToken, address _worker, uint256 _amount);
   event LogBorrow(address _vaultToken, address _token, uint256 _amount);
   event LogRepay(address _vaultToken, address _token, uint256 _amount);
   event LogPancakeV3SwapExactInputSingle(address _vaultToken, address _worker, bool _zeroForOne, uint256 _amountIn);
@@ -77,6 +76,7 @@ contract PCSV3Executor01 is Executor {
     external
     override
     onlyVaultManager
+    onlyOutOfExecutionScope
     returns (AutomatedVaultManager.TokenAmount[] memory _results)
   {
     uint256 _totalShares = ERC20(_vaultToken).totalSupply();
@@ -243,17 +243,11 @@ contract PCSV3Executor01 is Executor {
     emit LogTransferFromWorker(_getCurrentVaultToken(), _worker, _amount);
   }
 
-  function transferToWorker(address _token, uint256 _amount) external onlyVaultManager {
-    address _worker = _getCurrentWorker();
-    ERC20(_token).safeTransfer(_worker, _amount);
-    emit LogTransferToWorker(_getCurrentVaultToken(), _worker, _amount);
-  }
-
-  /// @notice Borrow token from Bank. Borrowed funds will be sent here to support borrow, swap, repay use case.
-  /// Have to transfer to worker manually.
+  /// @notice Borrow token from Bank. Borrowed funds will be sent directly to worker.
   function borrow(address _token, uint256 _amount) external onlyVaultManager {
     address _vaultToken = _getCurrentVaultToken();
     bank.borrowOnBehalfOf(_vaultToken, _token, _amount);
+    ERC20(_token).safeTransfer(_getCurrentWorker(), _amount);
     emit LogBorrow(_vaultToken, _token, _amount);
   }
 

@@ -19,7 +19,6 @@ import "../fixtures/PancakeV3WorkerExecutorBankIntegrationFixture.f.sol";
 //   - borrow
 //   - repay
 //   - transferFromWorker
-//   - transferToWorker
 
 // Scenario
 // 1) vault manager send tokens and call executor `onDeposit`
@@ -60,7 +59,12 @@ contract TC01 is PancakeV3WorkerExecutorBankIntegrationFixture {
     // Prepare for manage
     // Seed money market for borrow
     deal(address(usdt), address(mockMoneyMarket), 1 ether);
+    
+    // ***************************************
     // Set worker and vault token for executor
+    //  - close executor execution scope after do multicall
+    //    to mimic `AutomatedVaultManager.manage()`
+    // ***************************************
     executor.setExecutionScope(address(workerUSDTWBNB), address(mockVaultUSDTWBNBToken));
 
     uint256 beforeManageMulticall = vm.snapshot();
@@ -69,15 +73,14 @@ contract TC01 is PancakeV3WorkerExecutorBankIntegrationFixture {
     // Step 2a: vault manager call manage with multicall
     //
     // Prepare multicall data
-    bytes[] memory multicallData = new bytes[](8);
+    bytes[] memory multicallData = new bytes[](7);
     multicallData[0] = abi.encodeCall(PCSV3Executor01.openPosition, (-58000, -57750, 1 ether, 1 ether));
     multicallData[1] = abi.encodeCall(PCSV3Executor01.decreasePosition, (1 ether));
     multicallData[2] = abi.encodeCall(PCSV3Executor01.borrow, (address(usdt), 1 ether));
-    multicallData[3] = abi.encodeCall(PCSV3Executor01.transferToWorker, (address(usdt), 1 ether));
-    multicallData[4] = abi.encodeCall(PCSV3Executor01.increasePosition, (1 ether, 0));
-    multicallData[5] = abi.encodeCall(PCSV3Executor01.closePosition, ());
-    multicallData[6] = abi.encodeCall(PCSV3Executor01.transferFromWorker, (address(usdt), 1 ether));
-    multicallData[7] = abi.encodeCall(PCSV3Executor01.repay, (address(usdt), 1 ether));
+    multicallData[3] = abi.encodeCall(PCSV3Executor01.increasePosition, (1 ether, 0));
+    multicallData[4] = abi.encodeCall(PCSV3Executor01.closePosition, ());
+    multicallData[5] = abi.encodeCall(PCSV3Executor01.transferFromWorker, (address(usdt), 1 ether));
+    multicallData[6] = abi.encodeCall(PCSV3Executor01.repay, (address(usdt), 1 ether));
     executor.multicall(multicallData);
 
     // Assertions
@@ -113,8 +116,12 @@ contract TC01 is PancakeV3WorkerExecutorBankIntegrationFixture {
     (success,) = address(executor).call(multicallData[4]);
     (success,) = address(executor).call(multicallData[5]);
     (success,) = address(executor).call(multicallData[6]);
-    (success,) = address(executor).call(multicallData[7]);
     success; // silence compiler warning
+
+    // ***************************************
+    // Close `Executor` execution scope
+    // ***************************************
+    executor.setExecutionScope(address(0), address(0));
 
     // Invariant: should get exact same result as multicall
     assertEq(workerUSDTWBNB.nftTokenId(), 0);
