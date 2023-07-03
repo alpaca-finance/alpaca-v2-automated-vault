@@ -208,11 +208,9 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
       }
     }
 
-    // Get undeployed amount
-    uint256 _undeployedAmount = IERC20(_volatileToken).balanceOf(_pancakeV3Worker);
     // Get debt amount
     (, uint256 _debtAmount) = bank.getVaultDebt(_vaultToken, _volatileToken);
 
-    _exposure = int256(_farmAmount + _undeployedAmount) - int256(_debtAmount);
+    _exposure = int256(_farmAmount + IERC20(_volatileToken).balanceOf(_pancakeV3Worker)) - int256(_debtAmount);
   }
 }

@@ -299,6 +299,10 @@ contract PCSV3Executor01 is Executor {
       revert Executor_InvalidParams();
     }
     int256 _exposureBefore = vaultOracle.getExposure(_vaultToken, _worker);
+    // No repurchase if exposure already 0
+    if (_exposureBefore == 0) {
+      revert PCSV3Executor01_BadExposure();
+    }
 
     // Borrow
     bank.borrowOnBehalfOf(_vaultToken, _borrowToken, _borrowAmount);
@@ -314,16 +318,19 @@ contract PCSV3Executor01 is Executor {
     );
     uint256 _swapAmountOut = uint256(_zeroForOne ? -_amount1 : -_amount0);
 
+    // Check vault delta exposure
     {
-      // Check vault delta exposure
       // If borrow token is base, then delta exposure is swapAmountOut (repay volatile token with swapAmountOut, increasing exposure)
       // If borrow token is not base, then delta exposure is -borrowAmount (borrow volatile token, reducing exposure)
       int256 _deltaExposure = _increaseExposure ? int256(_swapAmountOut) : -int256(_borrowAmount);
-      // Revert if exposure deviate further from 0 or causing exposure to flip sign
-      if (
-        _exposureBefore == 0 || (_exposureBefore > 0 && (_deltaExposure > 0 || _exposureBefore + _deltaExposure < 0))
-          || (_exposureBefore < 0 && (_deltaExposure < 0 || _exposureBefore + _deltaExposure > 0))
-      ) {
+
+      // Revert if resulting exposure deviate further from 0 or causing exposure to flip sign
+      // Current exposure is long, can't make it longer or flip to short
+      if (_exposureBefore > 0 && (_deltaExposure > 0 || _exposureBefore + _deltaExposure < 0)) {
+        revert PCSV3Executor01_BadExposure();
+      }
+      // Current exposure is short, can't make it shorter or flip to long
+      if (_exposureBefore < 0 && (_deltaExposure < 0 || _exposureBefore + _deltaExposure > 0)) {
         revert PCSV3Executor01_BadExposure();
       }
     }
