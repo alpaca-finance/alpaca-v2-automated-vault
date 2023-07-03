@@ -177,26 +177,37 @@ contract PancakeV3VaultOracle is BaseOracle, IVaultOracle {
 
   /// @notice Exposure = position + undeployed - debt
   function getExposure(address _vaultToken, address _pancakeV3Worker) external view returns (int256 _exposure) {
-    // Load position data
-    (,, address _token0, address _token1,, int24 _tickLower, int24 _tickUpper, uint128 _liquidity,,,,) =
-      positionManager.positions(PancakeV3Worker(_pancakeV3Worker).nftTokenId());
-    // Find volatile token to base exposure on
-    bool _isToken0Base = PancakeV3Worker(_pancakeV3Worker).isToken0Base();
-    address _volatileToken = _isToken0Base ? _token1 : _token0;
-
-    // Get amount in farm position
     uint256 _farmAmount;
-    {
-      // Use pool price to calculate amount
-      (uint160 _poolSqrtPriceX96,,,,,,) = PancakeV3Worker(_pancakeV3Worker).pool().slot0();
-      (uint256 _amount0, uint256 _amount1) = LibLiquidityAmounts.getAmountsForLiquidity(
-        _poolSqrtPriceX96,
-        LibTickMath.getSqrtRatioAtTick(_tickLower),
-        LibTickMath.getSqrtRatioAtTick(_tickUpper),
-        _liquidity
-      );
-      _farmAmount = _isToken0Base ? _amount1 : _amount0;
+    address _volatileToken;
+    bool _isToken0Base = PancakeV3Worker(_pancakeV3Worker).isToken0Base();
+
+    uint256 _tokenId = PancakeV3Worker(_pancakeV3Worker).nftTokenId();
+    if (_tokenId == 0) {
+      // Skip farm amount calculation if worker didn't hold any nft (tokenId = 0)
+      _volatileToken = _isToken0Base
+        ? address(PancakeV3Worker(_pancakeV3Worker).pool().token1())
+        : address(PancakeV3Worker(_pancakeV3Worker).pool().token0());
+    } else {
+      // Load position data
+      (,, address _token0, address _token1,, int24 _tickLower, int24 _tickUpper, uint128 _liquidity,,,,) =
+        positionManager.positions(PancakeV3Worker(_pancakeV3Worker).nftTokenId());
+      // Find volatile token to base exposure on
+      _volatileToken = _isToken0Base ? _token1 : _token0;
+
+      // Get amount in farm position
+      {
+        // Use pool price to calculate amount
+        (uint160 _poolSqrtPriceX96,,,,,,) = PancakeV3Worker(_pancakeV3Worker).pool().slot0();
+        (uint256 _amount0, uint256 _amount1) = LibLiquidityAmounts.getAmountsForLiquidity(
+          _poolSqrtPriceX96,
+          LibTickMath.getSqrtRatioAtTick(_tickLower),
+          LibTickMath.getSqrtRatioAtTick(_tickUpper),
+          _liquidity
+        );
+        _farmAmount = _isToken0Base ? _amount1 : _amount0;
+      }
     }
+
     // Get undeployed amount
     uint256 _undeployedAmount = IERC20(_volatileToken).balanceOf(_pancakeV3Worker);
     // Get debt amount

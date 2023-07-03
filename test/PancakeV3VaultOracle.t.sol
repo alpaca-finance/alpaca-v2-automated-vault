@@ -287,7 +287,7 @@ contract PancakeV3VaultOracleTest is BscFixture, ProtocolActorFixture {
     assertEq(expectedDebtValue, debtValue);
   }
 
-  function testCorrectness_GetExposure() public {
+  function testCorrectness_GetExposure_WithPosition() public {
     (uint256 tokenId,, uint256 expectedAmount1Farm) =
       _addLiquidity(pancakeV3USDTWBNBPool, -59870, -56860, 300 ether, 1 ether);
     vm.mockCall(mockWorker, abi.encodeWithSignature("pool()"), abi.encode(address(pancakeV3USDTWBNBPool)));
@@ -308,6 +308,23 @@ contract PancakeV3VaultOracleTest is BscFixture, ProtocolActorFixture {
       int256(expectedAmount1Farm + expectedAmount1Undeployed - expectedAmount1Debt),
       0.006635307640418746 ether // actual < expected about 0.66%
     );
+  }
+
+  function testCorrectness_GetExposure_NoPosition() public {
+    vm.mockCall(mockWorker, abi.encodeWithSignature("pool()"), abi.encode(address(pancakeV3USDTWBNBPool)));
+    vm.mockCall(mockWorker, abi.encodeWithSignature("nftTokenId()"), abi.encode(0));
+    vm.mockCall(mockWorker, abi.encodeWithSignature("isToken0Base()"), abi.encode(true));
+    uint256 expectedAmount1Undeployed = 1 ether;
+    deal(address(wbnb), mockWorker, expectedAmount1Undeployed);
+    uint256 expectedAmount1Debt = 0.1 ether;
+    vm.mockCall(
+      mockBank,
+      abi.encodeWithSignature("getVaultDebt(address,address)", mockVaultToken, address(wbnb)),
+      abi.encode(0, expectedAmount1Debt)
+    );
+
+    int256 exposure = oracle.getExposure(mockVaultToken, mockWorker);
+    assertEq(exposure, int256(expectedAmount1Undeployed - expectedAmount1Debt));
   }
 
   // TODO: fuzz out range
