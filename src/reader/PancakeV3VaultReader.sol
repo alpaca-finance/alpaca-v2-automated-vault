@@ -132,7 +132,7 @@ contract PancakeV3VaultReader is IVaultReader {
     uint256 tokensOwed1;
   }
 
-  function getPendingRewards(address _vaultToken) external view returns (TokenWithAmount[] memory pendingRewards) {
+  function getPendingRewards(address _vaultToken) external view returns (TokenAmount[] memory pendingRewards) {
     (address _worker,,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
     uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
 
@@ -140,10 +140,10 @@ contract PancakeV3VaultReader is IVaultReader {
       _getPositionFees(_tokenId, PancakeV3Worker(_worker).nftPositionManager(), PancakeV3Worker(_worker).pool());
     uint256 rewardAmount = IPancakeV3MasterChef(PancakeV3Worker(_worker).masterChef()).pendingCake(_tokenId);
 
-    pendingRewards = new TokenWithAmount[](3);
-    pendingRewards[0] = TokenWithAmount({ token: address(PancakeV3Worker(_worker).token0()), amount: token0TradingFee });
-    pendingRewards[1] = TokenWithAmount({ token: address(PancakeV3Worker(_worker).token1()), amount: token1TradingFee });
-    pendingRewards[2] = TokenWithAmount({ token: cake, amount: rewardAmount });
+    pendingRewards = new TokenAmount[](3);
+    pendingRewards[0] = TokenAmount({ token: address(PancakeV3Worker(_worker).token0()), amount: token0TradingFee });
+    pendingRewards[1] = TokenAmount({ token: address(PancakeV3Worker(_worker).token1()), amount: token1TradingFee });
+    pendingRewards[2] = TokenAmount({ token: cake, amount: rewardAmount });
   }
 
   function _getPositionFees(uint256 tokenId, ICommonV3PositionManager positionManager, ICommonV3Pool pool)
