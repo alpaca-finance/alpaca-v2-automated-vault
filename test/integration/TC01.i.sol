@@ -59,7 +59,7 @@ contract TC01 is PancakeV3WorkerExecutorBankIntegrationFixture {
     // Prepare for manage
     // Seed money market for borrow
     deal(address(usdt), address(mockMoneyMarket), 1 ether);
-    
+
     // ***************************************
     // Set worker and vault token for executor
     //  - close executor execution scope after do multicall

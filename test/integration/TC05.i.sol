@@ -49,7 +49,8 @@ contract TC05 is PancakeV3WorkerExecutorBankIntegrationFixture {
     //
     // Prepare multicall data
     bytes[] memory multicallData = new bytes[](1);
-    multicallData[0] = abi.encodeCall(PCSV3Executor01.onWithdraw, (address(workerUSDTWBNB), address(mockVaultUSDTWBNBToken), 0.5 ether));
+    multicallData[0] =
+      abi.encodeCall(PCSV3Executor01.onWithdraw, (address(workerUSDTWBNB), address(mockVaultUSDTWBNBToken), 0.5 ether));
 
     // ***************************************
     // Set worker and vault token for executor
@@ -76,7 +77,7 @@ contract TC05 is PancakeV3WorkerExecutorBankIntegrationFixture {
     // Step 3: Assume that manager call onWithdraw via `AutomatedVaultManager.withdraw()`
     //
     executor.onWithdraw(address(workerUSDTWBNB), address(mockVaultUSDTWBNBToken), 1 ether);
-    
+
     // Check executor balance
     assertEq(usdt.balanceOf(address(executor)), 0);
     assertEq(wbnb.balanceOf(address(executor)), 0);
