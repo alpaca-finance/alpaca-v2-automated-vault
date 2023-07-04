@@ -36,6 +36,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   uint24 public poolFee;
   int24 public posTickLower;
   int24 public posTickUpper;
+  bool public isToken0Base;
 
   // packed slot for harvest
   address public performanceFeeBucket;
@@ -97,6 +98,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     address vaultManager;
     address positionManager;
     address pool;
+    bool isToken0Base;
     address router;
     address masterChef;
     address zapV3;
@@ -126,6 +128,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
 
     nftPositionManager = ICommonV3PositionManager(_params.positionManager);
     pool = ICommonV3Pool(_params.pool);
+    isToken0Base = _params.isToken0Base;
     router = IPancakeV3Router(_params.router);
     masterChef = IPancakeV3MasterChef(_params.masterChef);
     poolFee = ICommonV3Pool(_params.pool).fee();
@@ -193,12 +196,11 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
 
     // Update token id
     nftTokenId = _nftTokenId;
-    
+
     // Stake to PancakeMasterChefV3
     // NOTE: masterChef won't accept transfer from nft that associate with pool that doesn't have masterChef pid
     // aka no CAKE reward
     _nftPositionManager.safeTransferFrom(address(this), address(masterChef), _nftTokenId);
-    
 
     // Update worker ticks config
     posTickLower = _tickLower;

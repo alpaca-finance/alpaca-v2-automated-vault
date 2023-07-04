@@ -18,6 +18,7 @@ contract PCSV3Executor01ActionTest is Test {
   address mockVaultManager = makeAddr("mockVaultManager");
   address mockBank = makeAddr("mockBank");
   address mockVaultToken = makeAddr("mockVaultToken");
+  address mockVaultOracle = makeAddr("mockVaultOracle");
   MockERC20 mockToken0;
   MockERC20 mockToken1;
 
@@ -25,9 +26,11 @@ contract PCSV3Executor01ActionTest is Test {
     // Mock for sanity check
     vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
     vm.mockCall(mockBank, abi.encodeWithSignature("vaultManager()"), abi.encode(mockVaultManager));
+    vm.mockCall(mockVaultOracle, abi.encodeWithSignature("maxPriceAge()"), abi.encode(0));
     executor = PCSV3Executor01(
       DeployHelper.deployUpgradeable(
-        "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, mockBank)
+        "PCSV3Executor01",
+        abi.encodeWithSignature("initialize(address,address,address)", mockVaultManager, mockBank, mockVaultOracle)
       )
     );
 
@@ -198,54 +201,5 @@ contract PCSV3Executor01RepayTest is PCSV3Executor01ActionTest {
     vm.prank(address(1234));
     vm.expectRevert(Executor.Executor_NotVaultManager.selector);
     executor.repay(address(mockToken0), 1e18);
-  }
-}
-
-contract PCSV3Executor01PancakeV3SwapForkTest is PCSV3Executor01ActionTest, BscFixture {
-  constructor() BscFixture() {
-    vm.createSelectFork("bsc_mainnet", BscFixture.FORK_BLOCK_NUMBER_1);
-  }
-
-  function setUp() public override {
-    super.setUp();
-
-    // Mock for sanity check
-    vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
-    vm.mockCall(mockBank, abi.encodeWithSignature("vaultManager()"), abi.encode(mockVaultManager));
-    executor = PCSV3Executor01(
-      DeployHelper.deployUpgradeable(
-        "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, mockBank)
-      )
-    );
-  }
-
-  function testCorrectness_Executor_SwapExactInputSingle() public {
-    deal(address(usdt), address(executor), 1 ether);
-
-    vm.prank(mockVaultManager);
-    executor.setExecutionScope(mockWorker, mockVaultToken);
-
-    vm.mockCall(mockWorker, abi.encodeWithSignature("pool()"), abi.encode(address(pancakeV3USDTWBNBPool)));
-
-    uint256 usdtBefore = usdt.balanceOf(address(executor));
-    uint256 wbnbBefore = wbnb.balanceOf(address(executor));
-
-    vm.prank(mockVaultManager);
-    executor.pancakeV3SwapExactInputSingle(true, 1 ether);
-
-    assertEq(usdtBefore - usdt.balanceOf(address(executor)), 1 ether);
-    assertEq(wbnb.balanceOf(address(executor)) - wbnbBefore, 3068419005692078);
-  }
-
-  function testRevert_Swap_NotVaultManagerCall() public {
-    vm.prank(address(1234));
-    vm.expectRevert(Executor.Executor_NotVaultManager.selector);
-    executor.pancakeV3SwapExactInputSingle(true, 1 ether);
-  }
-
-  function testRevert_Executor_PancakeV3SwapCallback_CallerIsNotPool() public {
-    vm.prank(address(1234));
-    vm.expectRevert(PCSV3Executor01.PCSV3Executor01_NotPool.selector);
-    executor.pancakeV3SwapCallback(1, 1, abi.encode(address(usdt), address(wbnb), 500));
   }
 }

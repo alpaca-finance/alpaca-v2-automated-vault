@@ -41,6 +41,7 @@ contract PancakeV3WorkerExecutorBankIntegrationFixture is Test, BscFixture, Prot
   address public mockVaultManager = makeAddr("mockVaultManager");
   MockERC20 public mockVaultUSDTWBNBToken;
   MockERC20 public mockVaultDOGEWBNBToken;
+  address public mockVaultOracle = makeAddr("mockVaultOracle");
 
   constructor() BscFixture() ProtocolActorFixture() {
     vm.createSelectFork("bsc_mainnet", BscFixture.FORK_BLOCK_NUMBER_1);
@@ -50,6 +51,8 @@ contract PancakeV3WorkerExecutorBankIntegrationFixture is Test, BscFixture, Prot
     mockMoneyMarket = new MockMoneyMarket();
     // Mock for sanity check
     vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
+    vm.mockCall(mockVaultOracle, abi.encodeWithSignature("maxPriceAge()"), abi.encode(0));
+
     bank = Bank(
       DeployHelper.deployUpgradeable(
         "Bank", abi.encodeWithSelector(Bank.initialize.selector, address(mockMoneyMarket), mockVaultManager)
@@ -57,7 +60,8 @@ contract PancakeV3WorkerExecutorBankIntegrationFixture is Test, BscFixture, Prot
     );
     executor = PCSV3Executor01(
       DeployHelper.deployUpgradeable(
-        "PCSV3Executor01", abi.encodeWithSignature("initialize(address,address)", mockVaultManager, address(bank))
+        "PCSV3Executor01",
+        abi.encodeWithSignature("initialize(address,address,address)", mockVaultManager, address(bank), mockVaultOracle)
       )
     );
 
@@ -70,6 +74,7 @@ contract PancakeV3WorkerExecutorBankIntegrationFixture is Test, BscFixture, Prot
             vaultManager: mockVaultManager,
             positionManager: address(pancakeV3PositionManager),
             pool: address(pancakeV3USDTWBNBPool),
+            isToken0Base: true,
             router: address(pancakeV3Router),
             masterChef: address(pancakeV3MasterChef),
             zapV3: address(zapV3),

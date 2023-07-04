@@ -114,6 +114,7 @@ contract PancakeV3WorkerHarvestTest is PancakeV3WorkerFixture {
             vaultManager: address(vaultManager),
             positionManager: address(pancakeV3PositionManager),
             pool: address(pancakeV3CAKEUSDTPool),
+            isToken0Base: true,
             router: address(pancakeV3Router),
             masterChef: address(pancakeV3MasterChef),
             zapV3: address(zapV3),
