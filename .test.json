@@ -8,6 +8,7 @@
   },
   "automatedVault": {
     "automatedVaultERC20Implementation": "0x4a41d9eeFb9d252A59d90A2918Dd1852ddA98A6c",
+    "avManagerV3Gateway": "",
     "automatedVaultManager": {
       "proxy": "0x356B7e738592235Da0593F0E652C34278972C3F7",
       "implementation": "0x430824fe4D4800868640E21Bd851C6104aF2d855"

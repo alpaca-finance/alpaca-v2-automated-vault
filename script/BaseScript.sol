@@ -21,6 +21,7 @@ contract BaseScript is Script {
   address internal automatedVaultManager;
   address internal bank;
   address internal pancakeV3VaultOracle;
+  address internal avManagerV3Gateway;
 
   // Dependencies
   address internal moneyMarket;
@@ -48,6 +49,7 @@ contract BaseScript is Script {
     bank = abi.decode(configJson.parseRaw(".automatedVault.bank.proxy"), (address));
     pancakeV3VaultOracle =
       abi.decode(configJson.parseRaw(".automatedVault.pancake-v3-vault.vaultOracle.proxy"), (address));
+    avManagerV3Gateway = abi.decode(configJson.parseRaw(".automatedVault.avManagerV3Gateway"), (address));
     // Dependencies
     moneyMarket = abi.decode(configJson.parseRaw(".dependencies.moneyMarket"), (address));
     pancakeV3PositionManager = abi.decode(configJson.parseRaw(".dependencies.pancake-v3.positionManager"), (address));
