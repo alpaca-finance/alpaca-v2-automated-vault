@@ -15,10 +15,17 @@ interface IVaultReader {
     uint256 upperPrice; // quote token0/token1
   }
 
-  function getVaultSummary(address vaultToken) external view returns (VaultSummary memory);
+  struct TokenWithAmount {
+    address token;
+    uint256 amount;
+  }
+
+  function getVaultSummary(address _vaultToken) external view returns (VaultSummary memory);
 
   function getVaultSharePrice(address _vaultToken)
     external
     view
     returns (uint256 _sharePrice, uint256 _sharePriceWithManagementFee);
+
+  function getPendingRewards(address _vaultToken) external view returns (TokenWithAmount[] memory pendingRewards);
 }

@@ -24,6 +24,7 @@ contract PancakeV3VaultReader is IVaultReader {
   AutomatedVaultManager internal immutable automatedVaultManager;
   PancakeV3VaultOracle internal immutable pancakeV3VaultOracle;
   Bank internal immutable bank;
+  address internal constant cake = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
   IChainlinkAggregator internal constant cakePriceFeed =
     IChainlinkAggregator(0xB6064eD41d4f67e353768aA239cA86f4F73665a1);
 
@@ -131,11 +132,27 @@ contract PancakeV3VaultReader is IVaultReader {
     uint256 tokensOwed1;
   }
 
+  function getPendingRewards(address _vaultToken) external view returns (TokenWithAmount[] memory pendingRewards) {
+    (address _worker,,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
+    uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
+
+    (uint256 token0TradingFee, uint256 token1TradingFee) =
+      _getPositionFees(_tokenId, PancakeV3Worker(_worker).nftPositionManager(), PancakeV3Worker(_worker).pool());
+    uint256 rewardAmount = IPancakeV3MasterChef(PancakeV3Worker(_worker).masterChef()).pendingCake(_tokenId);
+
+    pendingRewards = new TokenWithAmount[](3);
+    pendingRewards[0] = TokenWithAmount({ token: address(PancakeV3Worker(_worker).token0()), amount: token0TradingFee });
+    pendingRewards[1] = TokenWithAmount({ token: address(PancakeV3Worker(_worker).token1()), amount: token1TradingFee });
+    pendingRewards[2] = TokenWithAmount({ token: cake, amount: rewardAmount });
+  }
+
   function _getPositionFees(uint256 tokenId, ICommonV3PositionManager positionManager, ICommonV3Pool pool)
     private
     view
     returns (uint256 amount0, uint256 amount1)
   {
+    if (tokenId == 0) return (amount0, amount1);
+
     (
       ,
       ,
