@@ -36,12 +36,11 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   uint24 public poolFee;
   int24 public posTickLower;
   int24 public posTickUpper;
-  bool public isToken0Base;
 
   // packed slot for harvest
   address public performanceFeeBucket;
   uint16 public tradingPerformanceFeeBps;
-  uint16 public rewardPerformanceFeeBps;
+
   uint40 public lastHarvest;
 
   IZapV3 public zapV3;
@@ -54,6 +53,8 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
 
   uint256 public nftTokenId;
 
+  uint16 public rewardPerformanceFeeBps;
+  bool public isToken0Base;
   mapping(address => bytes) public cakeToTokenPath;
 
   /// Authorization
