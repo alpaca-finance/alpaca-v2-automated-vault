@@ -61,6 +61,8 @@ contract PCSV3Executor01 is Executor {
       revert Executor_InvalidParams();
     }
 
+    __Ownable2Step_init();
+
     vaultManager = _vaultManager;
     bank = IBank(_bank);
     vaultOracle = PancakeV3VaultOracle(_vaultOracle);
