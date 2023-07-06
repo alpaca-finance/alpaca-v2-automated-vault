@@ -53,12 +53,13 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
 
   uint256 public nftTokenId;
 
+  /// Authorization
+  AutomatedVaultManager public vaultManager;
+
   uint16 public rewardPerformanceFeeBps;
   bool public isToken0Base;
   mapping(address => bytes) public cakeToTokenPath;
 
-  /// Authorization
-  AutomatedVaultManager public vaultManager;
 
   /// Modifier
   modifier onlyExecutorInScope() {
