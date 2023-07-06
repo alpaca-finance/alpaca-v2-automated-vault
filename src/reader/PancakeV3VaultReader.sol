@@ -202,4 +202,32 @@ contract PancakeV3VaultReader is IVaultReader {
       feeGrowthInside1X128 = upperFeeGrowthOutside1X128 - lowerFeeGrowthOutside1X128;
     }
   }
+
+  struct RepurchaseSummary {
+    address borrowToken; // token to borrow when repurchase, the other token will be repay token
+    address stableToken;
+    address assetToken;
+    int256 exposureAmount; // in assetToken
+    uint256 stableTokenPrice;
+    uint256 assetTokenPrice;
+  }
+
+  function getRepurchaseSummary(address _vaultToken) external view returns (RepurchaseSummary memory out) {
+    (address _worker,,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
+
+    bool _isToken0Base = PancakeV3Worker(_worker).isToken0Base();
+    if (_isToken0Base) {
+      out.stableToken = address(PancakeV3Worker(_worker).token0());
+      out.assetToken = address(PancakeV3Worker(_worker).token1());
+    } else {
+      out.stableToken = address(PancakeV3Worker(_worker).token1());
+      out.assetToken = address(PancakeV3Worker(_worker).token0());
+    }
+
+    out.exposureAmount = pancakeV3VaultOracle.getExposure(_vaultToken, _worker);
+    // if exposure is long, borrow asset token to decrease exposure, vice versa
+    out.borrowToken = out.exposureAmount > 0 ? out.assetToken : out.stableToken;
+    out.stableTokenPrice = pancakeV3VaultOracle.getTokenPrice(out.stableToken);
+    out.assetTokenPrice = pancakeV3VaultOracle.getTokenPrice(out.assetToken);
+  }
 }
