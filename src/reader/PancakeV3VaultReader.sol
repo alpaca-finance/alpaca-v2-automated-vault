@@ -212,22 +212,22 @@ contract PancakeV3VaultReader is IVaultReader {
     uint256 assetTokenPrice;
   }
 
-  function getRepurchaseSummary(address _vaultToken) external view returns (RepurchaseSummary memory out) {
+  function getRepurchaseSummary(address _vaultToken) external view returns (RepurchaseSummary memory _result) {
     (address _worker,,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
 
     bool _isToken0Base = PancakeV3Worker(_worker).isToken0Base();
     if (_isToken0Base) {
-      out.stableToken = address(PancakeV3Worker(_worker).token0());
-      out.assetToken = address(PancakeV3Worker(_worker).token1());
+      _result.stableToken = address(PancakeV3Worker(_worker).token0());
+      _result.assetToken = address(PancakeV3Worker(_worker).token1());
     } else {
-      out.stableToken = address(PancakeV3Worker(_worker).token1());
-      out.assetToken = address(PancakeV3Worker(_worker).token0());
+      _result.stableToken = address(PancakeV3Worker(_worker).token1());
+      _result.assetToken = address(PancakeV3Worker(_worker).token0());
     }
 
-    out.exposureAmount = pancakeV3VaultOracle.getExposure(_vaultToken, _worker);
+    _result.exposureAmount = pancakeV3VaultOracle.getExposure(_vaultToken, _worker);
     // if exposure is long, borrow asset token to decrease exposure, vice versa
-    out.borrowToken = out.exposureAmount > 0 ? out.assetToken : out.stableToken;
-    out.stableTokenPrice = pancakeV3VaultOracle.getTokenPrice(out.stableToken);
-    out.assetTokenPrice = pancakeV3VaultOracle.getTokenPrice(out.assetToken);
+    _result.borrowToken = _result.exposureAmount > 0 ? _result.assetToken : _result.stableToken;
+    _result.stableTokenPrice = pancakeV3VaultOracle.getTokenPrice(_result.stableToken);
+    _result.assetTokenPrice = pancakeV3VaultOracle.getTokenPrice(_result.assetToken);
   }
 }
