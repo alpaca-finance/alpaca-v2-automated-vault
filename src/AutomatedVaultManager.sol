@@ -367,7 +367,8 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
       }
     }
 
-    emit LogWithdraw(_vaultToken, msg.sender, _sharesToWithdraw);
+    // Assume `tx.origin` is user for tracking purpose
+    emit LogWithdraw(_vaultToken, tx.origin, _sharesToWithdraw);
   }
 
   /// =========================
