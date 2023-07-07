@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 // dependencies
 import { ERC20 } from "@solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "@solmate/utils/SafeTransferLib.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 // contracts
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
@@ -55,6 +56,7 @@ contract PCSV3Executor01 is Executor {
 
   function initialize(address _vaultManager, address _bank, address _vaultOracle) external initializer {
     // Sanity check
+    Ownable2StepUpgradeable.__Ownable2Step_init();
     AutomatedVaultManager(_vaultManager).vaultTokenImplementation();
     PancakeV3VaultOracle(_vaultOracle).maxPriceAge();
     if (_vaultManager != IBank(_bank).vaultManager()) {

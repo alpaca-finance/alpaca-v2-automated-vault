@@ -60,7 +60,6 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   bool public isToken0Base;
   mapping(address => bytes) public cakeToTokenPath;
 
-
   /// Modifier
   modifier onlyExecutorInScope() {
     if (msg.sender != vaultManager.EXECUTOR_IN_SCOPE()) {
@@ -593,5 +592,9 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     }
     cakeToTokenPath[_toToken] = _path;
     emit LogSetCakeToTokenPath(_toToken, _path);
+  }
+
+  function setIsToken0Base(bool _isToken0Base) external onlyOwner {
+    isToken0Base = _isToken0Base;
   }
 }

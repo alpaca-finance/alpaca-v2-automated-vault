@@ -367,7 +367,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
       }
     }
 
-    emit LogWithdraw(_vaultToken, msg.sender, _sharesToWithdraw);
+    emit LogWithdraw(_vaultToken, tx.origin, _sharesToWithdraw);
   }
 
   /// =========================
@@ -477,6 +477,10 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   function setCapacity(address _vaultToken, uint256 _capacity) external onlyOwner {
     vaultInfos[_vaultToken].capacity = _capacity;
     emit LogSetCapacity(_vaultToken, _capacity);
+  }
+
+  function setExecutor(address _vaultToken, address newExecutor) external onlyOwner {
+    vaultInfos[_vaultToken].executor = newExecutor;
   }
 
   function setIsDepositPaused(address[] calldata _vaultTokens, bool _isPaused) external onlyOwner {

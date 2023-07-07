@@ -8,10 +8,10 @@
   },
   "automatedVault": {
     "automatedVaultERC20Implementation": "0x4a41d9eeFb9d252A59d90A2918Dd1852ddA98A6c",
-    "avManagerV3Gateway": "",
+    "avManagerV3Gateway": "0xc55d7B14D125a2e035A22105A576fEA23A9Abc78",
     "automatedVaultManager": {
       "proxy": "0x356B7e738592235Da0593F0E652C34278972C3F7",
-      "implementation": "0x430824fe4D4800868640E21Bd851C6104aF2d855"
+      "implementation": "0xDa45D8358f996058E5b31fb43Ad2b613771c1DA6"
     },
     "bank": {
       "proxy": "0x4e7C950b87999a42cA63cc5492d52F93e28e5351",
@@ -20,11 +20,11 @@
     "pancake-v3-vault": {
       "vaultOracle": {
         "proxy": "0x42f3A6c5e555a83F00208340b60aE2643CE90a62",
-        "implementation": "0x85A507cB2E767afEec2C0028D6c3855A6E146235"
+        "implementation": "0xF01B2A60096eE4B9Aac0BbCEC6CBD51C755dAcDc"
       },
       "executor01": {
-        "proxy": "0xd8BD07eDFd276AA23EB4B6806C904728B4C7DCb3",
-        "implementation": "0x251e2171e2D5305275a974591fCA91089ff19D4e"
+        "proxy": "0x2B614d02C29E3D626D1Ba4df39D75231fE66E1ca",
+        "implementation": "0x02fC67086E47116CB3f5b09671A1Ad9E080750DB"
       },
       "pancakeV3VaultReader": "",
       "vaults": [
@@ -34,7 +34,7 @@
           "vaultToken": "0x130A4791cC36c3aaD8d4282404D5D7976C1E9246",
           "worker": {
             "proxy": "0x969A18e47256b35F54081a472D22e741C5AE607F",
-            "implementation": "0x0861F1c23701ee140568e49b992Ed1910Bd51190"
+            "implementation": "0xD045ebC50D1D45dC76e57c02A69C542610e1987a"
           }
         },
         {
@@ -43,7 +43,7 @@
           "vaultToken": "0x5dc672d3528535a97173AeD4671ccd2E5f627e44",
           "worker": {
             "proxy": "0x4a0cb84D2DD2bc0Aa5CC256EF6Ec3A4e1b83E74c",
-            "implementation": "0x0861F1c23701ee140568e49b992Ed1910Bd51190"
+            "implementation": "0xD045ebC50D1D45dC76e57c02A69C542610e1987a"
           }
         }
       ]
