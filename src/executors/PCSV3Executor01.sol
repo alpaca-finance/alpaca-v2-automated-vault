@@ -281,7 +281,6 @@ contract PCSV3Executor01 is Executor {
   }
 
   /// @notice Adjust vault exposure by borrowing a token, swap to another and repay.
-  // TODO: include token here to exposure
   function repurchase(address _borrowToken, uint256 _borrowAmount) external onlyVaultManager {
     // Check
     address _vaultToken = _getCurrentVaultToken();
@@ -302,7 +301,8 @@ contract PCSV3Executor01 is Executor {
     } else {
       revert Executor_InvalidParams();
     }
-    int256 _exposureBefore = vaultOracle.getExposure(_vaultToken, _worker);
+    int256 _exposureBefore = vaultOracle.getExposure(_vaultToken, _worker)
+      + int256(_increaseExposure ? _token1.balanceOf(address(this)) : _token0.balanceOf(address(this)));
     // No repurchase if exposure already 0
     if (_exposureBefore == 0) {
       revert PCSV3Executor01_BadExposure();
