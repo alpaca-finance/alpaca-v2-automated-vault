@@ -22,9 +22,6 @@ import { LibTickMath } from "src/libraries/LibTickMath.sol";
 contract PCSV3Executor01 is Executor {
   using SafeTransferLib for ERC20;
 
-  // TODO: remove unused
-  error PCSV3Executor01_PositionAlreadyExist();
-  error PCSV3Executor01_PositionNotExist();
   error PCSV3Executor01_NotPool();
   error PCSV3Executor01_BadExposure();
 

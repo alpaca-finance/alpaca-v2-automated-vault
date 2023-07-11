@@ -33,7 +33,6 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   error AutomatedVaultManager_Unauthorized();
   error AutomatedVaultManager_TooMuchEquityLoss();
   error AutomatedVaultManager_TooMuchLeverage();
-  error AutomatedVaultManager_ExceedSlippage();
   error AutomatedVaultManager_BelowMinimumDeposit();
   error AutomatedVaultManager_TooLittleReceived();
   error AutomatedVaultManager_TokenNotAllowed();
@@ -58,7 +57,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     uint256 capacity;
   }
 
-  uint256 constant MAX_PERCENTAGE_PER_SEC = 10e16 / uint256(365 days); // (10% / (365 * 24 * 60 * 60))
+  uint256 constant MAX_MANAGEMENT_FEE_PER_SEC = 10e16 / uint256(365 days); // 10% per year
 
   address public vaultTokenImplementation;
   address public managementFeeTreasury;
@@ -105,6 +104,13 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     _;
   }
 
+  modifier onlyExistedVault(address _vaultToken) {
+    if (vaultInfos[_vaultToken].worker == address(0)) {
+      revert AutomatedVaultManager_VaultNotExist(_vaultToken);
+    }
+    _;
+  }
+
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
     _disableInitializers();
@@ -114,6 +120,13 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     external
     initializer
   {
+    if (
+      _vaultTokenImplementation == address(0) || _managementFeeTreasury == address(0)
+        || _withdrawalFeeTreasury == address(0)
+    ) {
+      revert AutomatedVaultManager_InvalidParams();
+    }
+
     Ownable2StepUpgradeable.__Ownable2Step_init();
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
 
@@ -130,10 +143,9 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     uint256 _lastCollectedFee = vaultFeeLastCollectedAt[_vaultToken];
 
     if (block.timestamp > _lastCollectedFee) {
-      VaultInfo memory _vaultInfo = _getVaultInfo(_vaultToken);
       unchecked {
         _pendingFee = (
-          IAutomatedVaultERC20(_vaultToken).totalSupply() * _vaultInfo.managementFeePerSec
+          IAutomatedVaultERC20(_vaultToken).totalSupply() * vaultInfos[_vaultToken].managementFeePerSec
             * (block.timestamp - _lastCollectedFee)
         ) / 1e18;
       }
@@ -162,6 +174,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
 
   function deposit(address _depositFor, address _vaultToken, TokenAmount[] calldata _depositParams, uint256 _minReceive)
     external
+    onlyExistedVault(_vaultToken)
     collectManagementFee(_vaultToken)
     nonReentrant
     returns (bytes memory _result)
@@ -278,6 +291,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
 
   function withdraw(address _vaultToken, uint256 _sharesToWithdraw, TokenAmount[] calldata _minAmountOuts)
     external
+    onlyExistedVault(_vaultToken)
     collectManagementFee(_vaultToken)
     nonReentrant
     returns (AutomatedVaultManager.TokenAmount[] memory _results)
@@ -293,7 +307,11 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
       revert AutomatedVaultManager_WithdrawExceedBalance();
     }
 
-    uint256 _actualWithdrawAmount = (_sharesToWithdraw * (MAX_BPS - _cachedVaultInfo.withdrawalFeeBps)) / MAX_BPS;
+    uint256 _actualWithdrawAmount;
+    // Safe to do unchecked because we already checked withdraw amount < balance and max bps won't overflow anyway
+    unchecked {
+      _actualWithdrawAmount = (_sharesToWithdraw * (MAX_BPS - _cachedVaultInfo.withdrawalFeeBps)) / MAX_BPS;
+    }
 
     ///////////////////////////
     // Executor scope opened //
@@ -316,8 +334,6 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     // Executor scope closed //
     ///////////////////////////
 
-    // Check equity changed shouldn't exceed shares withdrawn proportion
-    // e.g. equityBefore = 100 USD, withdraw 10% of shares, equity shouldn't decrease more than 10 USD
     uint256 _equityChanged;
     {
       (uint256 _totalEquityAfter,) =
@@ -326,6 +342,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     }
 
     uint256 _withdrawalFee;
+    // Safe to do unchecked because _actualWithdrawAmount < _sharesToWithdraw from above
     unchecked {
       _withdrawalFee = _sharesToWithdraw - _actualWithdrawAmount;
     }
@@ -334,6 +351,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     IAutomatedVaultERC20(_vaultToken).burn(msg.sender, _sharesToWithdraw);
     // Mint withdrawal fee to withdrawal treasury
     IAutomatedVaultERC20(_vaultToken).mint(withdrawalFeeTreasury, _withdrawalFee);
+    // Net shares changed would be `_actualWithdrawAmount`
 
     emit LogWithdrawalFee(_vaultToken, _withdrawalFee);
 
@@ -357,7 +375,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
 
         // Check slippage
         if (_amount < _minAmountOuts[_i].amount) {
-          revert AutomatedVaultManager_ExceedSlippage();
+          revert AutomatedVaultManager_TooLittleReceived();
         }
 
         ERC20(_token).safeTransfer(msg.sender, _amount);
@@ -413,38 +431,46 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     vaultTokenImplementation = _implementation;
   }
 
-  function setAllowToken(address _vaultToken, address _token, bool _isAllowed) external onlyOwner {
-    // sanity check, should revert if vault not opened
-    if (vaultInfos[_vaultToken].worker == address(0)) {
-      revert AutomatedVaultManager_VaultNotExist(_vaultToken);
-    }
+  function setAllowToken(address _vaultToken, address _token, bool _isAllowed)
+    external
+    onlyOwner
+    onlyExistedVault(_vaultToken)
+  {
     allowTokens[_vaultToken][_token] = _isAllowed;
 
     emit LogSetAllowToken(_vaultToken, _token, _isAllowed);
   }
 
-  function setToleranceBps(address _vaultToken, uint16 _toleranceBps) external onlyOwner {
+  function setToleranceBps(address _vaultToken, uint16 _toleranceBps) external onlyOwner onlyExistedVault(_vaultToken) {
     _validateToleranceBps(_toleranceBps);
     vaultInfos[_vaultToken].toleranceBps = _toleranceBps;
 
     emit LogSetToleranceBps(_vaultToken, _toleranceBps);
   }
 
-  function setMaxLeverage(address _vaultToken, uint8 _maxLeverage) external onlyOwner {
+  function setMaxLeverage(address _vaultToken, uint8 _maxLeverage) external onlyOwner onlyExistedVault(_vaultToken) {
     _validateMaxLeverage(_maxLeverage);
     vaultInfos[_vaultToken].maxLeverage = _maxLeverage;
 
     emit LogSetMaxLeverage(_vaultToken, _maxLeverage);
   }
 
-  function setMinimumDeposit(address _vaultToken, uint256 _minimumDeposit) external onlyOwner {
+  function setMinimumDeposit(address _vaultToken, uint256 _minimumDeposit)
+    external
+    onlyOwner
+    onlyExistedVault(_vaultToken)
+  {
     _validateMinimumDeposit(_minimumDeposit);
     vaultInfos[_vaultToken].minimumDeposit = _minimumDeposit;
 
     emit LogSetMinimumDeposit(_vaultToken, _minimumDeposit);
   }
 
-  function setManagementFeePerSec(address _vaultToken, uint256 _managementFeePerSec) external onlyOwner {
+  function setManagementFeePerSec(address _vaultToken, uint256 _managementFeePerSec)
+    external
+    onlyOwner
+    onlyExistedVault(_vaultToken)
+  {
     _validateManagementFeePerSec(_managementFeePerSec);
     vaultInfos[_vaultToken].managementFeePerSec = _managementFeePerSec;
 
@@ -468,14 +494,18 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     emit LogSetWithdrawalFeeTreasury(_withdrawalFeeTreasury);
   }
 
-  function setWithdrawalFeeBps(address _vaultToken, uint16 _withdrawalFeeBps) external onlyOwner {
+  function setWithdrawalFeeBps(address _vaultToken, uint16 _withdrawalFeeBps)
+    external
+    onlyOwner
+    onlyExistedVault(_vaultToken)
+  {
     _validateWithdrawalFeeBps(_withdrawalFeeBps);
     vaultInfos[_vaultToken].withdrawalFeeBps = _withdrawalFeeBps;
 
     emit LogSetWithdrawalFeeBps(_vaultToken, _withdrawalFeeBps);
   }
 
-  function setCapacity(address _vaultToken, uint256 _capacity) external onlyOwner {
+  function setCapacity(address _vaultToken, uint256 _capacity) external onlyOwner onlyExistedVault(_vaultToken) {
     vaultInfos[_vaultToken].capacity = _capacity;
     emit LogSetCapacity(_vaultToken, _capacity);
   }
@@ -531,9 +561,9 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     }
   }
 
-  /// @dev Valid value range: 0 <= _managementFeePerSec <= MAX_PERCENTAGE_PER_SEC
+  /// @dev Valid value range: 0 <= _managementFeePerSec <= MAX_MANAGEMENT_FEE_PER_SEC
   function _validateManagementFeePerSec(uint256 _managementFeePerSec) internal pure {
-    if (_managementFeePerSec > MAX_PERCENTAGE_PER_SEC) {
+    if (_managementFeePerSec > MAX_MANAGEMENT_FEE_PER_SEC) {
       revert AutomatedVaultManager_InvalidParams();
     }
   }

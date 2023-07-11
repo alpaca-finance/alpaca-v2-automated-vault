@@ -74,7 +74,7 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     minAmountOuts[0].token = address(mockToken0);
     minAmountOuts[0].amount = 1 ether;
     // should revert: amount = 1 ether, actualAmount = 0.9 ether
-    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_ExceedSlippage()"));
+    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_TooLittleReceived()"));
     vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
   }
 
