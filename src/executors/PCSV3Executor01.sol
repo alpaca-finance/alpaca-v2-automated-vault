@@ -281,6 +281,7 @@ contract PCSV3Executor01 is Executor {
   }
 
   /// @notice Adjust vault exposure by borrowing a token, swap to another and repay.
+  // TODO: include token here to exposure
   function repurchase(address _borrowToken, uint256 _borrowAmount) external onlyVaultManager {
     // Check
     address _vaultToken = _getCurrentVaultToken();

@@ -297,19 +297,20 @@ contract PCSV3StableExecutor is Executor {
     // Only allow to repurchase token0 or 1 when price is depegged above threshold
     // to prevent price manipulation
     address _vaultToken = _getCurrentVaultToken();
-    address _worker = _getCurrentWorker();
-    (uint160 _sqrtPriceX96,,,,,,) = PancakeV3Worker(_worker).pool().slot0();
-    ERC20 _token0 = PancakeV3Worker(_worker).token0();
-    ERC20 _token1 = PancakeV3Worker(_worker).token1();
+    ICommonV3Pool _pool = PancakeV3Worker(_getCurrentWorker()).pool();
+    ERC20 _token0 = ERC20(_pool.token0());
+    ERC20 _token1 = ERC20(_pool.token1());
     bool _zeroForOne;
     address _repayToken;
     if (_borrowToken == address(_token0)) {
+      (uint160 _sqrtPriceX96,,,,,,) = _pool.slot0();
       if (_sqrtPriceX96 < token0RepurchaseThreshold) {
         revert PCSV3StableExecutor_BelowRepurchaseThreshold();
       }
       _zeroForOne = true;
       _repayToken = address(_token1);
     } else if (_borrowToken == address(_token1)) {
+      (uint160 _sqrtPriceX96,,,,,,) = _pool.slot0();
       if (_sqrtPriceX96 > token1RepurchaseThreshold) {
         revert PCSV3StableExecutor_BelowRepurchaseThreshold();
       }
@@ -319,11 +320,11 @@ contract PCSV3StableExecutor is Executor {
       revert Executor_InvalidParams();
     }
 
+    IBank _bank = bank;
     // Borrow
-    bank.borrowOnBehalfOf(_vaultToken, _borrowToken, _borrowAmount);
+    _bank.borrowOnBehalfOf(_vaultToken, _borrowToken, _borrowAmount);
 
     // Swap
-    ICommonV3Pool _pool = PancakeV3Worker(_worker).pool();
     (int256 _amount0, int256 _amount1) = _pool.swap(
       address(this),
       _zeroForOne,
@@ -334,14 +335,14 @@ contract PCSV3StableExecutor is Executor {
     uint256 _swapAmountOut = uint256(_zeroForOne ? -_amount1 : -_amount0);
 
     // Prevent repurchase exceed debt
-    (, uint256 _debt) = bank.getVaultDebt(_vaultToken, _repayToken);
+    (, uint256 _debt) = _bank.getVaultDebt(_vaultToken, _repayToken);
     if (_swapAmountOut > _debt) {
       revert PCSV3StableExecutor_RepurchaseExceedDebt();
     }
 
     // Repay
-    ERC20(_repayToken).safeApprove(address(bank), _swapAmountOut);
-    bank.repayOnBehalfOf(_vaultToken, _repayToken, _swapAmountOut);
+    ERC20(_repayToken).safeApprove(address(_bank), _swapAmountOut);
+    _bank.repayOnBehalfOf(_vaultToken, _repayToken, _swapAmountOut);
 
     emit LogRepurchase(_vaultToken, _borrowToken, _borrowAmount, _swapAmountOut);
   }
