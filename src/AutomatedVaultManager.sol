@@ -87,7 +87,11 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     uint256 _equityChanged
   );
   event LogWithdraw(
-    address indexed _vaultToken, address indexed _user, uint256 _sharesWithdrawn, uint256 _equityChanged
+    address indexed _vaultToken,
+    address indexed _user,
+    uint256 _sharesWithdrawn,
+    uint256 _withdrawFee,
+    uint256 _equityChanged
   );
   event LogManage(address _vaultToken, bytes[] _executorParams, uint256 _equityBefore, uint256 _equityAfter);
   event LogSetVaultManager(address indexed _vaultToken, address _manager, bool _isOk);
@@ -343,8 +347,6 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     // Mint withdrawal fee to withdrawal treasury
     IAutomatedVaultERC20(_vaultToken).mint(withdrawalFeeTreasury, _withdrawalFee);
 
-    emit LogWithdrawalFee(_vaultToken, _withdrawalFee);
-
     // Transfer withdrawn funds to user
     // Tokens should be transferred from executor to here during `onWithdraw`
     {
@@ -376,7 +378,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     }
 
     // Assume `tx.origin` is user for tracking purpose
-    emit LogWithdraw(_vaultToken, tx.origin, _sharesToWithdraw, _equityChanged);
+    emit LogWithdraw(_vaultToken, tx.origin, _sharesToWithdraw, _withdrawalFee, _equityChanged);
   }
 
   /// =========================
