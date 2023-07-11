@@ -79,8 +79,16 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   mapping(address => bool) public isWithdrawPaused; // flag for pausing withdraw
 
   event LogOpenVault(address indexed _vaultToken, VaultInfo _vaultInfo);
-  event LogDeposit(address indexed _vaultToken, address indexed _user, TokenAmount[] _deposits, uint256 _shareReceived);
-  event LogWithdraw(address indexed _vaultToken, address indexed _user, uint256 _sharesWithdrawn);
+  event LogDeposit(
+    address indexed _vaultToken,
+    address indexed _user,
+    TokenAmount[] _deposits,
+    uint256 _shareReceived,
+    uint256 _equityChanged
+  );
+  event LogWithdraw(
+    address indexed _vaultToken, address indexed _user, uint256 _sharesWithdrawn, uint256 _equityChanged
+  );
   event LogManage(address _vaultToken, bytes[] _executorParams, uint256 _equityBefore, uint256 _equityAfter);
   event LogSetVaultManager(address indexed _vaultToken, address _manager, bool _isOk);
   event LogSetAllowToken(address indexed _vaultToken, address _token, bool _isAllowed);
@@ -211,7 +219,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     }
     IAutomatedVaultERC20(_vaultToken).mint(_depositFor, _shareReceived);
 
-    emit LogDeposit(_vaultToken, _depositFor, _depositParams, _shareReceived);
+    emit LogDeposit(_vaultToken, _depositFor, _depositParams, _shareReceived, _equityChanged);
   }
 
   function manage(address _vaultToken, bytes[] calldata _executorParams)
@@ -368,7 +376,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     }
 
     // Assume `tx.origin` is user for tracking purpose
-    emit LogWithdraw(_vaultToken, tx.origin, _sharesToWithdraw);
+    emit LogWithdraw(_vaultToken, tx.origin, _sharesToWithdraw, _equityChanged);
   }
 
   /// =========================
