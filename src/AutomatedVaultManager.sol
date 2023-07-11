@@ -104,7 +104,6 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   event LogSetMangementFeeTreasury(address _managementFeeTreasury);
   event LogSetWithdrawalFeeTreasury(address _withdrawalFeeTreasury);
   event LogSetWithdrawalFeeBps(address _vaultToken, uint16 _withdrawalFeeBps);
-  event LogWithdrawalFee(address _vaultToken, uint256 _withdrawalFee);
   event LogSetCapacity(address _vaultToken, uint256 _capacity);
   event LogSetIsDepositPaused(address _vaultToken, bool _isPaused);
   event LogSetIsWithdrawPaused(address _vaultToken, bool _isPaused);
