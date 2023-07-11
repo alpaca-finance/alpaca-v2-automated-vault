@@ -8,10 +8,8 @@ import { SafeTransferLib } from "@solmate/utils/SafeTransferLib.sol";
 // contracts
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 import { Executor } from "src/executors/Executor.sol";
-import { PancakeV3VaultOracle } from "src/oracles/PancakeV3VaultOracle.sol";
 
 // interfaces
-import { IExecutor } from "src/interfaces/IExecutor.sol";
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
 import { IBank } from "src/interfaces/IBank.sol";
@@ -19,14 +17,12 @@ import { IBank } from "src/interfaces/IBank.sol";
 // libraries
 import { LibTickMath } from "src/libraries/LibTickMath.sol";
 
-contract PCSV3Executor01 is Executor {
+contract PCSV3StableExecutor is Executor {
   using SafeTransferLib for ERC20;
 
-  // TODO: remove unused
-  error PCSV3Executor01_PositionAlreadyExist();
-  error PCSV3Executor01_PositionNotExist();
-  error PCSV3Executor01_NotPool();
-  error PCSV3Executor01_BadExposure();
+  error PCSV3StableExecutor_NotPool();
+  error PCSV3StableExecutor_BelowRepurchaseThreshold();
+  error PCSV3StableExecutor_RepurchaseExceedDebt();
 
   event LogOnDeposit(address _vaultToken, address _worker, uint256 _amountIn0, uint256 _amountIn1);
   event LogOnWithdraw(
@@ -51,13 +47,21 @@ contract PCSV3Executor01 is Executor {
   event LogBorrow(address _vaultToken, address _token, uint256 _amount);
   event LogRepay(address _vaultToken, address _token, uint256 _amount);
   event LogRepurchase(address _vaultToken, address _borrowToken, uint256 _borrowAmount, uint256 _repayAmount);
+  event LogSetRepurchaseThreshold(uint160 token0Threshold, uint160 token1Threshold);
 
-  PancakeV3VaultOracle public vaultOracle;
+  // threshold is in sqrtPriceX96
+  // only allow repurchase when stables depegged to threshold
+  uint160 public token0RepurchaseThreshold;
+  uint160 public token1RepurchaseThreshold;
 
-  function initialize(address _vaultManager, address _bank, address _vaultOracle) external initializer {
+  function initialize(
+    address _vaultManager,
+    address _bank,
+    uint160 _token0RepurchaseThreshold,
+    uint160 _token1RepurchaseThreshold
+  ) external initializer {
     // Sanity check
     AutomatedVaultManager(_vaultManager).vaultTokenImplementation();
-    PancakeV3VaultOracle(_vaultOracle).maxPriceAge();
     if (_vaultManager != IBank(_bank).vaultManager()) {
       revert Executor_InvalidParams();
     }
@@ -66,7 +70,8 @@ contract PCSV3Executor01 is Executor {
 
     vaultManager = _vaultManager;
     bank = IBank(_bank);
-    vaultOracle = PancakeV3VaultOracle(_vaultOracle);
+    token0RepurchaseThreshold = _token0RepurchaseThreshold;
+    token1RepurchaseThreshold = _token1RepurchaseThreshold;
   }
 
   function onDeposit(address _worker, address _vaultToken)
@@ -282,29 +287,36 @@ contract PCSV3Executor01 is Executor {
 
   /// @notice Adjust vault exposure by borrowing a token, swap to another and repay.
   function repurchase(address _borrowToken, uint256 _borrowAmount) external onlyVaultManager {
+    // Example
+    // token0 = USDT, token1 = BUSD
+    // BUSD depegged to 0.9
+    // repurchase (borrow USDT, swap for BUSD and repay)
+    // after repurchase there should be no USDT left aka repay <= debt
+
     // Check
+    // Only allow to repurchase token0 or 1 when price is depegged above threshold
+    // to prevent price manipulation
     address _vaultToken = _getCurrentVaultToken();
     address _worker = _getCurrentWorker();
+    (uint160 _sqrtPriceX96,,,,,,) = PancakeV3Worker(_worker).pool().slot0();
     ERC20 _token0 = PancakeV3Worker(_worker).token0();
     ERC20 _token1 = PancakeV3Worker(_worker).token1();
     bool _zeroForOne;
     address _repayToken;
-    bool _increaseExposure;
     if (_borrowToken == address(_token0)) {
+      if (_sqrtPriceX96 < token0RepurchaseThreshold) {
+        revert PCSV3StableExecutor_BelowRepurchaseThreshold();
+      }
       _zeroForOne = true;
       _repayToken = address(_token1);
-      _increaseExposure = PancakeV3Worker(_worker).isToken0Base();
     } else if (_borrowToken == address(_token1)) {
+      if (_sqrtPriceX96 > token1RepurchaseThreshold) {
+        revert PCSV3StableExecutor_BelowRepurchaseThreshold();
+      }
       _zeroForOne = false;
       _repayToken = address(_token0);
-      _increaseExposure = !PancakeV3Worker(_worker).isToken0Base();
     } else {
       revert Executor_InvalidParams();
-    }
-    int256 _exposureBefore = vaultOracle.getExposure(_vaultToken, _worker);
-    // No repurchase if exposure already 0
-    if (_exposureBefore == 0) {
-      revert PCSV3Executor01_BadExposure();
     }
 
     // Borrow
@@ -321,21 +333,10 @@ contract PCSV3Executor01 is Executor {
     );
     uint256 _swapAmountOut = uint256(_zeroForOne ? -_amount1 : -_amount0);
 
-    // Check vault delta exposure
-    {
-      // If borrow token is base, then delta exposure is swapAmountOut (repay volatile token with swapAmountOut, increasing exposure)
-      // If borrow token is not base, then delta exposure is -borrowAmount (borrow volatile token, reducing exposure)
-      int256 _deltaExposure = _increaseExposure ? int256(_swapAmountOut) : -int256(_borrowAmount);
-
-      // Revert if resulting exposure deviate further from 0 or causing exposure to flip sign
-      // Current exposure is long, can't make it longer or flip to short
-      if (_exposureBefore > 0 && (_deltaExposure > 0 || _exposureBefore + _deltaExposure < 0)) {
-        revert PCSV3Executor01_BadExposure();
-      }
-      // Current exposure is short, can't make it shorter or flip to long
-      if (_exposureBefore < 0 && (_deltaExposure < 0 || _exposureBefore + _deltaExposure > 0)) {
-        revert PCSV3Executor01_BadExposure();
-      }
+    // Prevent repurchase exceed debt
+    (, uint256 _debt) = bank.getVaultDebt(_vaultToken, _repayToken);
+    if (_swapAmountOut > _debt) {
+      revert PCSV3StableExecutor_RepurchaseExceedDebt();
     }
 
     // Repay
@@ -368,7 +369,13 @@ contract PCSV3Executor01 is Executor {
         ERC20(_token1).safeTransfer(msg.sender, uint256(_amount1Delta));
       }
     } else {
-      revert PCSV3Executor01_NotPool();
+      revert PCSV3StableExecutor_NotPool();
     }
+  }
+
+  function setRepurchaseThreshold(uint160 _token0Threshold, uint160 _token1Threshold) external onlyOwner {
+    token0RepurchaseThreshold = _token0Threshold;
+    token1RepurchaseThreshold = _token1Threshold;
+    emit LogSetRepurchaseThreshold(_token0Threshold, _token1Threshold);
   }
 }

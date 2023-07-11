@@ -22,6 +22,7 @@ contract BscFixture is Test {
   IERC20 public constant cake = IERC20(0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82);
   IERC20 public constant wbnb = IERC20(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
   IERC20 public constant usdt = IERC20(0x55d398326f99059fF775485246999027B3197955);
+  IERC20 public constant busd = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
   IERC20 public constant doge = IERC20(0xbA2aE424d960c26247Dd6c32edC70B295c744C43);
 
   // PancakeV3
@@ -37,6 +38,8 @@ contract BscFixture is Test {
   ICommonV3Pool public constant pancakeV3DOGEWBNBPool = ICommonV3Pool(0xce6160bB594fC055c943F59De92ceE30b8c6B32c);
   // token0 = CAKE, token1 = USDT, fee = 2500
   ICommonV3Pool public constant pancakeV3CAKEUSDTPool = ICommonV3Pool(0x7f51c8AaA6B0599aBd16674e2b17FEc7a9f674A1);
+  // token0 = USDT, token1 = BUSD, fee = 100
+  ICommonV3Pool public constant pancakeV3USDTBUSD100Pool = ICommonV3Pool(0x4f3126d5DE26413AbDCF6948943FB9D0847d9818);
 
   // Zap
   IZapV3 public constant zapV3 = IZapV3(0xC462E9a70b16009d63fE9dFe701cA5bf70cBCb55);
@@ -45,11 +48,13 @@ contract BscFixture is Test {
   IChainlinkAggregator wbnbFeed = IChainlinkAggregator(0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE);
   IChainlinkAggregator usdtFeed = IChainlinkAggregator(0xB97Ad0E74fa7d920791E90258A6E2085088b4320);
   IChainlinkAggregator dogeFeed = IChainlinkAggregator(0x3AB0A0d137D4F946fBB19eecc6e92E64660231C8);
+  IChainlinkAggregator busdFeed = IChainlinkAggregator(0xcBb98864Ef56E9042e7d2efef76141f15731B82f);
 
   constructor() {
     // Tokens
     vm.label(address(wbnb), "WBNB");
     vm.label(address(usdt), "USDT");
+    vm.label(address(busd), "BUSD");
     vm.label(address(doge), "DOGE");
 
     // Pancake V3
@@ -59,6 +64,7 @@ contract BscFixture is Test {
     vm.label(address(pancakeV3Quoter), "pancakeV3Quoter");
     vm.label(address(pancakeV3USDTWBNBPool), "pancakeV3USDTWBNBPool");
     vm.label(address(pancakeV3DOGEWBNBPool), "pancakeV3DOGEWBNBPool");
+    vm.label(address(pancakeV3USDTBUSD100Pool), "pancakeV3USDTBUSD100Pool");
 
     // Zap
     vm.label(address(zapV3), "zapV3");
