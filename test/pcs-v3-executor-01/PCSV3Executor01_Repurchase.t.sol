@@ -31,12 +31,16 @@ contract PCSV3Executor01RepurchaseTest is Test, BscFixture {
     executor = PCSV3Executor01(
       DeployHelper.deployUpgradeable(
         "PCSV3Executor01",
-        abi.encodeWithSignature("initialize(address,address,address)", mockVaultManager, mockBank, mockVaultOracle)
+        abi.encodeWithSelector(PCSV3Executor01.initialize.selector, mockVaultManager, mockBank, mockVaultOracle, 500)
       )
     );
 
     vm.prank(mockVaultManager);
     executor.setExecutionScope(mockWorker, mockVaultToken);
+
+    _mockCallUSDTWBNBPool();
+    _mockTokenPrice(address(usdt), 1 ether);
+    _mockTokenPrice(address(wbnb), 325 ether);
   }
 
   function _mockCallExposure(int256 exposure) internal {
@@ -66,6 +70,10 @@ contract PCSV3Executor01RepurchaseTest is Test, BscFixture {
     );
   }
 
+  function _mockTokenPrice(address token, uint256 price) internal {
+    vm.mockCall(mockVaultOracle, abi.encodeWithSignature("getTokenPrice(address)", token), abi.encode(price));
+  }
+
   function testRevert_Repurchase_CallerIsNotVaultManager() public {
     vm.prank(address(1234));
     vm.expectRevert(Executor.Executor_NotVaultManager.selector);
@@ -73,14 +81,12 @@ contract PCSV3Executor01RepurchaseTest is Test, BscFixture {
   }
 
   function testRevert_Repurchase_InvalidParams() public {
-    _mockCallUSDTWBNBPool();
     vm.prank(mockVaultManager);
     vm.expectRevert(Executor.Executor_InvalidParams.selector);
     executor.repurchase(address(1234), 1e18);
   }
 
   function testRevert_Repurchase_ExposureIsZero() public {
-    _mockCallUSDTWBNBPool();
     _mockCallExposure(0);
     _mockCallBorrowRepay(address(usdt), address(wbnb), 1 ether, 0);
     vm.mockCall(mockVaultOracle, abi.encodeWithSignature("getExposure(address,address)"), abi.encode(0));
@@ -93,8 +99,6 @@ contract PCSV3Executor01RepurchaseTest is Test, BscFixture {
     address borrowToken = address(usdt);
     address repayToken = address(wbnb);
     uint256 borrowAmount = 1 ether;
-
-    _mockCallUSDTWBNBPool();
 
     // Assume vault is short 1 BNB
     _mockCallExposure(-1 ether);
@@ -114,8 +118,6 @@ contract PCSV3Executor01RepurchaseTest is Test, BscFixture {
     address repayToken = address(wbnb);
     uint256 borrowAmount = 400 ether;
 
-    _mockCallUSDTWBNBPool();
-
     // Assume vault is short 1 BNB
     _mockCallExposure(-1 ether);
     // Borrow 400 USDT, swap for >1 BNB should revert due to flipping exposure (short to long)
@@ -132,8 +134,6 @@ contract PCSV3Executor01RepurchaseTest is Test, BscFixture {
     address repayToken = address(wbnb);
     uint256 borrowAmount = 1 ether;
 
-    _mockCallUSDTWBNBPool();
-
     // Assume vault is long 1 BNB
     _mockCallExposure(1 ether);
     // Borrow 1 USDT, swap for ~0.03 BNB and repay should revert due to increasing exposure (more long)
@@ -148,8 +148,6 @@ contract PCSV3Executor01RepurchaseTest is Test, BscFixture {
     address borrowToken = address(wbnb);
     address repayToken = address(usdt);
     uint256 borrowAmount = 0.1 ether;
-
-    _mockCallUSDTWBNBPool();
 
     // Assume vault is long 1.5 BNB (0.5 from oracle + 0.5 in executor)
     _mockCallExposure(1 ether);
@@ -170,8 +168,6 @@ contract PCSV3Executor01RepurchaseTest is Test, BscFixture {
     address repayToken = address(usdt);
     uint256 borrowAmount = 2 ether;
 
-    _mockCallUSDTWBNBPool();
-
     // Assume vault is long 1 BNB (0.5 from oracle + 0.5 in executor)
     _mockCallExposure(0.5 ether);
     deal(address(wbnb), address(executor), 0.5 ether);
@@ -187,8 +183,6 @@ contract PCSV3Executor01RepurchaseTest is Test, BscFixture {
     address borrowToken = address(wbnb);
     address repayToken = address(usdt);
     uint256 borrowAmount = 0.1 ether;
-
-    _mockCallUSDTWBNBPool();
 
     // Assume vault is short 1 BNB
     _mockCallExposure(-1 ether);

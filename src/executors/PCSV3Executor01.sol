@@ -20,6 +20,8 @@ import { IBank } from "src/interfaces/IBank.sol";
 import { LibTickMath } from "src/libraries/LibTickMath.sol";
 import { MAX_BPS } from "src/libraries/Constants.sol";
 
+import "@forge-std/console.sol";
+
 contract PCSV3Executor01 is Executor {
   using SafeTransferLib for ERC20;
 
@@ -355,6 +357,10 @@ contract PCSV3Executor01 is Executor {
         _expectedAmountOut = _borrowAmount * vaultOracle.getTokenPrice(address(_vars.token1)) * _vars.token0.decimals()
           / (vaultOracle.getTokenPrice(address(_vars.token0)) * _vars.token1.decimals());
       }
+      console.log("expectedAmountOut", _expectedAmountOut);
+      console.log(_expectedAmountOut * (MAX_BPS - repurchaseSlippageBps));
+      console.log("swapAmountOut", _swapAmountOut);
+      console.log(_swapAmountOut * MAX_BPS);
       if (_swapAmountOut * MAX_BPS < _expectedAmountOut * (MAX_BPS - repurchaseSlippageBps)) {
         revert PCSV3Executor01_TooLittleReceived();
       }
