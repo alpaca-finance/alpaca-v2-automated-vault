@@ -53,6 +53,8 @@ contract PCSV3Executor01 is Executor {
   event LogBorrow(address _vaultToken, address _token, uint256 _amount);
   event LogRepay(address _vaultToken, address _token, uint256 _amount);
   event LogRepurchase(address _vaultToken, address _borrowToken, uint256 _borrowAmount, uint256 _repayAmount);
+  event LogSetRepurchaseSlippage(uint16 _repurchaseSlippageBps);
+  event LogSetVaultOracle(address _vaultOracle);
 
   PancakeV3VaultOracle public vaultOracle;
   uint16 public repurchaseSlippageBps;
@@ -409,5 +411,19 @@ contract PCSV3Executor01 is Executor {
     } else {
       revert PCSV3Executor01_NotPool();
     }
+  }
+
+  function setRepurchaseSlippageBps(uint16 _repurchaseSlippageBps) external onlyOwner {
+    if (_repurchaseSlippageBps > MAX_BPS) {
+      revert Executor_InvalidParams();
+    }
+    repurchaseSlippageBps = _repurchaseSlippageBps;
+    emit LogSetRepurchaseSlippage(_repurchaseSlippageBps);
+  }
+
+  function setVaultOracle(address _vaultOracle) external onlyOwner {
+    PancakeV3VaultOracle(_vaultOracle).maxPriceAge();
+    vaultOracle = PancakeV3VaultOracle(_vaultOracle);
+    emit LogSetVaultOracle(_vaultOracle);
   }
 }

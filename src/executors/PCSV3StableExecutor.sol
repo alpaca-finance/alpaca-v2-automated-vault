@@ -50,7 +50,9 @@ contract PCSV3StableExecutor is Executor {
   event LogBorrow(address _vaultToken, address _token, uint256 _amount);
   event LogRepay(address _vaultToken, address _token, uint256 _amount);
   event LogRepurchase(address _vaultToken, address _borrowToken, uint256 _borrowAmount, uint256 _repayAmount);
-  event LogSetRepurchaseThreshold(uint160 token0Threshold, uint160 token1Threshold);
+  event LogSetRepurchaseThreshold(uint160 _token0Threshold, uint160 _token1Threshold);
+  event LogSetRepurchaseSlippage(uint16 _repurchaseSlippageBps);
+  event LogSetVaultOracle(address _vaultOracle);
 
   // threshold is in sqrtPriceX96
   // only allow repurchase when stables depegged to threshold
@@ -411,5 +413,19 @@ contract PCSV3StableExecutor is Executor {
     token0RepurchaseThresholdX96 = _token0ThresholdX96;
     token1RepurchaseThresholdX96 = _token1ThresholdX96;
     emit LogSetRepurchaseThreshold(_token0ThresholdX96, _token1ThresholdX96);
+  }
+
+  function setRepurchaseSlippageBps(uint16 _repurchaseSlippageBps) external onlyOwner {
+    if (_repurchaseSlippageBps > MAX_BPS) {
+      revert Executor_InvalidParams();
+    }
+    repurchaseSlippageBps = _repurchaseSlippageBps;
+    emit LogSetRepurchaseSlippage(_repurchaseSlippageBps);
+  }
+
+  function setVaultOracle(address _vaultOracle) external onlyOwner {
+    PancakeV3VaultOracle(_vaultOracle).maxPriceAge();
+    vaultOracle = PancakeV3VaultOracle(_vaultOracle);
+    emit LogSetVaultOracle(_vaultOracle);
   }
 }
