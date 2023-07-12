@@ -8,6 +8,7 @@ import { SafeTransferLib } from "@solmate/utils/SafeTransferLib.sol";
 // contracts
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 import { Executor } from "src/executors/Executor.sol";
+import { PancakeV3VaultOracle } from "src/oracles/PancakeV3VaultOracle.sol";
 
 // interfaces
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
@@ -16,6 +17,7 @@ import { IBank } from "src/interfaces/IBank.sol";
 
 // libraries
 import { LibTickMath } from "src/libraries/LibTickMath.sol";
+import { MAX_BPS } from "src/libraries/Constants.sol";
 
 contract PCSV3StableExecutor is Executor {
   using SafeTransferLib for ERC20;
@@ -23,6 +25,7 @@ contract PCSV3StableExecutor is Executor {
   error PCSV3StableExecutor_NotPool();
   error PCSV3StableExecutor_BelowRepurchaseThreshold();
   error PCSV3StableExecutor_RepurchaseExceedDebt();
+  error PCSV3StableExecutor_TooLittleReceived();
 
   event LogOnDeposit(address _vaultToken, address _worker, uint256 _amountIn0, uint256 _amountIn1);
   event LogOnWithdraw(
@@ -53,14 +56,22 @@ contract PCSV3StableExecutor is Executor {
   // only allow repurchase when stables depegged to threshold
   uint160 public token0RepurchaseThresholdX96;
   uint160 public token1RepurchaseThresholdX96;
+  PancakeV3VaultOracle public vaultOracle;
+  uint16 public repurchaseSlippageBps;
 
   function initialize(
     address _vaultManager,
     address _bank,
     uint160 _token0RepurchaseThreshold,
-    uint160 _token1RepurchaseThreshold
+    uint160 _token1RepurchaseThreshold,
+    address _vaultOracle,
+    uint16 _repurchaseSlippageBps
   ) external initializer {
+    if (_repurchaseSlippageBps > MAX_BPS) {
+      revert Executor_InvalidParams();
+    }
     // Sanity check
+    PancakeV3VaultOracle(_vaultOracle).maxPriceAge();
     AutomatedVaultManager(_vaultManager).vaultTokenImplementation();
     if (_vaultManager != IBank(_bank).vaultManager()) {
       revert Executor_InvalidParams();
@@ -72,6 +83,8 @@ contract PCSV3StableExecutor is Executor {
     bank = IBank(_bank);
     token0RepurchaseThresholdX96 = _token0RepurchaseThreshold;
     token1RepurchaseThresholdX96 = _token1RepurchaseThreshold;
+    vaultOracle = PancakeV3VaultOracle(_vaultOracle);
+    repurchaseSlippageBps = _repurchaseSlippageBps;
   }
 
   function onDeposit(address _worker, address _vaultToken)
@@ -333,6 +346,23 @@ contract PCSV3StableExecutor is Executor {
       abi.encode(address(_token0), address(_token1), _pool.fee())
     );
     uint256 _swapAmountOut = uint256(_zeroForOne ? -_amount1 : -_amount0);
+
+    // Check slippage
+    {
+      {
+        uint256 _expectedAmountOut;
+        if (_zeroForOne) {
+          _expectedAmountOut = _borrowAmount * vaultOracle.getTokenPrice(address(_token0)) * _token1.decimals()
+            / (vaultOracle.getTokenPrice(address(_token1)) * _token0.decimals());
+        } else {
+          _expectedAmountOut = _borrowAmount * vaultOracle.getTokenPrice(address(_token1)) * _token0.decimals()
+            / (vaultOracle.getTokenPrice(address(_token0)) * _token1.decimals());
+        }
+        if (_swapAmountOut * MAX_BPS < _expectedAmountOut * (MAX_BPS - repurchaseSlippageBps)) {
+          revert PCSV3StableExecutor_TooLittleReceived();
+        }
+      }
+    }
 
     // Prevent repurchase exceed debt
     (, uint256 _debt) = _bank.getVaultDebt(_vaultToken, _repayToken);
