@@ -151,8 +151,9 @@ contract PCSV3Executor01RepurchaseTest is Test, BscFixture {
 
     _mockCallUSDTWBNBPool();
 
-    // Assume vault is long 1 BNB
+    // Assume vault is long 1.5 BNB (0.5 from oracle + 0.5 in executor)
     _mockCallExposure(1 ether);
+    deal(address(wbnb), address(executor), 0.5 ether);
     // Borrow 0.1 BNB, swap for ~32.5 USDT and repay should work
     uint256 expectedRepayAmount = 32557488721371968230; // amount from swap
     _mockCallBorrowRepay(borrowToken, repayToken, borrowAmount, expectedRepayAmount);
@@ -171,8 +172,9 @@ contract PCSV3Executor01RepurchaseTest is Test, BscFixture {
 
     _mockCallUSDTWBNBPool();
 
-    // Assume vault is long 1 BNB
-    _mockCallExposure(1 ether);
+    // Assume vault is long 1 BNB (0.5 from oracle + 0.5 in executor)
+    _mockCallExposure(0.5 ether);
+    deal(address(wbnb), address(executor), 0.5 ether);
     // Borrow 2 BNB should revert due to flipping exposre (long to short)
     _mockCallBorrowRepay(borrowToken, repayToken, borrowAmount, 0);
 
