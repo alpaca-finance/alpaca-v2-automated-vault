@@ -149,7 +149,7 @@ contract PCSV3Executor01RepurchaseTest is Test, BscFixture {
     address repayToken = address(usdt);
     uint256 borrowAmount = 0.1 ether;
 
-    // Assume vault is long 1.5 BNB (0.5 from oracle + 0.5 in executor)
+    // Assume vault is long 1.5 BNB (1 from oracle + 0.5 in executor)
     _mockCallExposure(1 ether);
     deal(address(wbnb), address(executor), 0.5 ether);
     // Borrow 0.1 BNB, swap for ~32.5 USDT and repay should work
@@ -192,6 +192,24 @@ contract PCSV3Executor01RepurchaseTest is Test, BscFixture {
 
     vm.prank(mockVaultManager);
     vm.expectRevert(abi.encodeWithSignature("PCSV3Executor01_BadExposure()"));
+    executor.repurchase(borrowToken, borrowAmount);
+  }
+
+  function testRevert_Repurchase_WhenSwapReceiveLessThanExpected() public {
+    address borrowToken = address(usdt);
+    address repayToken = address(wbnb);
+    uint256 borrowAmount = 1 ether;
+
+    // At BNB price 325 swap should yield 3068419005692078 USDT
+    // When BNB price drops we expect more from swap than amount above so repurchase should fail
+    _mockTokenPrice(address(wbnb), 200 ether);
+
+    // Assume vault is short 1 BNB
+    _mockCallExposure(-1 ether);
+    _mockCallBorrowRepay(borrowToken, repayToken, borrowAmount, 0);
+
+    vm.prank(mockVaultManager);
+    vm.expectRevert(abi.encodeWithSignature("PCSV3Executor01_TooLittleReceived()"));
     executor.repurchase(borrowToken, borrowAmount);
   }
 }
