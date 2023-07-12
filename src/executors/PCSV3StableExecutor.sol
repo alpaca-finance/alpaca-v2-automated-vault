@@ -51,8 +51,8 @@ contract PCSV3StableExecutor is Executor {
 
   // threshold is in sqrtPriceX96
   // only allow repurchase when stables depegged to threshold
-  uint160 public token0RepurchaseThreshold;
-  uint160 public token1RepurchaseThreshold;
+  uint160 public token0RepurchaseThresholdX96;
+  uint160 public token1RepurchaseThresholdX96;
 
   function initialize(
     address _vaultManager,
@@ -70,8 +70,8 @@ contract PCSV3StableExecutor is Executor {
 
     vaultManager = _vaultManager;
     bank = IBank(_bank);
-    token0RepurchaseThreshold = _token0RepurchaseThreshold;
-    token1RepurchaseThreshold = _token1RepurchaseThreshold;
+    token0RepurchaseThresholdX96 = _token0RepurchaseThreshold;
+    token1RepurchaseThresholdX96 = _token1RepurchaseThreshold;
   }
 
   function onDeposit(address _worker, address _vaultToken)
@@ -291,7 +291,7 @@ contract PCSV3StableExecutor is Executor {
     // token0 = USDT, token1 = BUSD
     // BUSD depegged to 0.9
     // repurchase (borrow USDT, swap for BUSD and repay)
-    // after repurchase there should be no USDT left aka repay <= debt
+    // after repurchase there cannot be any USDT left aka. repay <= debt
 
     // Check
     // Only allow to repurchase token0 or 1 when price is depegged above threshold
@@ -304,14 +304,14 @@ contract PCSV3StableExecutor is Executor {
     address _repayToken;
     if (_borrowToken == address(_token0)) {
       (uint160 _sqrtPriceX96,,,,,,) = _pool.slot0();
-      if (_sqrtPriceX96 < token0RepurchaseThreshold) {
+      if (_sqrtPriceX96 < token0RepurchaseThresholdX96) {
         revert PCSV3StableExecutor_BelowRepurchaseThreshold();
       }
       _zeroForOne = true;
       _repayToken = address(_token1);
     } else if (_borrowToken == address(_token1)) {
       (uint160 _sqrtPriceX96,,,,,,) = _pool.slot0();
-      if (_sqrtPriceX96 > token1RepurchaseThreshold) {
+      if (_sqrtPriceX96 > token1RepurchaseThresholdX96) {
         revert PCSV3StableExecutor_BelowRepurchaseThreshold();
       }
       _zeroForOne = false;
@@ -374,9 +374,12 @@ contract PCSV3StableExecutor is Executor {
     }
   }
 
-  function setRepurchaseThreshold(uint160 _token0Threshold, uint160 _token1Threshold) external onlyOwner {
-    token0RepurchaseThreshold = _token0Threshold;
-    token1RepurchaseThreshold = _token1Threshold;
-    emit LogSetRepurchaseThreshold(_token0Threshold, _token1Threshold);
+  function setRepurchaseThreshold(uint160 _token0ThresholdX96, uint160 _token1ThresholdX96) external onlyOwner {
+    if (_token0ThresholdX96 < _token1ThresholdX96) {
+      revert Executor_InvalidParams();
+    }
+    token0RepurchaseThresholdX96 = _token0ThresholdX96;
+    token1RepurchaseThresholdX96 = _token1ThresholdX96;
+    emit LogSetRepurchaseThreshold(_token0ThresholdX96, _token1ThresholdX96);
   }
 }

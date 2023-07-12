@@ -81,14 +81,14 @@ contract PCSV3StableExecutorTest is Test, BscFixture {
     // Token 0
     uint160 currentSqrtPrice = LibSqrtPriceX96.encodeSqrtPriceX96(1e18, 18, 18);
     _mockSqrtPrice(address(pancakeV3USDTBUSD100Pool), currentSqrtPrice - 1);
-    executor.setRepurchaseThreshold(currentSqrtPrice, 0);
+    executor.setRepurchaseThreshold(currentSqrtPrice, currentSqrtPrice);
     vm.prank(mockVaultManager);
     vm.expectRevert(abi.encodeWithSignature("PCSV3StableExecutor_BelowRepurchaseThreshold()"));
     executor.repurchase(address(usdt), 1 ether);
 
     // Token1
     _mockSqrtPrice(address(pancakeV3USDTBUSD100Pool), currentSqrtPrice + 1);
-    executor.setRepurchaseThreshold(0, currentSqrtPrice);
+    executor.setRepurchaseThreshold(currentSqrtPrice, currentSqrtPrice);
     vm.prank(mockVaultManager);
     vm.expectRevert(abi.encodeWithSignature("PCSV3StableExecutor_BelowRepurchaseThreshold()"));
     executor.repurchase(address(busd), 1 ether);
@@ -154,11 +154,18 @@ contract PCSV3StableExecutorTest is Test, BscFixture {
     executor.setRepurchaseThreshold(0, 0);
   }
 
-  function testCorrectness_SetRepurchaseThreshold() public {
+  function testRevert_SetRepurchaseThreshold_InvalidParams() public {
     uint160 token0RepurchaseThreshold = 1e18;
     uint160 token1RepurchaseThreshold = 2e18;
+    vm.expectRevert(abi.encodeWithSignature("Executor_InvalidParams()"));
     executor.setRepurchaseThreshold(token0RepurchaseThreshold, token1RepurchaseThreshold);
-    assertEq(executor.token0RepurchaseThreshold(), token0RepurchaseThreshold, "token0RepurchaseThreshold");
-    assertEq(executor.token1RepurchaseThreshold(), token1RepurchaseThreshold, "token1RepurchaseThreshold");
+  }
+
+  function testCorrectness_SetRepurchaseThreshold() public {
+    uint160 token0RepurchaseThreshold = 3e18;
+    uint160 token1RepurchaseThreshold = 2e18;
+    executor.setRepurchaseThreshold(token0RepurchaseThreshold, token1RepurchaseThreshold);
+    assertEq(executor.token0RepurchaseThresholdX96(), token0RepurchaseThreshold, "token0RepurchaseThreshold");
+    assertEq(executor.token1RepurchaseThresholdX96(), token1RepurchaseThreshold, "token1RepurchaseThreshold");
   }
 }
