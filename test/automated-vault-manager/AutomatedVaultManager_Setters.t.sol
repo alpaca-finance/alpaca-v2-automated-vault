@@ -6,7 +6,11 @@ import "./BaseAutomatedVaultUnitTest.sol";
 import { IERC20 } from "src/interfaces/IERC20.sol";
 
 contract AutomatedVaultManagerSettersTest is BaseAutomatedVaultUnitTest {
-  constructor() BaseAutomatedVaultUnitTest() { }
+  address vaultToken;
+
+  constructor() BaseAutomatedVaultUnitTest() {
+    vaultToken = _openDefaultVault();
+  }
 
   function testRevert_SetVaultManager_NonOwnerIsCaller() public {
     address _vaultToken = makeAddr("vaultToken");
@@ -18,23 +22,23 @@ contract AutomatedVaultManagerSettersTest is BaseAutomatedVaultUnitTest {
   }
 }
 
-contract AutomatedVaultManagerSetAllowTokenTest is BaseAutomatedVaultUnitTest {
+contract AutomatedVaultManagerSetAllowTokenTest is AutomatedVaultManagerSettersTest {
   function testRevert_SetAllowToken_NonOwnerIsCaller() public {
     vm.prank(address(1234));
     vm.expectRevert("Ownable: caller is not the owner");
-    vaultManager.setAllowToken(address(1), address(1234), true);
+    vaultManager.setAllowToken(vaultToken, address(1234), true);
   }
 
   function testRevert_SetAllowToken_VaultNotOpened() public {
     vm.prank(DEPLOYER);
     vm.expectRevert(
-      abi.encodeWithSelector(AutomatedVaultManager.AutomatedVaultManager_VaultNotExist.selector, address(1))
+      abi.encodeWithSelector(AutomatedVaultManager.AutomatedVaultManager_VaultNotExist.selector, address(1234))
     );
-    vaultManager.setAllowToken(address(1), address(1234), true);
+    vaultManager.setAllowToken(address(1234), address(1234), true);
   }
 }
 
-contract AutomatedVaultManagerSetVaultTokenImplementationTest is BaseAutomatedVaultUnitTest {
+contract AutomatedVaultManagerSetVaultTokenImplementationTest is AutomatedVaultManagerSettersTest {
   function testRevert_SetVaultTokenImplementation_NonOwnerIsCaller() public {
     vm.prank(address(1234));
     vm.expectRevert("Ownable: caller is not the owner");
@@ -49,127 +53,127 @@ contract AutomatedVaultManagerSetVaultTokenImplementationTest is BaseAutomatedVa
   }
 }
 
-contract AutomatedVaultManagerSetToleranceBpsTest is BaseAutomatedVaultUnitTest {
+contract AutomatedVaultManagerSetToleranceBpsTest is AutomatedVaultManagerSettersTest {
   function testRevert_SetToleranceBps_NonOwnerIsCaller() public {
     vm.prank(address(1234));
     vm.expectRevert("Ownable: caller is not the owner");
-    vaultManager.setToleranceBps(address(1), 1);
+    vaultManager.setToleranceBps(vaultToken, 1);
   }
 
   function testRevert_SetToleranceBps_InvalidValue() public {
     vm.startPrank(DEPLOYER);
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_InvalidParams.selector);
-    vaultManager.setToleranceBps(address(1), 1);
+    vaultManager.setToleranceBps(vaultToken, 1);
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_InvalidParams.selector);
-    vaultManager.setToleranceBps(address(1), 10001);
+    vaultManager.setToleranceBps(vaultToken, 10001);
   }
 
   function testCorrectness_SetToleranceBps() public {
     vm.startPrank(DEPLOYER);
-    vaultManager.setToleranceBps(address(1), 9501);
-    (,,,,,, uint16 toleranceBps,,) = vaultManager.vaultInfos(address(1));
+    vaultManager.setToleranceBps(vaultToken, 9501);
+    (,,,,,, uint16 toleranceBps,,) = vaultManager.vaultInfos(vaultToken);
     assertEq(toleranceBps, 9501);
-    vaultManager.setToleranceBps(address(1), 9900);
-    (,,,,,, toleranceBps,,) = vaultManager.vaultInfos(address(1));
+    vaultManager.setToleranceBps(vaultToken, 9900);
+    (,,,,,, toleranceBps,,) = vaultManager.vaultInfos(vaultToken);
     assertEq(toleranceBps, 9900);
-    vaultManager.setToleranceBps(address(1), 10000);
-    (,,,,,, toleranceBps,,) = vaultManager.vaultInfos(address(1));
+    vaultManager.setToleranceBps(vaultToken, 10000);
+    (,,,,,, toleranceBps,,) = vaultManager.vaultInfos(vaultToken);
     assertEq(toleranceBps, 10000);
   }
 }
 
-contract AutomatedVaultManagerSetMaxLeverageTest is BaseAutomatedVaultUnitTest {
+contract AutomatedVaultManagerSetMaxLeverageTest is AutomatedVaultManagerSettersTest {
   function testRevert_SetMaxLeverage_NonOwnerIsCaller() public {
     vm.prank(address(1234));
     vm.expectRevert("Ownable: caller is not the owner");
-    vaultManager.setMaxLeverage(address(1), 1);
+    vaultManager.setMaxLeverage(vaultToken, 1);
   }
 
   function testRevert_SetMaxLeverage_InvalidValue() public {
     vm.startPrank(DEPLOYER);
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_InvalidParams.selector);
-    vaultManager.setMaxLeverage(address(1), 0);
+    vaultManager.setMaxLeverage(vaultToken, 0);
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_InvalidParams.selector);
-    vaultManager.setMaxLeverage(address(1), 11);
+    vaultManager.setMaxLeverage(vaultToken, 11);
   }
 
   function testCorrectness_SetMaxLeverage() public {
     vm.startPrank(DEPLOYER);
-    vaultManager.setMaxLeverage(address(1), 1);
-    (,,,,,,, uint8 maxLeverage,) = vaultManager.vaultInfos(address(1));
+    vaultManager.setMaxLeverage(vaultToken, 1);
+    (,,,,,,, uint8 maxLeverage,) = vaultManager.vaultInfos(vaultToken);
     assertEq(maxLeverage, 1);
-    vaultManager.setMaxLeverage(address(1), 5);
-    (,,,,,,, maxLeverage,) = vaultManager.vaultInfos(address(1));
+    vaultManager.setMaxLeverage(vaultToken, 5);
+    (,,,,,,, maxLeverage,) = vaultManager.vaultInfos(vaultToken);
     assertEq(maxLeverage, 5);
-    vaultManager.setMaxLeverage(address(1), 10);
-    (,,,,,,, maxLeverage,) = vaultManager.vaultInfos(address(1));
+    vaultManager.setMaxLeverage(vaultToken, 10);
+    (,,,,,,, maxLeverage,) = vaultManager.vaultInfos(vaultToken);
     assertEq(maxLeverage, 10);
   }
 }
 
-contract AutomatedVaultManagerSetMinimumDepositTest is BaseAutomatedVaultUnitTest {
+contract AutomatedVaultManagerSetMinimumDepositTest is AutomatedVaultManagerSettersTest {
   function testRevert_SetMinimumDeposit_NonOwnerIsCaller() public {
     vm.prank(address(1234));
     vm.expectRevert("Ownable: caller is not the owner");
-    vaultManager.setMinimumDeposit(address(1), 1);
+    vaultManager.setMinimumDeposit(vaultToken, 1);
   }
 
   function testRevert_SetMinimumDeposit_InvalidValue() public {
     vm.startPrank(DEPLOYER);
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_InvalidParams.selector);
-    vaultManager.setMinimumDeposit(address(1), 0);
+    vaultManager.setMinimumDeposit(vaultToken, 0);
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_InvalidParams.selector);
-    vaultManager.setMinimumDeposit(address(1), 1e18 - 1);
+    vaultManager.setMinimumDeposit(vaultToken, 1e18 - 1);
   }
 
   function testCorrectness_SetMinimumDeposit() public {
     vm.startPrank(DEPLOYER);
-    vaultManager.setMinimumDeposit(address(1), 1e18);
-    (,,, uint256 minimumDeposit,,,,,) = vaultManager.vaultInfos(address(1));
+    vaultManager.setMinimumDeposit(vaultToken, 1e18);
+    (,,, uint256 minimumDeposit,,,,,) = vaultManager.vaultInfos(vaultToken);
     assertEq(minimumDeposit, 1e18);
-    vaultManager.setMinimumDeposit(address(1), 1e27);
-    (,,, minimumDeposit,,,,,) = vaultManager.vaultInfos(address(1));
+    vaultManager.setMinimumDeposit(vaultToken, 1e27);
+    (,,, minimumDeposit,,,,,) = vaultManager.vaultInfos(vaultToken);
     assertEq(minimumDeposit, 1e27);
   }
 }
 
-contract AutomatedVaultManagerSetFeePerSecTest is BaseAutomatedVaultUnitTest {
+contract AutomatedVaultManagerSetFeePerSecTest is AutomatedVaultManagerSettersTest {
   function testRevert_SetFeePerSec_NonOwnerIsCaller() public {
     vm.prank(address(1234));
     vm.expectRevert("Ownable: caller is not the owner");
-    vaultManager.setManagementFeePerSec(address(1), 1);
+    vaultManager.setManagementFeePerSec(vaultToken, 1);
   }
 
   function testCorrectness_SetFeePerSec() public {
     vm.startPrank(DEPLOYER);
-    vaultManager.setManagementFeePerSec(address(1), 10);
-    (,,,, uint256 managementFeePerSec,,,,) = vaultManager.vaultInfos(address(1));
+    vaultManager.setManagementFeePerSec(vaultToken, 10);
+    (,,,, uint256 managementFeePerSec,,,,) = vaultManager.vaultInfos(vaultToken);
     assertEq(managementFeePerSec, 10);
-    vaultManager.setManagementFeePerSec(address(1), 12);
-    (,,,, managementFeePerSec,,,,) = vaultManager.vaultInfos(address(1));
+    vaultManager.setManagementFeePerSec(vaultToken, 12);
+    (,,,, managementFeePerSec,,,,) = vaultManager.vaultInfos(vaultToken);
     assertEq(managementFeePerSec, 12);
   }
 }
 
-contract AutomatedVaultManagerSetCapacityTest is BaseAutomatedVaultUnitTest {
+contract AutomatedVaultManagerSetCapacityTest is AutomatedVaultManagerSettersTest {
   function testRevert_SetCapacity_NonOwnerIsCaller() public {
     vm.prank(address(1234));
     vm.expectRevert("Ownable: caller is not the owner");
-    vaultManager.setCapacity(address(1), 1);
+    vaultManager.setCapacity(vaultToken, 1);
   }
 
   function testCorrectness_SetCapacity() public {
     vm.startPrank(DEPLOYER);
-    vaultManager.setCapacity(address(1), 10);
-    (,,,,,,,, uint256 capacity) = vaultManager.vaultInfos(address(1));
+    vaultManager.setCapacity(vaultToken, 10);
+    (,,,,,,,, uint256 capacity) = vaultManager.vaultInfos(vaultToken);
     assertEq(capacity, 10);
-    vaultManager.setCapacity(address(1), 0);
-    (,,,,,,,, capacity) = vaultManager.vaultInfos(address(1));
+    vaultManager.setCapacity(vaultToken, 0);
+    (,,,,,,,, capacity) = vaultManager.vaultInfos(vaultToken);
     assertEq(capacity, 0);
   }
 }
 
-contract AutomatedVaultManagerSetIsPausedTest is BaseAutomatedVaultUnitTest {
+contract AutomatedVaultManagerSetIsPausedTest is AutomatedVaultManagerSettersTest {
   // Deposit paused
 
   function testRevert_SetIsDepositPaused_NonOwnerIsCaller() public {
