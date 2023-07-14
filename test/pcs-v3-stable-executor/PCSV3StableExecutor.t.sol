@@ -27,15 +27,22 @@ contract PCSV3StableExecutorTest is Test, BscFixture {
     // Mock for sanity check
     vm.mockCall(mockVaultManager, abi.encodeWithSignature("vaultTokenImplementation()"), abi.encode(address(0)));
     vm.mockCall(mockBank, abi.encodeWithSignature("vaultManager()"), abi.encode(mockVaultManager));
+    vm.mockCall(mockVaultOracle, abi.encodeWithSignature("maxPriceAge()"), abi.encode(0));
     executor = PCSV3StableExecutor(
       DeployHelper.deployUpgradeable(
         "PCSV3StableExecutor",
-        abi.encodeWithSignature("initialize(address,address,uint160,uint160)", mockVaultManager, mockBank, 0, 0)
+        abi.encodeWithSelector(
+          PCSV3StableExecutor.initialize.selector, mockVaultManager, mockBank, 0, 0, mockVaultOracle, 500
+        )
       )
     );
 
     vm.prank(mockVaultManager);
     executor.setExecutionScope(mockWorker, mockVaultToken);
+
+    _mockCallUSDTBUSDPool();
+    _mockTokenPrice(address(usdt), 1 ether);
+    _mockTokenPrice(address(busd), 1 ether);
   }
 
   function _mockCallUSDTBUSDPool() internal {
@@ -69,6 +76,10 @@ contract PCSV3StableExecutorTest is Test, BscFixture {
     );
   }
 
+  function _mockTokenPrice(address token, uint256 price) internal {
+    vm.mockCall(mockVaultOracle, abi.encodeWithSignature("getTokenPrice(address)", token), abi.encode(price));
+  }
+
   function testRevert_RepurchaseStableVault_CallerIsNotVaultManager() public {
     vm.prank(address(1234));
     vm.expectRevert(Executor.Executor_NotVaultManager.selector);
@@ -76,8 +87,6 @@ contract PCSV3StableExecutorTest is Test, BscFixture {
   }
 
   function testRevert_RepurchaseStableVault_BelowRepurchaseThreshold() public {
-    _mockCallUSDTBUSDPool();
-
     // Token 0
     uint160 currentSqrtPrice = LibSqrtPriceX96.encodeSqrtPriceX96(1e18, 18, 18);
     _mockSqrtPrice(address(pancakeV3USDTBUSD100Pool), currentSqrtPrice - 1);
@@ -95,7 +104,6 @@ contract PCSV3StableExecutorTest is Test, BscFixture {
   }
 
   function testRevert_RepurchaseStableVault_ExceedDebt_WhenNoDebt() public {
-    _mockCallUSDTBUSDPool();
     // Assume exchange rate: 0.9 USDT = 1 BUSD and can repurchase
     uint160 currentSqrtPrice = LibSqrtPriceX96.encodeSqrtPriceX96(111111111111111111, 18, 18);
     _mockSqrtPrice(address(pancakeV3USDTBUSD100Pool), currentSqrtPrice);
@@ -111,7 +119,6 @@ contract PCSV3StableExecutorTest is Test, BscFixture {
   }
 
   function testRevert_RepurchaseStableVault_ExceedDebt_WhenDebtExistButRepurchaseExceed() public {
-    _mockCallUSDTBUSDPool();
     // Assume exchange rate: 0.9 USDT = 1 BUSD and can repurchase
     uint160 currentSqrtPrice = LibSqrtPriceX96.encodeSqrtPriceX96(111111111111111111, 18, 18);
     _mockSqrtPrice(address(pancakeV3USDTBUSD100Pool), currentSqrtPrice);
@@ -131,7 +138,6 @@ contract PCSV3StableExecutorTest is Test, BscFixture {
     address repayToken = address(busd);
     uint256 borrowAmount = 1 ether;
 
-    _mockCallUSDTBUSDPool();
     // Assume exchange rate: 0.9 USDT = 1 BUSD and can repurchase
     uint160 currentSqrtPrice = LibSqrtPriceX96.encodeSqrtPriceX96(111111111111111111, 18, 18);
     _mockSqrtPrice(address(pancakeV3USDTBUSD100Pool), currentSqrtPrice);

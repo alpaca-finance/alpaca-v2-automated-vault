@@ -61,7 +61,7 @@ contract PancakeV3WorkerExecutorBankIntegrationFixture is Test, BscFixture, Prot
     executor = PCSV3Executor01(
       DeployHelper.deployUpgradeable(
         "PCSV3Executor01",
-        abi.encodeWithSignature("initialize(address,address,address)", mockVaultManager, address(bank), mockVaultOracle)
+        abi.encodeWithSelector(PCSV3Executor01.initialize.selector, mockVaultManager, address(bank), mockVaultOracle, 0)
       )
     );
 

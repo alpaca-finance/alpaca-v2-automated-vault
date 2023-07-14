@@ -35,7 +35,7 @@ contract PCSV3Executor01OnWithdrawTest is Test {
     executor = PCSV3Executor01(
       DeployHelper.deployUpgradeable(
         "PCSV3Executor01",
-        abi.encodeWithSignature("initialize(address,address,address)", mockVaultManager, mockBank, mockVaultOracle)
+        abi.encodeWithSelector(PCSV3Executor01.initialize.selector, mockVaultManager, mockBank, mockVaultOracle, 0)
       )
     );
 
@@ -188,7 +188,7 @@ contract PCSV3Executor01OnWithdrawForkTest is BscFixture {
     executor = PCSV3Executor01(
       DeployHelper.deployUpgradeable(
         "PCSV3Executor01",
-        abi.encodeWithSignature("initialize(address,address,address)", mockVaultManager, mockBank, mockVaultOracle)
+        abi.encodeWithSelector(PCSV3Executor01.initialize.selector, mockVaultManager, mockBank, mockVaultOracle, 0)
       )
     );
   }
