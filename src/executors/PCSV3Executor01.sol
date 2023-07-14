@@ -349,16 +349,10 @@ contract PCSV3Executor01 is Executor {
 
     // Check slippage, compare with oracle prices
     {
-      uint256 _expectedAmountOut;
-      if (_vars.zeroForOne) {
-        _expectedAmountOut = _borrowAmount * vaultOracle.getTokenPrice(address(_vars.token0))
-          * (10 ** _vars.token1.decimals())
-          / (vaultOracle.getTokenPrice(address(_vars.token1)) * (10 ** _vars.token0.decimals()));
-      } else {
-        _expectedAmountOut = _borrowAmount * vaultOracle.getTokenPrice(address(_vars.token1))
-          * (10 ** _vars.token0.decimals())
-          / (vaultOracle.getTokenPrice(address(_vars.token0)) * (10 ** _vars.token1.decimals()));
-      }
+      uint256 _expectedAmountOut = _borrowAmount * vaultOracle.getTokenPrice(_borrowToken)
+        * (10 ** ERC20(_vars.repayToken).decimals())
+        / (vaultOracle.getTokenPrice(_vars.repayToken) * (10 ** ERC20(_borrowToken).decimals()));
+
       if (_swapAmountOut * MAX_BPS < _expectedAmountOut * (MAX_BPS - repurchaseSlippageBps)) {
         revert PCSV3Executor01_TooLittleReceived();
       }
