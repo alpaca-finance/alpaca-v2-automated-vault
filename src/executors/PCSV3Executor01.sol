@@ -351,11 +351,13 @@ contract PCSV3Executor01 is Executor {
     {
       uint256 _expectedAmountOut;
       if (_vars.zeroForOne) {
-        _expectedAmountOut = _borrowAmount * vaultOracle.getTokenPrice(address(_vars.token0)) * _vars.token1.decimals()
-          / (vaultOracle.getTokenPrice(address(_vars.token1)) * _vars.token0.decimals());
+        _expectedAmountOut = _borrowAmount * vaultOracle.getTokenPrice(address(_vars.token0))
+          * (10 ** _vars.token1.decimals())
+          / (vaultOracle.getTokenPrice(address(_vars.token1)) * (10 ** _vars.token0.decimals()));
       } else {
-        _expectedAmountOut = _borrowAmount * vaultOracle.getTokenPrice(address(_vars.token1)) * _vars.token0.decimals()
-          / (vaultOracle.getTokenPrice(address(_vars.token0)) * _vars.token1.decimals());
+        _expectedAmountOut = _borrowAmount * vaultOracle.getTokenPrice(address(_vars.token1))
+          * (10 ** _vars.token0.decimals())
+          / (vaultOracle.getTokenPrice(address(_vars.token0)) * (10 ** _vars.token1.decimals()));
       }
       if (_swapAmountOut * MAX_BPS < _expectedAmountOut * (MAX_BPS - repurchaseSlippageBps)) {
         revert PCSV3Executor01_TooLittleReceived();
