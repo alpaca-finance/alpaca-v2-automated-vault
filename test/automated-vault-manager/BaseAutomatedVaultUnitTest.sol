@@ -22,8 +22,8 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
   MockERC20 mockToken0;
   MockERC20 mockToken1;
 
-  uint256 internal constant DEFAULT_MINIMUM_DEPOSIT = 1 ether;
-  uint256 internal constant DEFAULT_FEE_PER_SEC = 0;
+  uint32 internal constant DEFAULT_MINIMUM_DEPOSIT = 100; // 1 USD
+  uint32 internal constant DEFAULT_FEE_PER_SEC = 0;
   uint8 internal constant DEFAULT_MAX_LEVERAGE = 10;
   uint16 internal constant DEFAULT_TOLERANCE_BPS = 9900;
 
@@ -50,8 +50,8 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
 
   function _openVault(
     address worker,
-    uint256 minimumDeposit,
-    uint256 managementFeePerSec,
+    uint32 minimumDeposit,
+    uint32 managementFeePerSec,
     uint16 toleranceBps,
     uint8 maxLeverage
   ) internal returns (address vaultToken) {
@@ -59,12 +59,12 @@ contract BaseAutomatedVaultUnitTest is ProtocolActorFixture {
     vaultToken = vaultManager.openVault(
       "test vault",
       "TV",
-      AutomatedVaultManager.VaultInfo({
+      AutomatedVaultManager.OpenVaultParams({
         worker: worker,
         vaultOracle: address(mockVaultOracleAndExecutor),
         executor: address(mockVaultOracleAndExecutor),
-        minimumDeposit: minimumDeposit,
-        capacity: type(uint256).max,
+        compressedMinimumDeposit: minimumDeposit,
+        compressedCapacity: type(uint32).max,
         managementFeePerSec: managementFeePerSec,
         withdrawalFeeBps: 0,
         toleranceBps: toleranceBps,

@@ -9,7 +9,7 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/proxy/transparent/Tra
 contract SetCapacityScript is BaseScript {
   function run() public {
     address vaultToken = 0x5dc672d3528535a97173AeD4671ccd2E5f627e44;
-    uint256 newCapacity = type(uint256).max;
+    uint32 newCapacity = type(uint32).max;
 
     vm.startBroadcast(deployerPrivateKey);
 

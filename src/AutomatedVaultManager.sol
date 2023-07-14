@@ -135,8 +135,9 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   // Modifiers //
   ///////////////
   modifier collectManagementFee(address _vaultToken) {
-    uint256 _pendingFee = pendingManagementFee(_vaultToken);
-    if (_pendingFee != 0) {
+    uint256 _lastCollectedFee = vaultInfos[_vaultToken].lastManagementFeeCollectedAt;
+    if (block.timestamp > _lastCollectedFee) {
+      uint256 _pendingFee = pendingManagementFee(_vaultToken);
       IAutomatedVaultERC20(_vaultToken).mint(managementFeeTreasury, _pendingFee);
       vaultInfos[_vaultToken].lastManagementFeeCollectedAt = uint40(block.timestamp);
     }
