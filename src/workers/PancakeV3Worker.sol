@@ -65,10 +65,20 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
 
   /// Events
   event LogOpenPosition(
-    uint256 indexed _tokenId, address _caller, int24 _tickLower, int24 _tickUpper, uint256 _amount0Increased, uint256 _amount1Increased
+    uint256 indexed _tokenId,
+    address _caller,
+    int24 _tickLower,
+    int24 _tickUpper,
+    uint256 _amount0Increased,
+    uint256 _amount1Increased
   );
   event LogIncreasePosition(
-    uint256 indexed _tokenId, address _caller, int24 _tickLower, int24 _tickUpper, uint256 _amount0Increased, uint256 _amount1Increased
+    uint256 indexed _tokenId,
+    address _caller,
+    int24 _tickLower,
+    int24 _tickUpper,
+    uint256 _amount0Increased,
+    uint256 _amount1Increased
   );
   event LogClosePosition(
     uint256 indexed _tokenId, address _caller, uint256 _amount0Out, uint256 _amount1Out, uint128 _liquidityOut
@@ -499,13 +509,13 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     // Collect performance fee on collected trading fee
     _vars.tradingPerformanceFeeBps = tradingPerformanceFeeBps;
     if (_vars.fee0 > 0) {
-      // Safe to unchecked since value that overflow would revert on transfer anyway
+      // Safe to unchecked because fee always less than MAX_BPS
       unchecked {
         _token0.safeTransfer(_performanceFeeBucket, _vars.fee0 * _vars.tradingPerformanceFeeBps / MAX_BPS);
       }
     }
     if (_vars.fee1 > 0) {
-      // Safe to unchecked since value that overflow would revert on transfer anyway
+      // Safe to unchecked because fee always less than MAX_BPS
       unchecked {
         _token1.safeTransfer(_performanceFeeBucket, _vars.fee1 * _vars.tradingPerformanceFeeBps / MAX_BPS);
       }
@@ -516,7 +526,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     if (_vars.cakeRewards > 0) {
       uint256 _cakePerformanceFee;
       // Collect CAKE performance fee
-      // Safe to unchecked since value that overflow would revert on transfer anyway
+      // Safe to unchecked because fee always less than MAX_BPS
       unchecked {
         _vars.rewardPerformanceFeeBps = rewardPerformanceFeeBps;
         _cakePerformanceFee = _vars.cakeRewards * _vars.rewardPerformanceFeeBps / MAX_BPS;
