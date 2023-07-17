@@ -71,13 +71,13 @@ contract AutomatedVaultManagerSetToleranceBpsTest is AutomatedVaultManagerSetter
   function testCorrectness_SetToleranceBps() public {
     vm.startPrank(DEPLOYER);
     vaultManager.setToleranceBps(vaultToken, 9501);
-    (,,,,,, uint16 toleranceBps,,) = vaultManager.vaultInfos(vaultToken);
+    (,,,,,,,,,, uint16 toleranceBps,) = vaultManager.vaultInfos(vaultToken);
     assertEq(toleranceBps, 9501);
     vaultManager.setToleranceBps(vaultToken, 9900);
-    (,,,,,, toleranceBps,,) = vaultManager.vaultInfos(vaultToken);
+    (,,,,,,,,,, toleranceBps,) = vaultManager.vaultInfos(vaultToken);
     assertEq(toleranceBps, 9900);
     vaultManager.setToleranceBps(vaultToken, 10000);
-    (,,,,,, toleranceBps,,) = vaultManager.vaultInfos(vaultToken);
+    (,,,,,,,,,, toleranceBps,) = vaultManager.vaultInfos(vaultToken);
     assertEq(toleranceBps, 10000);
   }
 }
@@ -100,13 +100,13 @@ contract AutomatedVaultManagerSetMaxLeverageTest is AutomatedVaultManagerSetters
   function testCorrectness_SetMaxLeverage() public {
     vm.startPrank(DEPLOYER);
     vaultManager.setMaxLeverage(vaultToken, 1);
-    (,,,,,,, uint8 maxLeverage,) = vaultManager.vaultInfos(vaultToken);
+    (,,,,,,,,,,, uint8 maxLeverage) = vaultManager.vaultInfos(vaultToken);
     assertEq(maxLeverage, 1);
     vaultManager.setMaxLeverage(vaultToken, 5);
-    (,,,,,,, maxLeverage,) = vaultManager.vaultInfos(vaultToken);
+    (,,,,,,,,,,, maxLeverage) = vaultManager.vaultInfos(vaultToken);
     assertEq(maxLeverage, 5);
     vaultManager.setMaxLeverage(vaultToken, 10);
-    (,,,,,,, maxLeverage,) = vaultManager.vaultInfos(vaultToken);
+    (,,,,,,,,,,, maxLeverage) = vaultManager.vaultInfos(vaultToken);
     assertEq(maxLeverage, 10);
   }
 }
@@ -122,35 +122,30 @@ contract AutomatedVaultManagerSetMinimumDepositTest is AutomatedVaultManagerSett
     vm.startPrank(DEPLOYER);
     vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_InvalidParams.selector);
     vaultManager.setMinimumDeposit(vaultToken, 0);
-    vm.expectRevert(AutomatedVaultManager.AutomatedVaultManager_InvalidParams.selector);
-    vaultManager.setMinimumDeposit(vaultToken, 1e18 - 1);
   }
 
   function testCorrectness_SetMinimumDeposit() public {
     vm.startPrank(DEPLOYER);
-    vaultManager.setMinimumDeposit(vaultToken, 1e18);
-    (,,, uint256 minimumDeposit,,,,,) = vaultManager.vaultInfos(vaultToken);
-    assertEq(minimumDeposit, 1e18);
-    vaultManager.setMinimumDeposit(vaultToken, 1e27);
-    (,,, minimumDeposit,,,,,) = vaultManager.vaultInfos(vaultToken);
-    assertEq(minimumDeposit, 1e27);
+    vaultManager.setMinimumDeposit(vaultToken, 1);
+    (, uint32 compressedMinimumDeposit,,,,,,,,,,) = vaultManager.vaultInfos(vaultToken);
+    assertEq(compressedMinimumDeposit, 1);
   }
 }
 
 contract AutomatedVaultManagerSetFeePerSecTest is AutomatedVaultManagerSettersTest {
-  function testRevert_SetFeePerSec_NonOwnerIsCaller() public {
+  function testRevert_SetManagementFeePerSec_NonOwnerIsCaller() public {
     vm.prank(address(1234));
     vm.expectRevert("Ownable: caller is not the owner");
     vaultManager.setManagementFeePerSec(vaultToken, 1);
   }
 
-  function testCorrectness_SetFeePerSec() public {
+  function testCorrectness_SetManagementFeePerSec() public {
     vm.startPrank(DEPLOYER);
     vaultManager.setManagementFeePerSec(vaultToken, 10);
-    (,,,, uint256 managementFeePerSec,,,,) = vaultManager.vaultInfos(vaultToken);
+    (,,,,,,, uint32 managementFeePerSec,,,,) = vaultManager.vaultInfos(vaultToken);
     assertEq(managementFeePerSec, 10);
     vaultManager.setManagementFeePerSec(vaultToken, 12);
-    (,,,, managementFeePerSec,,,,) = vaultManager.vaultInfos(vaultToken);
+    (,,,,,,, managementFeePerSec,,,,) = vaultManager.vaultInfos(vaultToken);
     assertEq(managementFeePerSec, 12);
   }
 }
@@ -165,11 +160,11 @@ contract AutomatedVaultManagerSetCapacityTest is AutomatedVaultManagerSettersTes
   function testCorrectness_SetCapacity() public {
     vm.startPrank(DEPLOYER);
     vaultManager.setCapacity(vaultToken, 10);
-    (,,,,,,,, uint256 capacity) = vaultManager.vaultInfos(vaultToken);
-    assertEq(capacity, 10);
+    (,, uint32 compressedCapacity,,,,,,,,,) = vaultManager.vaultInfos(vaultToken);
+    assertEq(compressedCapacity, 10);
     vaultManager.setCapacity(vaultToken, 0);
-    (,,,,,,,, capacity) = vaultManager.vaultInfos(vaultToken);
-    assertEq(capacity, 0);
+    (,, compressedCapacity,,,,,,,,,) = vaultManager.vaultInfos(vaultToken);
+    assertEq(compressedCapacity, 0);
   }
 }
 
@@ -182,6 +177,11 @@ contract AutomatedVaultManagerSetIsPausedTest is AutomatedVaultManagerSettersTes
     vaultManager.setIsDepositPaused(new address[](1), true);
   }
 
+  function _assertDepositPaused(address _vaultToken, bool _expected) internal {
+    (,,, bool isDepositPaused,,,,,,,,) = vaultManager.vaultInfos(_vaultToken);
+    assertEq(isDepositPaused, _expected);
+  }
+
   function testCorrectness_SetIsDepositPaused_MultipleVaults() public {
     address _vaultToken1 = makeAddr("vaultToken1");
     address _vaultToken2 = makeAddr("vaultToken2");
@@ -190,19 +190,19 @@ contract AutomatedVaultManagerSetIsPausedTest is AutomatedVaultManagerSettersTes
     _vaultTokens[1] = _vaultToken2;
 
     // unset vaults should be false by default
-    assertFalse(vaultManager.isDepositPaused(_vaultToken1));
-    assertFalse(vaultManager.isDepositPaused(_vaultToken2));
+    _assertDepositPaused(_vaultToken1, false);
+    _assertDepositPaused(_vaultToken2, false);
 
     vm.startPrank(DEPLOYER);
     // should be true
     vaultManager.setIsDepositPaused(_vaultTokens, true);
-    assertTrue(vaultManager.isDepositPaused(_vaultToken1));
-    assertTrue(vaultManager.isDepositPaused(_vaultToken2));
+    _assertDepositPaused(_vaultToken1, true);
+    _assertDepositPaused(_vaultToken2, true);
 
     // should be false
     vaultManager.setIsDepositPaused(_vaultTokens, false);
-    assertFalse(vaultManager.isDepositPaused(_vaultToken1));
-    assertFalse(vaultManager.isDepositPaused(_vaultToken2));
+    _assertDepositPaused(_vaultToken1, false);
+    _assertDepositPaused(_vaultToken2, false);
     vm.stopPrank();
   }
 
@@ -214,6 +214,11 @@ contract AutomatedVaultManagerSetIsPausedTest is AutomatedVaultManagerSettersTes
     vaultManager.setIsWithdrawPaused(new address[](1), true);
   }
 
+  function _assertWithdrawPaused(address _vaultToken, bool _expected) internal {
+    (,,,,, bool isWithdrawPaused,,,,,,) = vaultManager.vaultInfos(_vaultToken);
+    assertEq(isWithdrawPaused, _expected);
+  }
+
   function testCorrectness_SetIsWithdrawPaused_MultipleVaults() public {
     address _vaultToken1 = makeAddr("vaultToken1");
     address _vaultToken2 = makeAddr("vaultToken2");
@@ -222,19 +227,19 @@ contract AutomatedVaultManagerSetIsPausedTest is AutomatedVaultManagerSettersTes
     _vaultTokens[1] = _vaultToken2;
 
     // unset vaults should be false by default
-    assertFalse(vaultManager.isWithdrawPaused(_vaultToken1));
-    assertFalse(vaultManager.isWithdrawPaused(_vaultToken2));
+    _assertWithdrawPaused(_vaultToken1, false);
+    _assertWithdrawPaused(_vaultToken2, false);
 
     vm.startPrank(DEPLOYER);
     // should be true
     vaultManager.setIsWithdrawPaused(_vaultTokens, true);
-    assertTrue(vaultManager.isWithdrawPaused(_vaultToken1));
-    assertTrue(vaultManager.isWithdrawPaused(_vaultToken2));
+    _assertWithdrawPaused(_vaultToken1, true);
+    _assertWithdrawPaused(_vaultToken2, true);
 
     // should be false
     vaultManager.setIsWithdrawPaused(_vaultTokens, false);
-    assertFalse(vaultManager.isWithdrawPaused(_vaultToken1));
-    assertFalse(vaultManager.isWithdrawPaused(_vaultToken2));
+    _assertWithdrawPaused(_vaultToken1, false);
+    _assertWithdrawPaused(_vaultToken2, false);
     vm.stopPrank();
   }
 }

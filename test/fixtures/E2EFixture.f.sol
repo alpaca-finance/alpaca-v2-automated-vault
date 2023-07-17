@@ -32,8 +32,8 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
   uint16 internal constant REWARD_PERFORMANCE_FEE_BPS = 1_000;
   uint16 internal constant MAX_PRICE_AGE = 60 * 60;
   uint16 internal constant MAX_PRICE_DIFF = 10_500;
-  uint256 internal constant MIN_DEPOSIT = 1 ether;
-  uint256 internal constant MANAGEMENT_FEE_PER_SEC = 0;
+  uint32 internal constant MIN_DEPOSIT = 100; // 1 USD
+  uint32 internal constant MANAGEMENT_FEE_PER_SEC = 0;
   uint16 internal constant WITHDRAWAL_FEE = 0;
   uint16 internal constant TOLERANCE_BPS = 9900; // tolerate up to 1% equity loss on manage
   uint8 internal constant MAX_LEVERAGE = 10;
@@ -162,12 +162,12 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
       vaultManager.openVault(
         "test vault",
         "TV",
-        AutomatedVaultManager.VaultInfo({
+        AutomatedVaultManager.OpenVaultParams({
           worker: address(workerUSDTWBNB),
           vaultOracle: address(pancakeV3VaultOracle),
           executor: address(pancakeV3Executor),
-          minimumDeposit: MIN_DEPOSIT,
-          capacity: type(uint256).max,
+          compressedMinimumDeposit: MIN_DEPOSIT,
+          compressedCapacity: type(uint32).max,
           managementFeePerSec: MANAGEMENT_FEE_PER_SEC,
           withdrawalFeeBps: WITHDRAWAL_FEE,
           toleranceBps: TOLERANCE_BPS,
@@ -182,12 +182,12 @@ contract E2EFixture is Test, BscFixture, ProtocolActorFixture {
       vaultManager.openVault(
         "test stable vault",
         "TSV",
-        AutomatedVaultManager.VaultInfo({
+        AutomatedVaultManager.OpenVaultParams({
           worker: address(workerUSDTBUSD),
           vaultOracle: address(pancakeV3VaultOracle),
           executor: address(pancakeV3StableExecutor),
-          minimumDeposit: MIN_DEPOSIT,
-          capacity: type(uint256).max,
+          compressedMinimumDeposit: MIN_DEPOSIT,
+          compressedCapacity: type(uint32).max,
           managementFeePerSec: MANAGEMENT_FEE_PER_SEC,
           withdrawalFeeBps: WITHDRAWAL_FEE,
           toleranceBps: TOLERANCE_BPS,
