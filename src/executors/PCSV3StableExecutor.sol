@@ -27,10 +27,10 @@ contract PCSV3StableExecutor is Executor {
   error PCSV3StableExecutor_RepurchaseExceedDebt();
   error PCSV3StableExecutor_TooLittleReceived();
 
-  event LogOnDeposit(address _vaultToken, address _worker, uint256 _amountIn0, uint256 _amountIn1);
+  event LogOnDeposit(address indexed _vaultToken, address indexed _worker, uint256 _amountIn0, uint256 _amountIn1);
   event LogOnWithdraw(
-    address _worker,
-    address _vaultToken,
+    address indexed _vaultToken,
+    address indexed _worker,
     uint256 _sharesToWithdraw,
     uint256 _totalShares,
     uint256 _amount0Withdraw,
@@ -38,18 +38,25 @@ contract PCSV3StableExecutor is Executor {
     uint256 _amount0AfterRepay,
     uint256 _amount1AfterRepay
   );
-  event LogOnUpdate(address _vaultToken, address _worker);
+  event LogOnUpdate(address indexed _vaultToken, address indexed _worker);
   event LogSweepToWorker(address _token, uint256 _amount);
-  event LogIncreasePosition(address _vaultToken, address _worker, uint256 _amountIn0, uint256 _amountIn1);
-  event LogOpenPosition(
-    address _vaultToken, address _worker, int24 _tickLower, int24 _tickUpper, uint256 _amountIn0, uint256 _amountIn1
+  event LogIncreasePosition(
+    address indexed _vaultToken, address indexed _worker, uint256 _amountIn0, uint256 _amountIn1
   );
-  event LogDecreasePosition(address _vaultToken, address _worker, uint128 _liquidity);
-  event LogClosePosition(address _vaultToken, address _worker);
-  event LogTransferFromWorker(address _vaultToken, address _worker, uint256 _amount);
-  event LogBorrow(address _vaultToken, address _token, uint256 _amount);
-  event LogRepay(address _vaultToken, address _token, uint256 _amount);
-  event LogRepurchase(address _vaultToken, address _borrowToken, uint256 _borrowAmount, uint256 _repayAmount);
+  event LogOpenPosition(
+    address indexed _vaultToken,
+    address indexed _worker,
+    int24 _tickLower,
+    int24 _tickUpper,
+    uint256 _amountIn0,
+    uint256 _amountIn1
+  );
+  event LogDecreasePosition(address indexed _vaultToken, address indexed _worker, uint128 _liquidity);
+  event LogClosePosition(address indexed _vaultToken, address indexed _worker);
+  event LogTransferFromWorker(address indexed _vaultToken, address indexed _worker, uint256 _amount);
+  event LogBorrow(address indexed _vaultToken, address _token, uint256 _amount);
+  event LogRepay(address indexed _vaultToken, address _token, uint256 _amount);
+  event LogRepurchase(address indexed _vaultToken, address _borrowToken, uint256 _borrowAmount, uint256 _repayAmount);
   event LogSetRepurchaseThreshold(uint160 _token0Threshold, uint160 _token1Threshold);
   event LogSetRepurchaseSlippage(uint16 _repurchaseSlippageBps);
   event LogSetVaultOracle(address _vaultOracle);
@@ -169,8 +176,8 @@ contract PCSV3StableExecutor is Executor {
     }
 
     emit LogOnWithdraw(
-      _worker,
       _vaultToken,
+      _worker,
       _sharesToWithdraw,
       _totalShares,
       _amount0Withdraw,

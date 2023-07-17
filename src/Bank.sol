@@ -150,7 +150,7 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     // Safe to unchecked, total vault debt shares must always be less than total token debt shares
     unchecked {
       vaultDebtShares[_vaultToken][_token] = _cachedVaultDebtShares - _debtSharesToDecrease;
-      if (_cachedVaultDebtShares - _debtSharesToDecrease == 0) {
+      if (_cachedVaultDebtShares == _debtSharesToDecrease) {
         vaultDebtTokens[_vaultToken].remove(_token);
       }
       tokenDebtShares[_token] = _cachedTokenDebtShares - _debtSharesToDecrease;
