@@ -66,7 +66,7 @@ contract PCSV3Executor01RepurchaseTest is Test, BscFixture {
     vm.mockCall(
       mockBank,
       abi.encodeWithSignature("repayOnBehalfOf(address,address,uint256)", mockVaultToken, repayToken, repayAmount),
-      abi.encode()
+      abi.encode(repayAmount)
     );
   }
 

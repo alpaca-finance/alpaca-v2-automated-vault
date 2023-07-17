@@ -64,7 +64,7 @@ contract PCSV3StableExecutorTest is Test, BscFixture {
     vm.mockCall(
       mockBank,
       abi.encodeWithSignature("repayOnBehalfOf(address,address,uint256)", mockVaultToken, repayToken, repayAmount),
-      abi.encode()
+      abi.encode(repayAmount)
     );
   }
 
@@ -144,11 +144,12 @@ contract PCSV3StableExecutorTest is Test, BscFixture {
     executor.setRepurchaseThreshold(currentSqrtPrice - 1, 0);
 
     // Mock some debt
-    _mockCallBorrowRepay(address(usdt), address(busd), 1 ether, 0);
+    uint256 expectedRepayAmount = 1000323800987847830;
+    _mockCallBorrowRepay(address(usdt), address(busd), 1 ether, expectedRepayAmount);
     vm.mockCall(mockBank, abi.encodeWithSignature("getVaultDebt(address,address)"), abi.encode(0, 999 ether));
 
     vm.expectCall(mockBank, abi.encodeCall(Bank.borrowOnBehalfOf, (mockVaultToken, borrowToken, borrowAmount)), 1);
-    vm.expectCall(mockBank, abi.encodeCall(Bank.repayOnBehalfOf, (mockVaultToken, repayToken, 1000323800987847830)), 1);
+    vm.expectCall(mockBank, abi.encodeCall(Bank.repayOnBehalfOf, (mockVaultToken, repayToken, expectedRepayAmount)), 1);
 
     vm.prank(mockVaultManager);
     executor.repurchase(borrowToken, borrowAmount);
