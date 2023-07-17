@@ -28,9 +28,9 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   error PancakeV3Worker_PositionNotExist();
   error PancakeV3Worker_InvalidParams();
 
-  // pool info
   ERC20 public token0;
   ERC20 public token1;
+
   // packed slot
   ICommonV3Pool public pool;
   uint24 public poolFee;
@@ -38,26 +38,22 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   int24 public posTickUpper;
   bool public isToken0Base;
 
-  // packed slot for harvest
+  // packed slot
   address public performanceFeeBucket;
   uint16 public tradingPerformanceFeeBps;
   uint16 public rewardPerformanceFeeBps;
   uint40 public lastHarvest;
 
-  IZapV3 public zapV3;
+  uint256 public nftTokenId;
 
-  // pancake config
+  IZapV3 public zapV3;
   ERC20 public cake;
   ICommonV3PositionManager public nftPositionManager;
   IPancakeV3Router public router;
   IPancakeV3MasterChef public masterChef;
-
-  uint256 public nftTokenId;
+  AutomatedVaultManager public vaultManager;
 
   mapping(address => bytes) public cakeToTokenPath;
-
-  /// Authorization
-  AutomatedVaultManager public vaultManager;
 
   /// Modifier
   modifier onlyExecutorInScope() {
@@ -68,9 +64,6 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
   }
 
   /// Events
-  event LogIncreaseLiquidity(uint256 _tokenId, uint256 _amount0, uint256 _amount1, uint128 _liquidity);
-  event LogCollectPerformanceFee(address indexed _token, uint256 _earned, uint256 _feeCollected);
-  event LogDecreaseLiquidity(uint256 tokenId, uint256 amount0out, uint256 amount1out, uint128 liquidityOut);
   event LogOpenPosition(
     uint256 indexed _tokenId, address _caller, int24 _tickLower, int24 _tickUpper, uint256 _amount0, uint256 _amount1
   );
