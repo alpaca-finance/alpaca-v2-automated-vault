@@ -204,9 +204,8 @@ contract PCSV3Executor01 is Executor {
       );
     }
 
-    _repayToken.safeApprove(address(bank), _repayAmount);
-    bank.repayOnBehalfOf(_vaultToken, address(_repayToken), _repayAmount);
-    emit LogRepay(_vaultToken, address(_repayToken), _repayAmount);
+    _repay(_vaultToken, address(_repayToken), _repayAmount);
+
   }
 
   function onUpdate(address _worker, address _vaultToken)
@@ -282,11 +281,22 @@ contract PCSV3Executor01 is Executor {
   }
 
   /// @notice Repay token back to Bank
+  /// @notice Repay token back to Bank
   function repay(address _token, uint256 _amount) external onlyVaultManager {
     address _vaultToken = _getCurrentVaultToken();
+   _repay(_vaultToken,_token,_amount);
+  }
+
+  function _repay(address _vaultToken, address _token, uint256 _amount) internal {
+
     ERC20(_token).safeApprove(address(bank), _amount);
-    bank.repayOnBehalfOf(_vaultToken, _token, _amount);
-    emit LogRepay(_vaultToken, _token, _amount);
+
+    uint256 _acutalRepayAmount = bank.repayOnBehalfOf(_vaultToken, _token, _amount);
+
+    // reset approve when _acutalRepayAmount < _amount
+    ERC20(_token).safeApprove(address(bank), 0);
+    
+    emit LogRepay(_vaultToken, _token, _acutalRepayAmount);
   }
 
   struct RepurchaseLocalVars {
@@ -374,6 +384,7 @@ contract PCSV3Executor01 is Executor {
 
     // Repay
     ERC20(_vars.repayToken).safeApprove(address(bank), _swapAmountOut);
+
     bank.repayOnBehalfOf(_vars.vaultToken, _vars.repayToken, _swapAmountOut);
 
     emit LogRepurchase(_vars.vaultToken, _borrowToken, _borrowAmount, _swapAmountOut);

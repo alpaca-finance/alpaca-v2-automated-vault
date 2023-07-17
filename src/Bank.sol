@@ -115,7 +115,11 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     emit LogBorrowOnBehalfOf(_vaultToken, msg.sender, _token, _amount);
   }
 
-  function repayOnBehalfOf(address _vaultToken, address _token, uint256 _amount) external onlyExecutorWithinScope {
+  function repayOnBehalfOf(address _vaultToken, address _token, uint256 _amount)
+    external
+    onlyExecutorWithinScope
+    returns (uint256 _actualRepayAmount)
+  {
     IMoneyMarket _moneyMarket = moneyMarket;
     // Accure interest first
     _moneyMarket.accrueInterest(_token);
@@ -138,8 +142,10 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
       }
     }
 
+    _actualRepayAmount = _amount;
+
     // Transfer capped amount
-    ERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
+    ERC20(_token).safeTransferFrom(msg.sender, address(this), _actualRepayAmount);
 
     // Decrease vault and total debt shares and remove token from borrowed token list if repay all
     // Safe to unchecked, total vault debt shares must always be less than total token debt shares
@@ -152,9 +158,9 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     }
 
     // Non-collat repay money market for itself
-    ERC20(_token).safeApprove(address(_moneyMarket), _amount);
-    _moneyMarket.nonCollatRepay(address(this), _token, _amount);
+    ERC20(_token).safeApprove(address(_moneyMarket), _actualRepayAmount);
+    _moneyMarket.nonCollatRepay(address(this), _token, _actualRepayAmount);
 
-    emit LogRepayOnBehalfOf(_vaultToken, msg.sender, _token, _amount);
+    emit LogRepayOnBehalfOf(_vaultToken, msg.sender, _token, _actualRepayAmount);
   }
 }
