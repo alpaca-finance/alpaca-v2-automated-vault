@@ -115,7 +115,11 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     emit LogBorrowOnBehalfOf(_vaultToken, msg.sender, _token, _amount);
   }
 
-  function repayOnBehalfOf(address _vaultToken, address _token, uint256 _amount) external onlyExecutorWithinScope {
+  function repayOnBehalfOf(address _vaultToken, address _token, uint256 _amount)
+    external
+    onlyExecutorWithinScope
+    returns (uint256 _actualRepayAmount)
+  {
     IMoneyMarket _moneyMarket = moneyMarket;
     // Accure interest first
     _moneyMarket.accrueInterest(_token);
@@ -126,20 +130,21 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
 
     // NOTE: must accrue interest on money market before calculate shares to correctly reflect debt
     // Round down in protocol favor: decrease less debt
-    uint256 _debtSharesToDecrease = _amount.valueToShare(_cachedTokenDebtShares, _cachedMMDebt);
+    _actualRepayAmount = _amount;
+    uint256 _debtSharesToDecrease = _actualRepayAmount.valueToShare(_cachedTokenDebtShares, _cachedMMDebt);
     // Cap to debt if try to repay more than debt and re-calculate repay amount
     if (_debtSharesToDecrease > _cachedVaultDebtShares) {
       _debtSharesToDecrease = _cachedVaultDebtShares;
       // Round up in protocol favor: repay more
-      _amount = _debtSharesToDecrease.shareToValueRoundingUp(_cachedMMDebt, _cachedTokenDebtShares);
+      _actualRepayAmount = _debtSharesToDecrease.shareToValueRoundingUp(_cachedMMDebt, _cachedTokenDebtShares);
       // Cap to actual debt, could happen when round up
-      if (_amount > _cachedMMDebt) {
-        _amount = _cachedMMDebt;
+      if (_actualRepayAmount > _cachedMMDebt) {
+        _actualRepayAmount = _cachedMMDebt;
       }
     }
 
     // Transfer capped amount
-    ERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
+    ERC20(_token).safeTransferFrom(msg.sender, address(this), _actualRepayAmount);
 
     // Decrease vault and total debt shares and remove token from borrowed token list if repay all
     // Safe to unchecked, total vault debt shares must always be less than total token debt shares
@@ -152,9 +157,9 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
     }
 
     // Non-collat repay money market for itself
-    ERC20(_token).safeApprove(address(_moneyMarket), _amount);
-    _moneyMarket.nonCollatRepay(address(this), _token, _amount);
+    ERC20(_token).safeApprove(address(_moneyMarket), _actualRepayAmount);
+    _moneyMarket.nonCollatRepay(address(this), _token, _actualRepayAmount);
 
-    emit LogRepayOnBehalfOf(_vaultToken, msg.sender, _token, _amount);
+    emit LogRepayOnBehalfOf(_vaultToken, msg.sender, _token, _actualRepayAmount);
   }
 }

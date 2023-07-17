@@ -188,7 +188,7 @@ contract PCSV3Executor01RepayTest is PCSV3Executor01ActionTest {
     vm.mockCall(
       mockBank,
       abi.encodeWithSignature("repayOnBehalfOf(address,address,uint256)", mockVaultToken, address(mockToken0), 1e18),
-      abi.encode()
+      abi.encode(1e18)
     );
 
     vm.expectCall(mockBank, abi.encodeWithSignature("repayOnBehalfOf(address,address,uint256)"), 1);
