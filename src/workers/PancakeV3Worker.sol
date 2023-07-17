@@ -65,16 +65,23 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
 
   /// Events
   event LogOpenPosition(
-    uint256 indexed _tokenId, address _caller, int24 _tickLower, int24 _tickUpper, uint256 _amount0, uint256 _amount1
+    uint256 indexed _tokenId, address _caller, int24 _tickLower, int24 _tickUpper, uint256 _amount0Increased, uint256 _amount1Increased
   );
   event LogIncreasePosition(
-    uint256 indexed _tokenId, address _caller, int24 _tickLower, int24 _tickUpper, uint256 _amount0, uint256 _amount1
+    uint256 indexed _tokenId, address _caller, int24 _tickLower, int24 _tickUpper, uint256 _amount0Increased, uint256 _amount1Increased
   );
   event LogClosePosition(
     uint256 indexed _tokenId, address _caller, uint256 _amount0Out, uint256 _amount1Out, uint128 _liquidityOut
   );
   event LogDecreasePosition(
     uint256 indexed _tokenId, address _caller, uint256 _amount0Out, uint256 _amount1Out, uint128 _liquidityOut
+  );
+  event LogHarvest(
+    uint256 _token0Earned,
+    uint256 _token1Earned,
+    uint16 _tradingPerformanceFeeBps,
+    uint256 _cakeEarned,
+    uint16 _rewardPerformanceFeeBps
   );
   event LogTransferToExecutor(address indexed _token, address _to, uint256 _amount);
   event LogSetTradingPerformanceFee(uint16 _prevTradingPerformanceFeeBps, uint16 _newTradingPerformanceFeeBps);
@@ -449,6 +456,14 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     _harvest();
   }
 
+  struct HarvestFeeLocalVars {
+    uint256 fee0;
+    uint256 fee1;
+    uint256 cakeRewards;
+    uint16 tradingPerformanceFeeBps;
+    uint16 rewardPerformanceFeeBps;
+  }
+
   /**
    * @dev Perform the actual claim and harvest.
    * 1. claim trading fee and harvest reward
@@ -463,6 +478,8 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     // If tokenId is 0, then nothing to harvest
     if (_nftTokenId == 0) return;
 
+    HarvestFeeLocalVars memory _vars;
+
     // SLOADs
     address _performanceFeeBucket = performanceFeeBucket;
     ERC20 _token0 = token0;
@@ -470,41 +487,42 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     ERC20 _cake = cake;
     IPancakeV3MasterChef _masterChef = masterChef;
 
-    // _cachedFee is for emitting the event. So we don't have to calc fee * performanceFeeBps / MAX_BPS twice
-    uint256 _cachedFee = 0;
-
     // Handle trading fee
-    {
-      // Claim all trading fee
-      (uint256 _fee0, uint256 _fee1) = _masterChef.collect(
-        IPancakeV3MasterChef.CollectParams({
-          tokenId: _nftTokenId,
-          recipient: address(this),
-          amount0Max: type(uint128).max,
-          amount1Max: type(uint128).max
-        })
-      );
-      // Collect performance fee on collected trading fee
-      uint16 _tradingPerformanceFeeBps = tradingPerformanceFeeBps;
-      if (_fee0 > 0) {
-        // Collect token0 performance fee
-        _token0.safeTransfer(_performanceFeeBucket, _cachedFee = _fee0 * _tradingPerformanceFeeBps / MAX_BPS);
-        emit LogCollectPerformanceFee(address(_token0), _fee0, _cachedFee);
+    (_vars.fee0, _vars.fee1) = _masterChef.collect(
+      IPancakeV3MasterChef.CollectParams({
+        tokenId: _nftTokenId,
+        recipient: address(this),
+        amount0Max: type(uint128).max,
+        amount1Max: type(uint128).max
+      })
+    );
+    // Collect performance fee on collected trading fee
+    _vars.tradingPerformanceFeeBps = tradingPerformanceFeeBps;
+    if (_vars.fee0 > 0) {
+      // Safe to unchecked since value that overflow would revert on transfer anyway
+      unchecked {
+        _token0.safeTransfer(_performanceFeeBucket, _vars.fee0 * _vars.tradingPerformanceFeeBps / MAX_BPS);
       }
-      if (_fee1 > 0) {
-        // Collect token1 performance fee
-        _token1.safeTransfer(_performanceFeeBucket, _cachedFee = _fee1 * _tradingPerformanceFeeBps / MAX_BPS);
-        emit LogCollectPerformanceFee(address(_token1), _fee1, _cachedFee);
+    }
+    if (_vars.fee1 > 0) {
+      // Safe to unchecked since value that overflow would revert on transfer anyway
+      unchecked {
+        _token1.safeTransfer(_performanceFeeBucket, _vars.fee1 * _vars.tradingPerformanceFeeBps / MAX_BPS);
       }
     }
 
-    // Harvest CAKE rewards
-    uint256 _cakeRewards = _masterChef.harvest(_nftTokenId, address(this));
-    if (_cakeRewards > 0) {
-      // Handing CAKE rewards
+    // Handle CAKE rewards
+    _vars.cakeRewards = _masterChef.harvest(_nftTokenId, address(this));
+    if (_vars.cakeRewards > 0) {
+      uint256 _cakePerformanceFee;
       // Collect CAKE performance fee
-      _cake.safeTransfer(_performanceFeeBucket, _cachedFee = _cakeRewards * rewardPerformanceFeeBps / MAX_BPS);
-      emit LogCollectPerformanceFee(address(_cake), _cakeRewards, _cachedFee);
+      // Safe to unchecked since value that overflow would revert on transfer anyway
+      unchecked {
+        _vars.rewardPerformanceFeeBps = rewardPerformanceFeeBps;
+        _cakePerformanceFee = _vars.cakeRewards * _vars.rewardPerformanceFeeBps / MAX_BPS;
+        _cake.safeTransfer(_performanceFeeBucket, _cakePerformanceFee);
+      }
+
       // Sell CAKE for token0 or token1, if any
       // Find out need to sell CAKE to which side by checking currTick
       (, int24 _currTick,,,,,) = pool.slot0();
@@ -517,7 +535,11 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
       if (_tokenOut != address(_cake)) {
         IPancakeV3Router _router = router;
         // Swap reward after fee to token0 or token1
-        uint256 _swapAmount = _cakeRewards - _cachedFee;
+        // Safe to unchecked because _cakePerformanceFee is always less than _vars.cakeRewards (see above)
+        uint256 _swapAmount;
+        unchecked {
+          _swapAmount = _vars.cakeRewards - _cakePerformanceFee;
+        }
         _cake.safeApprove(address(_router), _swapAmount);
         // Swap CAKE for token0 or token1 based on predefined v3 path
         _router.exactInput(
@@ -530,6 +552,10 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
         );
       }
     }
+
+    emit LogHarvest(
+      _vars.fee0, _vars.fee1, _vars.tradingPerformanceFeeBps, _vars.cakeRewards, _vars.rewardPerformanceFeeBps
+    );
   }
 
   /// @notice Transfer undeployed token out
