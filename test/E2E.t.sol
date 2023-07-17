@@ -96,7 +96,7 @@ contract E2ETest is E2EFixture {
       assertApproxEqRel(equityBefore * totalSharesAfter / totalSharesBefore, equityAfter, 2, "equity decreased");
     }
 
-    (,,,,, uint256 withdrawalFeeBps,,,) = vaultManager.vaultInfos(address(vaultToken));
+    (,,,, uint256 withdrawalFeeBps,,,,,,,) = vaultManager.vaultInfos(address(vaultToken));
     uint256 expectedShare = withdrawAmount * withdrawalFeeBps / MAX_BPS;
 
     // expect that withdrawal fee must be collected (if it's set)
@@ -521,8 +521,8 @@ contract E2ETest is E2EFixture {
   }
 
   function testCorrectness_ManagementFee_InTheSameBlock_ShouldSkip() public {
-    uint256 _lastTimeCollectedBefore = vaultManager.vaultFeeLastCollectedAt(address(vaultToken));
-    uint256 _timePassed = 1;
+    (,,,,,,,, uint40 _lastTimeCollectedBefore,,,) = vaultManager.vaultInfos(address(vaultToken));
+    uint256 _timePassed = 1000;
     bytes[] memory _data = new bytes[](0);
 
     skip(_timePassed);
@@ -537,13 +537,14 @@ contract E2ETest is E2EFixture {
     // withdraw
     _withdrawAndAssert(address(this), 1 ether);
 
-    assertEq(vaultManager.vaultFeeLastCollectedAt(address(vaultToken)), _lastTimeCollectedBefore + _timePassed);
+    (,,,,,,,, uint40 _lastTimeCollectedAfter,,,) = vaultManager.vaultInfos(address(vaultToken));
+    assertEq(_lastTimeCollectedAfter, _lastTimeCollectedBefore + _timePassed);
   }
 
   function testCorrectness_ManagementFee_MustCollect_WhenDeposit() public {
     uint256 depositAmount = 100 ether;
     uint256 treasuryShareBefore = vaultToken.balanceOf(MANAGEMENT_FEE_TREASURY);
-    uint256 managementFeePerSec = 2;
+    uint32 managementFeePerSec = 2;
     uint256 timePassed = 100;
 
     // set management fee
@@ -572,7 +573,7 @@ contract E2ETest is E2EFixture {
     _depositUSDTAndAssert(address(this), 100 ether);
     uint256 treasuryShareBefore = vaultToken.balanceOf(MANAGEMENT_FEE_TREASURY);
     uint256 userShareBefore = vaultToken.balanceOf(address(this));
-    uint256 managementFeePerSec = 2;
+    uint32 managementFeePerSec = 2;
     uint256 timePassed = 100;
 
     // set management fee

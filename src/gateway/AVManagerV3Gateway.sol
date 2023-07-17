@@ -93,7 +93,7 @@ contract AVManagerV3Gateway is IAVManagerV3Gateway {
     returns (uint256 _amountOut)
   {
     // dump token0 <> token1
-    (address _worker,,,,,,,,) = vaultManager.vaultInfos(_vaultToken);
+    address _worker = vaultManager.getWorker(_vaultToken);
     ERC20 _token0 = PancakeV3Worker(_worker).token0();
     ERC20 _token1 = PancakeV3Worker(_worker).token1();
     ICommonV3Pool _pool = PancakeV3Worker(_worker).pool();

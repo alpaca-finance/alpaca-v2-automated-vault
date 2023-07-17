@@ -36,7 +36,7 @@ contract PancakeV3VaultReader is IVaultReader {
 
   function getVaultSummary(address _vaultToken) public view returns (VaultSummary memory _vaultSummary) {
     // prerequisites
-    (address _worker,,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
+    address _worker = automatedVaultManager.getWorker(_vaultToken);
     ERC20 _token0 = PancakeV3Worker(_worker).token0();
     ERC20 _token1 = PancakeV3Worker(_worker).token1();
     uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
@@ -85,7 +85,7 @@ contract PancakeV3VaultReader is IVaultReader {
 
     // Stack too deep
     {
-      (address _worker,,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
+      address _worker = automatedVaultManager.getWorker(_vaultToken);
       uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
 
       // Find pending cake equity
@@ -133,7 +133,7 @@ contract PancakeV3VaultReader is IVaultReader {
   }
 
   function getPendingRewards(address _vaultToken) external view returns (TokenAmount[] memory pendingRewards) {
-    (address _worker,,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
+    address _worker = automatedVaultManager.getWorker(_vaultToken);
     uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
 
     (uint256 token0TradingFee, uint256 token1TradingFee) =
@@ -213,7 +213,7 @@ contract PancakeV3VaultReader is IVaultReader {
   }
 
   function getRepurchaseSummary(address _vaultToken) external view returns (RepurchaseSummary memory _result) {
-    (address _worker,,,,,,,,) = automatedVaultManager.vaultInfos(_vaultToken);
+    address _worker = automatedVaultManager.getWorker(_vaultToken);
 
     bool _isToken0Base = PancakeV3Worker(_worker).isToken0Base();
     if (_isToken0Base) {
