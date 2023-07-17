@@ -36,7 +36,7 @@ contract PancakeV3VaultReaderTest is E2EFixture {
   function testCorrectness_VaultReader_ShouldWork() external {
     address _token0 = address(usdt);
     address _token1 = address(wbnb);
-    (address _worker,,,,,,,,) = vaultManager.vaultInfos(address(vaultToken));
+    address _worker = vaultManager.getWorker(address(vaultToken));
     uint256 depositAmount = 100 ether;
 
     // Vault action

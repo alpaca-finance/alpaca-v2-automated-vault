@@ -4,6 +4,8 @@ pragma solidity 0.8.19;
 import "./fixtures/E2EFixture.f.sol";
 import { AutomatedVaultManager, MAX_BPS } from "src/AutomatedVaultManager.sol";
 
+import { LibSqrtPriceX96 } from "src/libraries/LibSqrtPriceX96.sol";
+
 contract E2ETest is E2EFixture {
   constructor() E2EFixture() { }
 
@@ -94,7 +96,7 @@ contract E2ETest is E2EFixture {
       assertApproxEqRel(equityBefore * totalSharesAfter / totalSharesBefore, equityAfter, 2, "equity decreased");
     }
 
-    (,,,,, uint256 withdrawalFeeBps,,,) = vaultManager.vaultInfos(address(vaultToken));
+    (,,,, uint256 withdrawalFeeBps,,,,,,,) = vaultManager.vaultInfos(address(vaultToken));
     uint256 expectedShare = withdrawAmount * withdrawalFeeBps / MAX_BPS;
 
     // expect that withdrawal fee must be collected (if it's set)
@@ -519,8 +521,8 @@ contract E2ETest is E2EFixture {
   }
 
   function testCorrectness_ManagementFee_InTheSameBlock_ShouldSkip() public {
-    uint256 _lastTimeCollectedBefore = vaultManager.vaultFeeLastCollectedAt(address(vaultToken));
-    uint256 _timePassed = 1;
+    (,,,,,,,, uint40 _lastTimeCollectedBefore,,,) = vaultManager.vaultInfos(address(vaultToken));
+    uint256 _timePassed = 1000;
     bytes[] memory _data = new bytes[](0);
 
     skip(_timePassed);
@@ -535,13 +537,14 @@ contract E2ETest is E2EFixture {
     // withdraw
     _withdrawAndAssert(address(this), 1 ether);
 
-    assertEq(vaultManager.vaultFeeLastCollectedAt(address(vaultToken)), _lastTimeCollectedBefore + _timePassed);
+    (,,,,,,,, uint40 _lastTimeCollectedAfter,,,) = vaultManager.vaultInfos(address(vaultToken));
+    assertEq(_lastTimeCollectedAfter, _lastTimeCollectedBefore + _timePassed);
   }
 
   function testCorrectness_ManagementFee_MustCollect_WhenDeposit() public {
     uint256 depositAmount = 100 ether;
     uint256 treasuryShareBefore = vaultToken.balanceOf(MANAGEMENT_FEE_TREASURY);
-    uint256 managementFeePerSec = 2;
+    uint32 managementFeePerSec = 2;
     uint256 timePassed = 100;
 
     // set management fee
@@ -570,7 +573,7 @@ contract E2ETest is E2EFixture {
     _depositUSDTAndAssert(address(this), 100 ether);
     uint256 treasuryShareBefore = vaultToken.balanceOf(MANAGEMENT_FEE_TREASURY);
     uint256 userShareBefore = vaultToken.balanceOf(address(this));
-    uint256 managementFeePerSec = 2;
+    uint32 managementFeePerSec = 2;
     uint256 timePassed = 100;
 
     // set management fee
@@ -623,5 +626,74 @@ contract E2ETest is E2EFixture {
     assertEq(treasuryShareAfter - treasuryShareBefore, expectedFee);
     // actual withdraw amount < expected withdraw amount (fee deducted)
     assertLt(IERC20(usdt).balanceOf(address(this)), depositAmount / 2);
+  }
+
+  function testCorrectness_StableVault_Repurchase_WhenToken1Depegged() public {
+    deal(address(usdt), address(this), 100 ether);
+    usdt.approve(address(vaultManager), 100 ether);
+
+    AutomatedVaultManager.TokenAmount[] memory deposits = new AutomatedVaultManager.TokenAmount[](1);
+    deposits[0] = AutomatedVaultManager.TokenAmount({ token: address(usdt), amount: 100 ether });
+    vaultManager.deposit(address(this), address(usdtBusdVaultToken), deposits, 0);
+
+    // Current tick = 4
+    // Borrow busd and open position
+    deal(address(busd), address(moneyMarket), 100 ether);
+    bytes[] memory executorData = new bytes[](2);
+    executorData[0] = abi.encodeCall(PCSV3StableExecutor.borrow, (address(busd), 100 ether));
+    executorData[1] = abi.encodeCall(PCSV3StableExecutor.openPosition, (2, 6, 100 ether, 100 ether));
+    vm.prank(MANAGER);
+    vaultManager.manage(address(usdtBusdVaultToken), executorData);
+
+    // Swap to make BUSD depeg
+    // Price after swap = 1.32
+    deal(address(busd), address(this), 12917000 ether);
+    busd.approve(address(pancakeV3Router), 12917000 ether);
+    pancakeV3Router.exactInputSingle(
+      IPancakeV3Router.ExactInputSingleParams({
+        tokenIn: address(busd),
+        tokenOut: address(usdt),
+        fee: 100,
+        recipient: address(this),
+        amountIn: 12917000 ether,
+        amountOutMinimum: 0,
+        sqrtPriceLimitX96: 0
+      })
+    );
+    vm.prank(DEPLOYER);
+    // Repurchasable when depeg more than 1%
+    pancakeV3StableExecutor.setRepurchaseThreshold(LibSqrtPriceX96.encodeSqrtPriceX96(1.01 ether, 18, 18), 0);
+    // Mock oracle price
+    vm.mockCall(
+      address(busdFeed), abi.encodeWithSignature("latestRoundData()"), abi.encode(0, 75757575, 0, block.timestamp, 0)
+    );
+
+    // Borrow usdt, swap and repay wbnb debt
+    deal(address(usdt), address(moneyMarket), 1 ether);
+    executorData = new bytes[](1);
+    executorData[0] = abi.encodeCall(PCSV3StableExecutor.repurchase, (address(usdt), 1 ether));
+    vm.prank(MANAGER);
+    vaultManager.manage(address(usdtBusdVaultToken), executorData);
+    // Assertions
+    // - usdt debt increase
+    (, uint256 usdtDebt) = bank.getVaultDebt(address(usdtBusdVaultToken), address(usdt));
+    assertEq(usdtDebt, 1 ether);
+    // - busd debt repaid
+    (, uint256 busdDebt) = bank.getVaultDebt(address(usdtBusdVaultToken), address(busd));
+    assertEq(busdDebt, 100 ether - 1318319302793630967); // 1318319302793630967 is usdt to busd swap output
+
+    uint256 usdtBefore = usdt.balanceOf(address(this));
+    uint256 busdBefore = busd.balanceOf(address(this));
+
+    AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](2);
+    minAmountOuts[0].token = address(usdt);
+    minAmountOuts[0].amount = 0;
+    minAmountOuts[1].token = address(busd);
+    minAmountOuts[1].amount = 0;
+    vaultManager.withdraw(address(usdtBusdVaultToken), usdtBusdVaultToken.balanceOf(address(this)), minAmountOuts);
+
+    // Should only get busd since it is out of range
+    assertEq(usdt.balanceOf(address(this)), usdtBefore);
+    assertGt(busd.balanceOf(address(this)), busdBefore);
   }
 }

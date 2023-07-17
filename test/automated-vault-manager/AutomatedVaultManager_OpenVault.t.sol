@@ -17,49 +17,50 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
   }
 
   function testCorrectness_OpenVault() public {
-    uint256 minimumDeposit = 100 ether;
-    uint256 managementFeePerSec = 0;
-    uint16 toleranceBps = 9900;
-    uint8 maxLeverage = 10;
-
     vm.prank(DEPLOYER);
     address vaultToken = vaultManager.openVault(
       "test vault",
       "TV",
-      AutomatedVaultManager.VaultInfo({
+      AutomatedVaultManager.OpenVaultParams({
         worker: worker,
         vaultOracle: vaultOracle,
         executor: executor,
-        minimumDeposit: minimumDeposit,
-        capacity: type(uint256).max,
-        managementFeePerSec: managementFeePerSec,
+        compressedMinimumDeposit: 100,
+        compressedCapacity: type(uint32).max,
+        managementFeePerSec: 200,
         withdrawalFeeBps: 0,
-        toleranceBps: toleranceBps,
-        maxLeverage: maxLeverage
+        toleranceBps: 9500,
+        maxLeverage: 8
       })
     );
 
     // Assert vault manager
     (
       address vaultWorker,
-      address vaultWorkerOracle,
-      address vaultExecutor,
-      uint256 vaultMinimumDeposit,
-      uint256 vaultFeePerSec,
+      uint32 vaultMinimumDeposit,
+      uint32 vaultCapacity,
+      bool isDepositPaused,
       uint16 vaultWithdrawalFeeBps,
+      bool isWithdrawalPaused,
+      address vaultExecutor,
+      uint32 vaultFeePerSec,
+      uint40 lastFeeCollectedAt,
+      address vaultWorkerOracle,
       uint16 vaultToleranceBps,
-      uint8 vaultMaxLeverage,
-      uint256 vaultCapacity
+      uint8 vaultMaxLeverage
     ) = vaultManager.vaultInfos(vaultToken);
     assertEq(vaultWorker, worker);
-    assertEq(vaultWorkerOracle, vaultOracle);
+    assertEq(vaultMinimumDeposit, 100);
+    assertEq(vaultCapacity, type(uint32).max);
+    assertEq(isDepositPaused, false);
     assertEq(vaultExecutor, executor);
-    assertEq(vaultToleranceBps, toleranceBps);
-    assertEq(vaultMaxLeverage, maxLeverage);
-    assertEq(vaultMinimumDeposit, minimumDeposit);
-    assertEq(vaultCapacity, type(uint256).max);
-    assertEq(vaultFeePerSec, managementFeePerSec);
     assertEq(vaultWithdrawalFeeBps, 0);
+    assertEq(isWithdrawalPaused, false);
+    assertEq(vaultFeePerSec, 200);
+    assertEq(lastFeeCollectedAt, block.timestamp);
+    assertEq(vaultWorkerOracle, vaultOracle);
+    assertEq(vaultToleranceBps, 9500);
+    assertEq(vaultMaxLeverage, 8);
     assertEq(vaultManager.workerExisted(worker), true);
 
     // Assert vault token
@@ -72,12 +73,12 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
     vaultManager.openVault(
       "test vault",
       "TV",
-      AutomatedVaultManager.VaultInfo({
+      AutomatedVaultManager.OpenVaultParams({
         worker: worker,
         vaultOracle: vaultOracle,
         executor: executor,
-        minimumDeposit: 100 ether,
-        capacity: type(uint256).max,
+        compressedMinimumDeposit: 10000, // 100 USD
+        compressedCapacity: type(uint32).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
@@ -93,12 +94,12 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
     vaultManager.openVault(
       "test vault",
       "TV",
-      AutomatedVaultManager.VaultInfo({
+      AutomatedVaultManager.OpenVaultParams({
         worker: worker,
         vaultOracle: vaultOracle,
         executor: executor,
-        minimumDeposit: 0.1 ether,
-        capacity: type(uint256).max,
+        compressedMinimumDeposit: 0,
+        compressedCapacity: type(uint32).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
@@ -110,12 +111,12 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
     vaultManager.openVault(
       "test vault",
       "TV",
-      AutomatedVaultManager.VaultInfo({
+      AutomatedVaultManager.OpenVaultParams({
         worker: worker,
         vaultOracle: vaultOracle,
         executor: executor,
-        minimumDeposit: 1 ether,
-        capacity: type(uint256).max,
+        compressedMinimumDeposit: 100,
+        compressedCapacity: type(uint32).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 1,
@@ -127,12 +128,12 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
     vaultManager.openVault(
       "test vault",
       "TV",
-      AutomatedVaultManager.VaultInfo({
+      AutomatedVaultManager.OpenVaultParams({
         worker: worker,
         vaultOracle: vaultOracle,
         executor: executor,
-        minimumDeposit: 1 ether,
-        capacity: type(uint256).max,
+        compressedMinimumDeposit: 100,
+        compressedCapacity: type(uint32).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
@@ -146,12 +147,12 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
     vaultManager.openVault(
       "test vault",
       "TV",
-      AutomatedVaultManager.VaultInfo({
+      AutomatedVaultManager.OpenVaultParams({
         worker: worker,
         vaultOracle: vaultOracle,
         executor: executor,
-        minimumDeposit: 1 ether,
-        capacity: type(uint256).max,
+        compressedMinimumDeposit: 100,
+        compressedCapacity: type(uint32).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
@@ -166,12 +167,12 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
     vaultManager.openVault(
       "test vault",
       "TV",
-      AutomatedVaultManager.VaultInfo({
+      AutomatedVaultManager.OpenVaultParams({
         worker: worker,
         vaultOracle: vaultOracle,
         executor: executor,
-        minimumDeposit: 1 ether,
-        capacity: type(uint256).max,
+        compressedMinimumDeposit: 100,
+        compressedCapacity: type(uint32).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
@@ -185,12 +186,12 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
     vaultManager.openVault(
       "test vault",
       "TV",
-      AutomatedVaultManager.VaultInfo({
+      AutomatedVaultManager.OpenVaultParams({
         worker: worker,
         vaultOracle: vaultOracle,
         executor: executor,
-        minimumDeposit: 1 ether,
-        capacity: type(uint256).max,
+        compressedMinimumDeposit: 100,
+        compressedCapacity: type(uint32).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
@@ -204,12 +205,12 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
     vaultManager.openVault(
       "test vault",
       "TV",
-      AutomatedVaultManager.VaultInfo({
+      AutomatedVaultManager.OpenVaultParams({
         worker: worker,
         vaultOracle: vaultOracle,
         executor: executor,
-        minimumDeposit: 1 ether,
-        capacity: type(uint256).max,
+        compressedMinimumDeposit: 100,
+        compressedCapacity: type(uint32).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,
@@ -221,12 +222,12 @@ contract AutomatedVaultManagerOpenVaultTest is BaseAutomatedVaultUnitTest {
     vaultManager.openVault(
       "test vault",
       "TV",
-      AutomatedVaultManager.VaultInfo({
+      AutomatedVaultManager.OpenVaultParams({
         worker: worker,
         vaultOracle: vaultOracle,
         executor: executor,
-        minimumDeposit: 1 ether,
-        capacity: type(uint256).max,
+        compressedMinimumDeposit: 100,
+        compressedCapacity: type(uint32).max,
         managementFeePerSec: 0,
         withdrawalFeeBps: 0,
         toleranceBps: 9900,

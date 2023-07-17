@@ -76,10 +76,10 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
     AutomatedVaultERC20(vaultToken).mint(address(1), 1 ether);
     // state before
     uint256 _vaultSupplyBefore = IERC20(vaultToken).totalSupply();
-    uint256 _lastTimeCollecteBefore = vaultManager.vaultFeeLastCollectedAt(vaultToken);
+    (,,,,,,,, uint40 _lastTimeCollecteBefore,,,) = vaultManager.vaultInfos(address(vaultToken));
 
     uint256 _timePassed = 100;
-    uint256 _managementFeePerSec = 1;
+    uint32 _managementFeePerSec = 1;
     uint256 _expectedFee = (_vaultSupplyBefore * _timePassed * _managementFeePerSec) / 1e18;
 
     // set fee
@@ -94,7 +94,7 @@ contract AutomatedVaultManagerManageTest is BaseAutomatedVaultUnitTest {
     vaultManager.manage(address(vaultToken), new bytes[](0));
 
     // state after
-    uint256 _lastTimeCollecteAfter = vaultManager.vaultFeeLastCollectedAt(vaultToken);
+    (,,,,,,,, uint40 _lastTimeCollecteAfter,,,) = vaultManager.vaultInfos(address(vaultToken));
 
     assertEq(IERC20(vaultToken).balanceOf(managementFeeTreasury), _expectedFee, "Management fee treasury balance");
     assertGt(_lastTimeCollecteAfter, _lastTimeCollecteBefore, "Last collected time must be updated");

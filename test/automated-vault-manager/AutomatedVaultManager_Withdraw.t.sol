@@ -74,7 +74,7 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     minAmountOuts[0].token = address(mockToken0);
     minAmountOuts[0].amount = 1 ether;
     // should revert: amount = 1 ether, actualAmount = 0.9 ether
-    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_ExceedSlippage()"));
+    vm.expectRevert(abi.encodeWithSignature("AutomatedVaultManager_TooLittleReceived()"));
     vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
   }
 
@@ -132,10 +132,10 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
 
     // state before
     uint256 _vaultSupplyBefore = IERC20(vaultToken).totalSupply();
-    uint256 _lastTimeCollecteBefore = vaultManager.vaultFeeLastCollectedAt(vaultToken);
+    (,,,,,,,, uint40 _lastTimeCollecteBefore,,,) = vaultManager.vaultInfos(address(vaultToken));
 
     uint256 _timePassed = 100;
-    uint256 _managementFeePerSec = 1;
+    uint32 _managementFeePerSec = 1;
     uint256 _expectedFee = (_vaultSupplyBefore * _timePassed * _managementFeePerSec) / 1e18;
 
     // set fee
@@ -154,7 +154,7 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
 
     // state after
-    uint256 _lastTimeCollecteAfter = vaultManager.vaultFeeLastCollectedAt(vaultToken);
+    (,,,,,,,, uint40 _lastTimeCollecteAfter,,,) = vaultManager.vaultInfos(address(vaultToken));
 
     // Assertions
     // - management fee is minted

@@ -41,8 +41,7 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
   }
 
   function testRevert_WhenDepositBelowMinimumDepositSize() public {
-    address vaultToken =
-      _openVault(mockWorker, 1 ether, DEFAULT_FEE_PER_SEC, DEFAULT_TOLERANCE_BPS, DEFAULT_MAX_LEVERAGE);
+    address vaultToken = _openVault(mockWorker, 100, DEFAULT_FEE_PER_SEC, DEFAULT_TOLERANCE_BPS, DEFAULT_MAX_LEVERAGE);
     uint256 equityAfter = 0.1 ether;
 
     mockVaultOracleAndExecutor.setGetEquityAndDebtResult({
@@ -133,10 +132,10 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
 
     // state before
     uint256 _vaultSupplyBefore = IERC20(vaultToken).totalSupply();
-    uint256 _lastTimeCollecteBefore = vaultManager.vaultFeeLastCollectedAt(vaultToken);
+    (,,,,,,,, uint40 _lastTimeCollecteBefore,,,) = vaultManager.vaultInfos(address(vaultToken));
 
     uint256 _timePassed = 100;
-    uint256 _managementFeePerSec = 1;
+    uint32 _managementFeePerSec = 1;
     uint256 _expectedFee = (_vaultSupplyBefore * _timePassed * _managementFeePerSec) / 1e18;
 
     // set fee
@@ -165,7 +164,7 @@ contract AutomatedVaultManagerDepositTest is BaseAutomatedVaultUnitTest {
     vaultManager.deposit(address(this), vaultToken, params, 0);
 
     // state after
-    uint256 _lastTimeCollecteAfter = vaultManager.vaultFeeLastCollectedAt(vaultToken);
+    (,,,,,,,, uint40 _lastTimeCollecteAfter,,,) = vaultManager.vaultInfos(address(vaultToken));
 
     // Assertions
     // 1. user's receive share amount = (deposit amount * (current share amount) / equity before deposit)

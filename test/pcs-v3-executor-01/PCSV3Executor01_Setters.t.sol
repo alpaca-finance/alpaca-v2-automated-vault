@@ -8,7 +8,7 @@ import { MockERC20 } from "test/mocks/MockERC20.sol";
 
 import { DeployHelper } from "test/helpers/DeployHelper.sol";
 
-contract PCSV3Executor01SweepToWorkerTest is Test {
+contract PCSV3Executor01SettersTest is Test {
   PCSV3Executor01 executor;
   address mockWorker = makeAddr("mockWorker");
   address mockVaultManager = makeAddr("mockVaultManager");
@@ -34,28 +34,30 @@ contract PCSV3Executor01SweepToWorkerTest is Test {
     mockToken1 = new MockERC20("Mock Token1", "MTKN1", 6);
   }
 
-  function testRevert_SweepToWorker_CallerIsNotVaultManager() public {
+  function testRevert_SetRepurchaseSlippage_CallerIsNotOwner() public {
     vm.prank(address(1234));
-    vm.expectRevert(abi.encodeWithSignature("Executor_NotVaultManager()"));
-    executor.sweepToWorker();
+    vm.expectRevert("Ownable: caller is not the owner");
+    executor.setRepurchaseSlippageBps(123);
   }
 
-  function testCorrectness_SweepToWorker() public {
-    deal(address(mockToken0), address(executor), 1 ether);
-    deal(address(mockToken1), address(executor), 1e6);
-    vm.mockCall(address(mockWorker), abi.encodeWithSignature("pool()"), abi.encode(mockPool));
-    vm.mockCall(mockPool, abi.encodeWithSignature("token0()"), abi.encode(address(mockToken0)));
-    vm.mockCall(mockPool, abi.encodeWithSignature("token1()"), abi.encode(address(mockToken1)));
+  function testRevert_SetRepurchaseSlippage_InvalidValue() public {
+    vm.expectRevert(abi.encodeWithSignature("Executor_InvalidParams()"));
+    executor.setRepurchaseSlippageBps(10001);
+  }
 
-    vm.startPrank(mockVaultManager);
-    executor.setExecutionScope(mockWorker, address(0));
-    executor.sweepToWorker();
-    // Assertions
-    // - no token left in executor
-    assertEq(mockToken0.balanceOf(address(executor)), 0);
-    assertEq(mockToken1.balanceOf(address(executor)), 0);
-    // - worker balance increase by executor previous balance
-    assertEq(mockToken0.balanceOf(mockWorker), 1 ether);
-    assertEq(mockToken1.balanceOf(mockWorker), 1e6);
+  function testCorrectness_SetRepurchaseSlippage() public {
+    executor.setRepurchaseSlippageBps(123);
+    assertEq(executor.repurchaseSlippageBps(), 123);
+  }
+
+  function testRevert_SetVaultOracle_CallerIsNotOwner() public {
+    vm.prank(address(1234));
+    vm.expectRevert("Ownable: caller is not the owner");
+    executor.setVaultOracle(mockVaultOracle);
+  }
+
+  function testCorrectness_SetVaultOracle() public {
+    executor.setVaultOracle(mockVaultOracle);
+    assertEq(address(executor.vaultOracle()), mockVaultOracle);
   }
 }
