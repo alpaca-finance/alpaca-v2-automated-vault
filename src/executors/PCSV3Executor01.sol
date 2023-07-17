@@ -285,15 +285,15 @@ contract PCSV3Executor01 is Executor {
     _repay(_vaultToken, _token, _amount);
   }
 
-  function _repay(address _vaultToken, address _token, uint256 _amount) internal {
+  function _repay(address _vaultToken, address _token, uint256 _amount) internal returns (uint256 _actualRepayAmount) {
     ERC20(_token).safeApprove(address(bank), _amount);
 
-    uint256 _acutalRepayAmount = bank.repayOnBehalfOf(_vaultToken, _token, _amount);
+    _actualRepayAmount = bank.repayOnBehalfOf(_vaultToken, _token, _amount);
 
-    // reset approve when _acutalRepayAmount < _amount
+    // reset approve when _actualRepayAmount < _amount
     ERC20(_token).safeApprove(address(bank), 0);
 
-    emit LogRepay(_vaultToken, _token, _acutalRepayAmount);
+    emit LogRepay(_vaultToken, _token, _actualRepayAmount);
   }
 
   struct RepurchaseLocalVars {
@@ -380,11 +380,9 @@ contract PCSV3Executor01 is Executor {
     }
 
     // Repay
-    ERC20(_vars.repayToken).safeApprove(address(bank), _swapAmountOut);
+    uint256 _actualRepayAmount = _repay(_vars.vaultToken, _vars.repayToken, _swapAmountOut);
 
-    bank.repayOnBehalfOf(_vars.vaultToken, _vars.repayToken, _swapAmountOut);
-
-    emit LogRepurchase(_vars.vaultToken, _borrowToken, _borrowAmount, _swapAmountOut);
+    emit LogRepurchase(_vars.vaultToken, _borrowToken, _borrowAmount, _actualRepayAmount);
   }
 
   function pancakeV3SwapCallback(int256 _amount0Delta, int256 _amount1Delta, bytes calldata _data) external {

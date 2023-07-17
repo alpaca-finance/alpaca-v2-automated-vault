@@ -296,14 +296,14 @@ contract PCSV3StableExecutor is Executor {
     _repay(_vaultToken, _token, _amount);
   }
 
-  function _repay(address _vaultToken, address _token, uint256 _amount) internal {
+  function _repay(address _vaultToken, address _token, uint256 _amount) internal returns (uint256 _actualRepayAmount) {
     ERC20(_token).safeApprove(address(bank), _amount);
 
-    uint256 _acutalRepayAmount = bank.repayOnBehalfOf(_vaultToken, _token, _amount);
+    _actualRepayAmount = bank.repayOnBehalfOf(_vaultToken, _token, _amount);
 
     ERC20(_token).safeApprove(address(bank), 0);
 
-    emit LogRepay(_vaultToken, _token, _acutalRepayAmount);
+    emit LogRepay(_vaultToken, _token, _actualRepayAmount);
   }
 
   /// @notice Adjust vault exposure by borrowing a token, swap to another and repay.
@@ -379,7 +379,9 @@ contract PCSV3StableExecutor is Executor {
     }
 
     // Repay
-    _repay(_vaultToken, _repayToken, _swapAmountOut);
+    uint256 _actualRepayAmount = _repay(_vaultToken, _repayToken, _swapAmountOut);
+
+    emit LogRepurchase(_vaultToken, _borrowToken, _borrowAmount, _actualRepayAmount);
   }
 
   function pancakeV3SwapCallback(int256 _amount0Delta, int256 _amount1Delta, bytes calldata _data) external {
