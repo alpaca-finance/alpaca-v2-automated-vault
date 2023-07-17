@@ -205,7 +205,6 @@ contract PCSV3Executor01 is Executor {
     }
 
     _repay(_vaultToken, address(_repayToken), _repayAmount);
-
   }
 
   function onUpdate(address _worker, address _vaultToken)
@@ -283,18 +282,17 @@ contract PCSV3Executor01 is Executor {
   /// @notice Repay token back to Bank
   function repay(address _token, uint256 _amount) external onlyVaultManager {
     address _vaultToken = _getCurrentVaultToken();
-   _repay(_vaultToken,_token,_amount);
+    _repay(_vaultToken, _token, _amount);
   }
 
   function _repay(address _vaultToken, address _token, uint256 _amount) internal {
-
     ERC20(_token).safeApprove(address(bank), _amount);
 
     uint256 _acutalRepayAmount = bank.repayOnBehalfOf(_vaultToken, _token, _amount);
 
     // reset approve when _acutalRepayAmount < _amount
     ERC20(_token).safeApprove(address(bank), 0);
-    
+
     emit LogRepay(_vaultToken, _token, _acutalRepayAmount);
   }
 
