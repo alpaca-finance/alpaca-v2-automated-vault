@@ -204,7 +204,7 @@ contract PancakeV3VaultReader is IVaultReader {
   }
 
   struct RepurchaseSummary {
-    VaultSummary vaultSummary;
+    // repurchase summary
     address borrowToken; // token to borrow when repurchase, the other token will be repay token
     address stableToken;
     address assetToken;
@@ -215,11 +215,36 @@ contract PancakeV3VaultReader is IVaultReader {
     uint256 stableTokenFees;
     uint256 assetTokenFees;
     uint256 cakeFarmed;
+    // vault summary
+    uint256 token0price;
+    uint256 token1price;
+    uint256 token0Undeployed;
+    uint256 token1Undeployed;
+    uint256 token0Farmed;
+    uint256 token1Farmed;
+    uint256 token0Debt;
+    uint256 token1Debt;
+    uint256 lowerPrice;
+    uint256 upperPrice;
   }
 
   function getRepurchaseSummary(address _vaultToken) external view returns (RepurchaseSummary memory _result) {
-    _result.vaultSummary = getVaultSummary(_vaultToken);
+    VaultSummary memory _vaultSummary = getVaultSummary(_vaultToken);
     TokenAmount[] memory _pendingRewards = getPendingRewards(_vaultToken);
+
+    // destruct vault summary
+    _result.token0price = _vaultSummary.token0price;
+    _result.token1price = _vaultSummary.token1price;
+    _result.token0Undeployed = _vaultSummary.token0Undeployed;
+    _result.token1Undeployed = _vaultSummary.token1Undeployed;
+    _result.token0Farmed = _vaultSummary.token0Farmed;
+    _result.token1Farmed = _vaultSummary.token1Farmed;
+    _result.token0Debt = _vaultSummary.token0Debt;
+    _result.token1Debt = _vaultSummary.token1Debt;
+    _result.lowerPrice = _vaultSummary.lowerPrice;
+    _result.upperPrice = _vaultSummary.upperPrice;
+
+    // repurchase summary
 
     address _worker = automatedVaultManager.getWorker(_vaultToken);
 
