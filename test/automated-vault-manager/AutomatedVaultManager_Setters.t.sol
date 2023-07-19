@@ -243,3 +243,19 @@ contract AutomatedVaultManagerSetIsPausedTest is AutomatedVaultManagerSettersTes
     vm.stopPrank();
   }
 }
+
+contract AutomatedVaultManagerSetExemptWithdrawalFeeTest is AutomatedVaultManagerSettersTest {
+  function testRevert_SetExemptWithdrawalFee_NonOwnerIsCaller() public {
+    vm.prank(address(1234));
+    vm.expectRevert("Ownable: caller is not the owner");
+    vaultManager.setExemptWithdrawalFee(address(1234), true);
+  }
+
+  function testCorrectness_SetExemptWihtdrawalFee() public {
+    vm.startPrank(DEPLOYER);
+    vaultManager.setExemptWithdrawalFee(address(1234), true);
+    assertEq(vaultManager.isExemptWithdrawalFee(address(1234)), true);
+    vaultManager.setExemptWithdrawalFee(address(1234), false);
+    assertEq(vaultManager.isExemptWithdrawalFee(address(1234)), false);
+  }
+}
