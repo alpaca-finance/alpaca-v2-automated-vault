@@ -78,7 +78,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   event LogSetCapacity(address _vaultToken, uint32 _compressedCapacity);
   event LogSetIsDepositPaused(address _vaultToken, bool _isPaused);
   event LogSetIsWithdrawPaused(address _vaultToken, bool _isPaused);
-  event LogExemptWithdrawalFee(address _user, bool _isExempt);
+  event LogSetExemptWithdrawalFee(address _user, bool _isExempt);
 
   /////////////
   // Structs //
@@ -505,7 +505,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
 
   function setExemptWithdrawalFee(address _user, bool _isExempt) external onlyOwner {
     isExemptWithdrawalFee[_user] = _isExempt;
-    emit LogExemptWithdrawalFee(_user, _isExempt);
+    emit LogSetExemptWithdrawalFee(_user, _isExempt);
   }
 
   //////////////////////////////
