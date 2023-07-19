@@ -165,6 +165,40 @@ contract AutomatedVaultManagerWithdrawTest is BaseAutomatedVaultUnitTest {
     assertEq(_lastTimeCollecteAfter, _time, "Update last collected time correctly");
   }
 
+  function testCorrectness_WhenWithdraw_ExemptFromWithdrawalFee() public {
+    uint256 sharesToWithdraw = 1 ether;
+    uint16 withdrawalFeeBps = 100;
+
+    address vaultToken = _openDefaultVault();
+    deal(vaultToken, address(this), sharesToWithdraw, true);
+
+    AutomatedVaultManager.TokenAmount[] memory withdrawResults = new AutomatedVaultManager.TokenAmount[](2);
+    withdrawResults[0].token = address(mockToken0);
+    withdrawResults[0].amount = 1 ether;
+    withdrawResults[1].token = address(mockToken1);
+    withdrawResults[1].amount = 2 ether;
+    mockVaultOracleAndExecutor.setOnTokenAmount(withdrawResults);
+    deal(withdrawResults[0].token, address(vaultManager), withdrawResults[0].amount);
+    deal(withdrawResults[1].token, address(vaultManager), withdrawResults[1].amount);
+
+    // set fee
+    vm.startPrank(DEPLOYER);
+    vaultManager.setWithdrawalFeeBps(vaultToken, withdrawalFeeBps);
+    vaultManager.setExemptWithdrawalFee(address(this), true);
+    vm.stopPrank();
+
+    AutomatedVaultManager.TokenAmount[] memory minAmountOuts = new AutomatedVaultManager.TokenAmount[](2);
+    minAmountOuts[0].token = address(mockToken0);
+    minAmountOuts[0].amount = 0;
+    minAmountOuts[1].token = address(mockToken1);
+    minAmountOuts[1].amount = 0;
+    vaultManager.withdraw(vaultToken, sharesToWithdraw, minAmountOuts);
+
+    assertEq(IERC20(vaultToken).balanceOf(WITHDRAWAL_FEE_TREASURY), 0);
+    assertEq(IERC20(withdrawResults[0].token).balanceOf(address(this)), withdrawResults[0].amount);
+    assertEq(IERC20(withdrawResults[1].token).balanceOf(address(this)), withdrawResults[1].amount);
+  }
+
   function testCorrectness_WhenWithdraw_WithdrawalFee_ShouldBeCollected() public {
     uint256 sharesToWithdraw = 1 ether;
     uint16 withdrawalFeeBps = 100;

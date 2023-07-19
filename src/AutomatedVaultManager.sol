@@ -78,6 +78,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   event LogSetCapacity(address _vaultToken, uint32 _compressedCapacity);
   event LogSetIsDepositPaused(address _vaultToken, bool _isPaused);
   event LogSetIsWithdrawPaused(address _vaultToken, bool _isPaused);
+  event LogExemptWithdrawalFee(address _user, bool _isExempt);
 
   /////////////
   // Structs //
@@ -130,6 +131,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
   mapping(address => mapping(address => bool)) public isManager; // vault's ERC20 address => manager address => is manager
   mapping(address => mapping(address => bool)) public allowTokens; // vault's ERC20 address => token address => is allowed
   mapping(address => bool) public workerExisted; // worker address => is existed
+  mapping(address => bool) public isExemptWithdrawalFee;
 
   ///////////////
   // Modifiers //
@@ -325,7 +327,9 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     uint256 _actualWithdrawAmount;
     // Safe to do unchecked because we already checked withdraw amount < balance and max bps won't overflow anyway
     unchecked {
-      _actualWithdrawAmount = (_sharesToWithdraw * (MAX_BPS - _cachedVaultInfo.withdrawalFeeBps)) / MAX_BPS;
+      _actualWithdrawAmount = isExemptWithdrawalFee[msg.sender]
+        ? _sharesToWithdraw
+        : (_sharesToWithdraw * (MAX_BPS - _cachedVaultInfo.withdrawalFeeBps)) / MAX_BPS;
     }
 
     ///////////////////////////
@@ -365,7 +369,9 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     // Burn shares per requested amount before transfer out
     IAutomatedVaultERC20(_vaultToken).burn(msg.sender, _sharesToWithdraw);
     // Mint withdrawal fee to withdrawal treasury
-    IAutomatedVaultERC20(_vaultToken).mint(withdrawalFeeTreasury, _withdrawalFee);
+    if (_withdrawalFee != 0) {
+      IAutomatedVaultERC20(_vaultToken).mint(withdrawalFeeTreasury, _withdrawalFee);
+    }
     // Net shares changed would be `_actualWithdrawAmount`
 
     // Transfer withdrawn funds to user
@@ -495,6 +501,11 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     }
     withdrawalFeeTreasury = _withdrawalFeeTreasury;
     emit LogSetWithdrawalFeeTreasury(_withdrawalFeeTreasury);
+  }
+
+  function setExemptWithdrawalFee(address _user, bool _isExempt) external onlyOwner {
+    isExemptWithdrawalFee[_user] = _isExempt;
+    emit LogExemptWithdrawalFee(_user, _isExempt);
   }
 
   //////////////////////////////
