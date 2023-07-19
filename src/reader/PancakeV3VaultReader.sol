@@ -132,7 +132,7 @@ contract PancakeV3VaultReader is IVaultReader {
     uint256 tokensOwed1;
   }
 
-  function getPendingRewards(address _vaultToken) external view returns (TokenAmount[] memory pendingRewards) {
+  function getPendingRewards(address _vaultToken) public view returns (TokenAmount[] memory pendingRewards) {
     address _worker = automatedVaultManager.getWorker(_vaultToken);
     uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
 
@@ -204,30 +204,45 @@ contract PancakeV3VaultReader is IVaultReader {
   }
 
   struct RepurchaseSummary {
+    VaultSummary vaultSummary;
     address borrowToken; // token to borrow when repurchase, the other token will be repay token
     address stableToken;
     address assetToken;
     int256 exposureAmount; // in assetToken
     uint256 stableTokenPrice;
     uint256 assetTokenPrice;
+    uint160 poolSqrtPriceX96;
+    uint256 stableTokenFees;
+    uint256 assetTokenFees;
+    uint256 cakeFarmed;
   }
 
   function getRepurchaseSummary(address _vaultToken) external view returns (RepurchaseSummary memory _result) {
+    _result.vaultSummary = getVaultSummary(_vaultToken);
+    TokenAmount[] memory _pendingRewards = getPendingRewards(_vaultToken);
+
     address _worker = automatedVaultManager.getWorker(_vaultToken);
 
     bool _isToken0Base = PancakeV3Worker(_worker).isToken0Base();
     if (_isToken0Base) {
       _result.stableToken = address(PancakeV3Worker(_worker).token0());
       _result.assetToken = address(PancakeV3Worker(_worker).token1());
+      _result.stableTokenFees = _pendingRewards[0].amount;
+      _result.assetTokenFees = _pendingRewards[1].amount; 
     } else {
       _result.stableToken = address(PancakeV3Worker(_worker).token1());
       _result.assetToken = address(PancakeV3Worker(_worker).token0());
+      _result.stableTokenFees = _pendingRewards[1].amount;
+      _result.assetTokenFees = _pendingRewards[0].amount;
     }
+    _result.cakeFarmed = _pendingRewards[2].amount;
 
     _result.exposureAmount = pancakeV3VaultOracle.getExposure(_vaultToken, _worker);
     // if exposure is long, borrow asset token to decrease exposure, vice versa
     _result.borrowToken = _result.exposureAmount > 0 ? _result.assetToken : _result.stableToken;
     _result.stableTokenPrice = pancakeV3VaultOracle.getTokenPrice(_result.stableToken);
     _result.assetTokenPrice = pancakeV3VaultOracle.getTokenPrice(_result.assetToken);
+
+    (_result.poolSqrtPriceX96,,,,,,) = ICommonV3Pool(PancakeV3Worker(_worker).pool()).slot0();
   }
 }
