@@ -45,6 +45,15 @@
             "proxy": "0x4a0cb84D2DD2bc0Aa5CC256EF6Ec3A4e1b83E74c",
             "implementation": "0xD045ebC50D1D45dC76e57c02A69C542610e1987a"
           }
+        },
+        {
+          "name": "Long USDT-BNB-500 PCS1",
+          "symbol": "L-USDT-BNB-500-PCS1",
+          "vaultToken": "0xf4AC330BceEB264abA153D3D95eb36E8c2E77439",
+          "worker": {
+            "proxy": "0xb8bc1D2D48ecfBB7d924296890aABe7A31c27333",
+            "implementation": "0xD045ebC50D1D45dC76e57c02A69C542610e1987a"
+          }
         }
       ]
     }
