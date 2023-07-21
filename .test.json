@@ -26,7 +26,7 @@
         "proxy": "0x2B614d02C29E3D626D1Ba4df39D75231fE66E1ca",
         "implementation": "0x02fC67086E47116CB3f5b09671A1Ad9E080750DB"
       },
-      "pancakeV3VaultReader": "0x29be6ce0BbFa14eDAC7eaC0B481022229C199012",
+      "pancakeV3VaultReader": "0xbdd11FA13bc5EB8750D7bEcaD5CD744a4593D7c5",
       "vaults": [
         {
           "name": "Market Neutral USDT-BNB-500 PCS1",
