@@ -11,7 +11,7 @@
     "avManagerV3Gateway": "0xc55d7B14D125a2e035A22105A576fEA23A9Abc78",
     "automatedVaultManager": {
       "proxy": "0x356B7e738592235Da0593F0E652C34278972C3F7",
-      "implementation": "0xDa45D8358f996058E5b31fb43Ad2b613771c1DA6"
+      "implementation": "0x4ad1F671F18E59D502461d0AC5292A2B3E230627"
     },
     "bank": {
       "proxy": "0x4e7C950b87999a42cA63cc5492d52F93e28e5351",
