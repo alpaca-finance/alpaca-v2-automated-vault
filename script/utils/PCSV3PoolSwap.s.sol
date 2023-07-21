@@ -7,7 +7,6 @@ import { ERC20 } from "lib/solmate/src/tokens/ERC20.sol";
 import { IPancakeV3Router } from "src/interfaces/pancake-v3/IPancakeV3Router.sol";
 
 contract PCSV3PoolSwapScript is BaseScript {
-
   function run() public {
     address _tokenIn = usdt;
     address _tokenOut = wbnb;
