@@ -118,8 +118,10 @@ contract PancakeV3VaultReader is IVaultReader {
     uint256 _pendingManagementFee = automatedVaultManager.pendingManagementFee(_vaultToken);
 
     // Return value
-    _sharePrice = _totalEquity * 1e18 / _vaultTotalSupply;
-    _sharePriceWithManagementFee = _totalEquity * 1e18 / (_vaultTotalSupply + _pendingManagementFee);
+    if (_vaultTotalSupply != 0) {
+      _sharePrice = _totalEquity * 1e18 / _vaultTotalSupply;
+      _sharePriceWithManagementFee = _totalEquity * 1e18 / (_vaultTotalSupply + _pendingManagementFee);
+    }
   }
 
   struct FeeParams {
