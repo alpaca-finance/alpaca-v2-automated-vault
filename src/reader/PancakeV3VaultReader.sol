@@ -39,10 +39,6 @@ contract PancakeV3VaultReader is IVaultReader {
     address _worker = automatedVaultManager.getWorker(_vaultToken);
     ERC20 _token0 = PancakeV3Worker(_worker).token0();
     ERC20 _token1 = PancakeV3Worker(_worker).token1();
-    uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
-    (uint160 _poolSqrtPriceX96,,,,,,) = ICommonV3Pool(PancakeV3Worker(_worker).pool()).slot0();
-    (,,,,, int24 _tickLower, int24 _tickUpper, uint128 _liquidity,,,,) =
-      PancakeV3Worker(_worker).nftPositionManager().positions(_tokenId);
 
     // assign values
     _vaultSummary.token0price = pancakeV3VaultOracle.getTokenPrice(address(_token0));
@@ -53,15 +49,22 @@ contract PancakeV3VaultReader is IVaultReader {
     (, _vaultSummary.token0Debt) = bank.getVaultDebt(_vaultToken, address(_token0));
     (, _vaultSummary.token1Debt) = bank.getVaultDebt(_vaultToken, address(_token1));
 
-    (_vaultSummary.token0Farmed, _vaultSummary.token1Farmed) = LibLiquidityAmounts.getAmountsForLiquidity(
-      _poolSqrtPriceX96,
-      LibTickMath.getSqrtRatioAtTick(_tickLower),
-      LibTickMath.getSqrtRatioAtTick(_tickUpper),
-      _liquidity
-    );
+    uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
+    if (_tokenId != 0) {
+      (uint160 _poolSqrtPriceX96,,,,,,) = ICommonV3Pool(PancakeV3Worker(_worker).pool()).slot0();
+      (,,,,, int24 _tickLower, int24 _tickUpper, uint128 _liquidity,,,,) =
+        PancakeV3Worker(_worker).nftPositionManager().positions(_tokenId);
 
-    _vaultSummary.lowerPrice = _tickToPrice(_tickLower, _token0.decimals(), _token1.decimals());
-    _vaultSummary.upperPrice = _tickToPrice(_tickUpper, _token0.decimals(), _token1.decimals());
+      (_vaultSummary.token0Farmed, _vaultSummary.token1Farmed) = LibLiquidityAmounts.getAmountsForLiquidity(
+        _poolSqrtPriceX96,
+        LibTickMath.getSqrtRatioAtTick(_tickLower),
+        LibTickMath.getSqrtRatioAtTick(_tickUpper),
+        _liquidity
+      );
+
+      _vaultSummary.lowerPrice = _tickToPrice(_tickLower, _token0.decimals(), _token1.decimals());
+      _vaultSummary.upperPrice = _tickToPrice(_tickUpper, _token0.decimals(), _token1.decimals());
+    }
   }
 
   function _tickToPrice(int24 _tick, uint256 _token0Decimals, uint256 _token1Decimals)
@@ -253,7 +256,7 @@ contract PancakeV3VaultReader is IVaultReader {
       _result.stableToken = address(PancakeV3Worker(_worker).token0());
       _result.assetToken = address(PancakeV3Worker(_worker).token1());
       _result.stableTokenFees = _pendingRewards[0].amount;
-      _result.assetTokenFees = _pendingRewards[1].amount; 
+      _result.assetTokenFees = _pendingRewards[1].amount;
     } else {
       _result.stableToken = address(PancakeV3Worker(_worker).token1());
       _result.assetToken = address(PancakeV3Worker(_worker).token0());
