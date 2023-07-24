@@ -14,6 +14,11 @@ export class ConfigFileHelper {
     return this.config;
   }
 
+  public setProxyAdmin(address: string) {
+    this.config.proxyAdmin = address;
+    this._writeConfigFile(this.config);
+  }
+
   private _writeConfigFile(config: Config) {
     console.log(`>> Writing ${this.filePath}`);
     fs.writeFileSync(this.filePath, JSON.stringify(config, null, 2));

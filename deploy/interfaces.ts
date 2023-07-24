@@ -25,7 +25,7 @@ export interface Pancake {
 export interface PancakeV3Vault {
   vaultOracle: UpgradableContract;
   executor01: UpgradableContract;
-  reader: string;
+  pancakeV3VaultReader: string;
 }
 
 export interface AutomatedVault {
