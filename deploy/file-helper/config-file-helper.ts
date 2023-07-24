@@ -19,6 +19,11 @@ export class ConfigFileHelper {
     this._writeConfigFile(this.config);
   }
 
+  public setAutomatedVaultERC20Implementation(address: string) {
+    this.config.automatedVault.automatedVaultERC20Implementation = address;
+    this._writeConfigFile(this.config);
+  }
+
   private _writeConfigFile(config: Config) {
     console.log(`>> Writing ${this.filePath}`);
     fs.writeFileSync(this.filePath, JSON.stringify(config, null, 2));
