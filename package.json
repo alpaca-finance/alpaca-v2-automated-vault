@@ -4,6 +4,11 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
+    "prepublishOnly": "yarn compile",
+    "compile": "hardhat compile && yarn build",
+    "build:cjs": "tsc -p tsconfig.cjs.json",
+    "build": "yarn run build:cjs",
+    "bsc_mainnet": "hardhat console --no-compile --network bsc_mainnet",
     "----------Deploy Foundry Script-------------": "----------Deploy Foundry Script-------------",
     "exec:bsc_mainnet:proxy-admin:deploy": "forge script ./script/deployments/ProxyAdmin/deploy/DeployProxyAdmin.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:money-market-mock:deploy": "forge script ./script/deployments/MoneyMarketForTest/deploy/DeployMoneyMarketForTest.s.sol --rpc-url bsc_mainnet --broadcast --slow",
@@ -26,8 +31,28 @@
     "exec:bsc_mainnet:av-manager-v3-gateway:deploy": "forge script ./script/deployments/AVManagerV3Gateway/deploy/AVManagerV3Gateway.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "----------Deploy Hardhat -------------": "----------Deploy Hardhat -------------"
   },
-  "devDependencies": {},
-  "dependencies": {},
+  "devDependencies": {
+    "@typechain/hardhat": "^5.0.0",
+    "@types/mocha": "^9.1.0",
+    "@types/readline-sync": "^1.4.4",
+    "readline-sync": "^1.4.10",
+    "ts-node": "^10.7.0",
+    "typechain": "^8.0.0",
+    "typescript": "^4.6.2"
+  },
+  "dependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.5",
+    "@openzeppelin/contracts": "^4.7.1",
+    "@openzeppelin/contracts-upgradeable": "^4.7.3",
+    "@openzeppelin/hardhat-upgrades": "^1.16.1",
+    "@typechain/ethers-v5": "^10.2.0",
+    "dotenv": "^16.0.0",
+    "ethers": "^5.7.0",
+    "hardhat": "^2.9.1",
+    "hardhat-deploy": "^0.11.10",
+    "prettier": "^2.6.0",
+    "prettier-plugin-solidity": "^1.0.0-beta.19"
+  },
   "engines": {
     "node": ">=14.15.4"
   }
