@@ -4,7 +4,7 @@ out = "out"
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./" }]
 optimizer = true
-optimizer-runs = 200
+optimizer-runs = 1
 fuzz = { runs = 50, max_test_rejects = 100_000, seed = 0x5eed }
 cache_path = './forge_cache'
 

@@ -3,6 +3,7 @@ cache/
 out/
 forge_cache/
 typechain/
+artifacts/
 
 # Ignores all broadcast logs
 broadcast/

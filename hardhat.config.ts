@@ -2,6 +2,7 @@ import { config as dotEnvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 dotEnvConfig();
 
+import "@nomicfoundation/hardhat-foundry";
 import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-ethers";
 import "@typechain/hardhat";
@@ -26,7 +27,7 @@ const config: HardhatUserConfig = {
     },
   },
   paths: {
-    sources: "./solidity/contracts",
+    sources: "./src",
     tests: "./test",
     cache: "./cache",
     artifacts: "./artifacts",

@@ -40,5 +40,6 @@ export interface Config {
   proxyAdmin: string;
   performanceFeeBucket: string;
   tokens: Tokens;
+  automatedVault: AutomatedVault;
   dependencies: Dependency;
 }
