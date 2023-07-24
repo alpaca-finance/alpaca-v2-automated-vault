@@ -15,7 +15,6 @@
     "exec:bsc_mainnet:money-market-mock:config:withdraw-tokens": "forge script ./script/deployments/MoneyMarketForTest/config/WithdrawTokens.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:money-market-mock:config:set-interest-rate-per-sec": "forge script ./script/deployments/MoneyMarketForTest/config/SetInterestRatePerSec.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:money-market-mock:config:set-borrower": "forge script ./script/deployments/MoneyMarketForTest/config/SetBorrower.s.sol --rpc-url bsc_mainnet --broadcast --slow",
-    "exec:bsc_mainnet:automated-vault-manager:deploy": "forge script ./script/deployments/AutomatedVaultManager/deploy/DeployAutomatedVaultManager.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:automated-vault-manager:config:open-vault": "forge script ./script/deployments/AutomatedVaultManager/config/OpenVault.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:automated-vault-manager:config:set-vault-manager": "forge script ./script/deployments/AutomatedVaultManager/config/SetVaultManager.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:automated-vault-manager:config:set-allow-token": "forge script ./script/deployments/AutomatedVaultManager/config/SetAllowToken.s.sol --rpc-url bsc_mainnet --broadcast --slow",
@@ -29,7 +28,8 @@
     "exec:bsc_mainnet:av-manager-v3-gateway:deploy": "forge script ./script/deployments/AVManagerV3Gateway/deploy/AVManagerV3Gateway.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "----------Deploy Hardhat -------------": "----------Deploy Hardhat -------------",
     "exec:bsc_mainnet:proxy-admin:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags ProxyAdminDeploy",
-    "exec:bsc_mainnet:automated-vault-token-implementation:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AutomatedVaultImplementationDeploy"
+    "exec:bsc_mainnet:automated-vault-token-implementation:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AutomatedVaultImplementationDeploy",
+    "exec:bsc_mainnet:automated-vault-manager:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AutomatedVaultManagerDeploy"
   },
   "devDependencies": {
     "@typechain/hardhat": "^5.0.0",

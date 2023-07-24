@@ -24,6 +24,12 @@ export class ConfigFileHelper {
     this._writeConfigFile(this.config);
   }
 
+  public setAutomatedVaultManager(proxy: string, implementation: string) {
+    this.config.automatedVault.automatedVaultManager.proxy = proxy;
+    this.config.automatedVault.automatedVaultManager.implementation = implementation;
+    this._writeConfigFile(this.config);
+  }
+
   private _writeConfigFile(config: Config) {
     console.log(`>> Writing ${this.filePath}`);
     fs.writeFileSync(this.filePath, JSON.stringify(config, null, 2));
