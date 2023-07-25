@@ -21,7 +21,6 @@
     "exec:bsc_mainnet:automated-vault-manager:config:manage": "forge script ./script/deployments/AutomatedVaultManager/config/Manage.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:pcs-v3-worker:deploy": "forge script ./script/deployments/Worker/deploy/DeployPancakeV3Worker.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:pcs-v3-vault-oracle:config:set-price-feed": "forge script ./script/deployments/VaultOracle/config/SetPriceFeedOf.s.sol --rpc-url bsc_mainnet --broadcast --slow",
-    "exec:bsc_mainnet:pcs-v3-executor01:deploy": "forge script ./script/deployments/Executor/deploy/DeployPCSV3Executor01.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:pcs-v3-vault-reader:deploy": "forge script ./script/deployments/VaultReader/deploy/DeployPancakeV3VaultReader.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:av-manager-v3-gateway:deploy": "forge script ./script/deployments/AVManagerV3Gateway/deploy/AVManagerV3Gateway.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "----------Deploy Hardhat -------------": "----------Deploy Hardhat -------------",
@@ -29,7 +28,8 @@
     "exec:bsc_mainnet:automated-vault-token-implementation:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AutomatedVaultImplementationDeploy",
     "exec:bsc_mainnet:automated-vault-manager:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AutomatedVaultManagerDeploy",
     "exec:bsc_mainnet:bank:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags BankDeploy",
-    "exec:bsc_mainnet:pcs-v3-vault-oracle:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3VaultOracleDeploy"
+    "exec:bsc_mainnet:pcs-v3-vault-oracle:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3VaultOracleDeploy",
+    "exec:bsc_mainnet:pcs-v3-executor01:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3Executor01Deploy"
   },
   "devDependencies": {
     "@typechain/hardhat": "^5.0.0",
