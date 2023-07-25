@@ -1,10 +1,21 @@
-import { ethers, upgrades } from "hardhat";
+import { AutomatedVaultManager__factory } from "./../../../typechain/factories/src/AutomatedVaultManager__factory";
 import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { ConfigFileHelper } from "../../file-helper/config-file-helper";
 import { getDeployer } from "../../utils/deployer-helper";
-import { getImplementationAddress } from "@openzeppelin/upgrades-core";
+import { compare } from "../../utils/address";
 
+interface OpenVaultParams {
+  worker: string;
+  vaultOracle: string;
+  executor: string;
+  compressedMinimumDeposit: number;
+  compressedCapacity: number;
+  managementFeePerSec: number;
+  withdrawalFeeBps: number;
+  toleranceBps: number;
+  maxLeverage: number;
+}
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const configFileHelper = new ConfigFileHelper();
   const config = configFileHelper.getConfig();
@@ -18,31 +29,37 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   Check all variables below before execute the deployment script
   */
 
-  const AUTOMATED_VAULT_MANAGER = config.automatedVault.automatedVaultManager.proxy;
-  const BANK = config.automatedVault.bank.proxy;
-  const VAULT_ORACLE = config.automatedVault.pancakeV3Vault.vaultOracle.proxy;
-  const REPURCHASE_SLIPPAGE_BPS = 25;
+  const NAME = "Saving USDT-BNB 250 PCS1";
+  const SYMBOL = "L-USDTBNB250-PCS1";
+  const param: OpenVaultParams = {
+    worker: "",
+    vaultOracle: config.automatedVault.pancakeV3Vault.vaultOracle.proxy,
+    executor: config.automatedVault.pancakeV3Vault.executor01.proxy,
+    compressedMinimumDeposit: 5000, // 50 USD
+    compressedCapacity: 500_000, // 500,000 USD
+    managementFeePerSec: 634195840, // 2% per year
+    withdrawalFeeBps: 20,
+    toleranceBps: 25,
+    maxLeverage: 8,
+  };
+
+  console.log("Open Vault param", param);
 
   const deployer = await getDeployer();
 
-  const PCSV3Executor01Factory = await ethers.getContractFactory("PCSV3Executor01", deployer);
+  const automatedVaultManager = AutomatedVaultManager__factory.connect(
+    config.automatedVault.automatedVaultManager.proxy,
+    deployer
+  );
 
-  console.log(`> Deploying PCSV3Executor01 ...`);
+  await automatedVaultManager.openVault(NAME, SYMBOL, param);
 
-  const pcsV3Executor01 = await upgrades.deployProxy(PCSV3Executor01Factory, [
-    AUTOMATED_VAULT_MANAGER,
-    BANK,
-    VAULT_ORACLE,
-    REPURCHASE_SLIPPAGE_BPS,
-  ]);
+  const vaultConfig = config.automatedVault.pancakeV3Vault.vaults.find((vault) => compare(vault.worker, param.worker));
 
-  const implAddress = await getImplementationAddress(ethers.provider, pcsV3Executor01.address);
-
-  console.log(`> 🟢 PCSV3Executor01 implementation deployed at: ${implAddress}`);
-  console.log(`> 🟢 PCSV3Executor01 proxy deployed at: ${pcsV3Executor01.address}`);
-
-  configFileHelper.setPancakeV3VaultOracle(pcsV3Executor01.address, implAddress);
+  if (vaultConfig) {
+    configFileHelper.addOrSetPCSV3VaultByWorker(vaultConfig);
+  }
 };
 
 export default func;
-func.tags = ["PancakeV3Executor01Deploy"];
+func.tags = ["OpenVault"];

@@ -1,4 +1,4 @@
-import { Config } from "../interfaces";
+import { Config, Vault } from "../interfaces";
 import MainnetConfig from "../../.mainnet.json";
 import * as fs from "fs";
 
@@ -44,6 +44,16 @@ export class ConfigFileHelper {
 
   public addPCSV3Worker(address: string) {
     this.config.automatedVault.pancakeV3Vault.vaults.push({ name: "", symbol: "", vaultToken: "", worker: address });
+    this._writeConfigFile(this.config);
+  }
+
+  public addOrSetPCSV3VaultByWorker(vault: Vault) {
+    const index = this.config.automatedVault.pancakeV3Vault.vaults.findIndex((vault) => vault.worker);
+    if (index === -1) {
+      this.config.automatedVault.pancakeV3Vault.vaults.push(vault);
+    } else {
+      this.config.automatedVault.pancakeV3Vault.vaults[index] = vault;
+    }
     this._writeConfigFile(this.config);
   }
 
