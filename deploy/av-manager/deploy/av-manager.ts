@@ -1,4 +1,3 @@
-import { AutomatedVaultManager } from "./../../../typechain/src/AutomatedVaultManager";
 import { ethers, upgrades } from "hardhat";
 import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";

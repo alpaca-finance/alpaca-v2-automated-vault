@@ -30,6 +30,12 @@ export class ConfigFileHelper {
     this._writeConfigFile(this.config);
   }
 
+  public setBank(proxy: string, implementation: string) {
+    this.config.automatedVault.bank.proxy = proxy;
+    this.config.automatedVault.bank.implementation = implementation;
+    this._writeConfigFile(this.config);
+  }
+
   private _writeConfigFile(config: Config) {
     console.log(`>> Writing ${this.filePath}`);
     fs.writeFileSync(this.filePath, JSON.stringify(config, null, 2));

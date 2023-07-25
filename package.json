@@ -19,7 +19,6 @@
     "exec:bsc_mainnet:automated-vault-manager:config:set-vault-manager": "forge script ./script/deployments/AutomatedVaultManager/config/SetVaultManager.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:automated-vault-manager:config:set-allow-token": "forge script ./script/deployments/AutomatedVaultManager/config/SetAllowToken.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:automated-vault-manager:config:manage": "forge script ./script/deployments/AutomatedVaultManager/config/Manage.s.sol --rpc-url bsc_mainnet --broadcast --slow",
-    "exec:bsc_mainnet:bank:deploy": "forge script ./script/deployments/Bank/deploy/DeployBank.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:pcs-v3-worker:deploy": "forge script ./script/deployments/Worker/deploy/DeployPancakeV3Worker.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:pcs-v3-vault-oracle:deploy": "forge script ./script/deployments/VaultOracle/deploy/DeployPancakeV3VaultOracle.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:pcs-v3-vault-oracle:config:set-price-feed": "forge script ./script/deployments/VaultOracle/config/SetPriceFeedOf.s.sol --rpc-url bsc_mainnet --broadcast --slow",
@@ -29,7 +28,8 @@
     "----------Deploy Hardhat -------------": "----------Deploy Hardhat -------------",
     "exec:bsc_mainnet:proxy-admin:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags ProxyAdminDeploy",
     "exec:bsc_mainnet:automated-vault-token-implementation:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AutomatedVaultImplementationDeploy",
-    "exec:bsc_mainnet:automated-vault-manager:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AutomatedVaultManagerDeploy"
+    "exec:bsc_mainnet:automated-vault-manager:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AutomatedVaultManagerDeploy",
+    "exec:bsc_mainnet:bank:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags BankDeploy"
   },
   "devDependencies": {
     "@typechain/hardhat": "^5.0.0",
