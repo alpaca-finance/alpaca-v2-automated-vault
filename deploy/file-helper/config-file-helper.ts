@@ -42,6 +42,11 @@ export class ConfigFileHelper {
     this._writeConfigFile(this.config);
   }
 
+  public addPCSV3Worker(address: string) {
+    this.config.automatedVault.pancakeV3Vault.vaults.push({ name: "", symbol: "", vaultToken: "", worker: address });
+    this._writeConfigFile(this.config);
+  }
+
   private _writeConfigFile(config: Config) {
     console.log(`>> Writing ${this.filePath}`);
     fs.writeFileSync(this.filePath, JSON.stringify(config, null, 2));

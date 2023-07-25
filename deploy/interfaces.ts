@@ -19,6 +19,7 @@ export interface Pancake {
   masterChef: string;
   positionManager: string;
   swapRouter: string;
+  factoryV3: string;
   pools: Record<string, string>;
 }
 
@@ -26,6 +27,14 @@ export interface PancakeV3Vault {
   vaultOracle: UpgradableContract;
   executor01: UpgradableContract;
   pancakeV3VaultReader: string;
+  vaults: Vault[];
+}
+
+export interface Vault {
+  name: string;
+  symbol: string;
+  vaultToken: string;
+  worker: string;
 }
 
 export interface AutomatedVault {
