@@ -21,7 +21,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const AUTOMATED_VAULT_MANAGER = config.automatedVault.automatedVaultManager.proxy;
   const BANK = config.automatedVault.bank.proxy;
   const VAULT_ORACLE = config.automatedVault.pancakeV3Vault.vaultOracle.proxy;
-  const REPURCHASE_SLIPPAGE_BPS = 25;
+  const REPURCHASE_SLIPPAGE_BPS = 100;
 
   const deployer = await getDeployer();
 
