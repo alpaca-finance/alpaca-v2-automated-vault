@@ -36,6 +36,12 @@ export class ConfigFileHelper {
     this._writeConfigFile(this.config);
   }
 
+  public setPancakeV3Executor(proxy: string, implementation: string) {
+    this.config.automatedVault.pancakeV3Vault.executor01.proxy = proxy;
+    this.config.automatedVault.pancakeV3Vault.executor01.implementation = implementation;
+    this._writeConfigFile(this.config);
+  }
+
   public setBank(proxy: string, implementation: string) {
     this.config.automatedVault.bank.proxy = proxy;
     this.config.automatedVault.bank.implementation = implementation;

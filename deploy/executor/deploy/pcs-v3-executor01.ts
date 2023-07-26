@@ -41,7 +41,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   console.log(`> 🟢 PCSV3Executor01 implementation deployed at: ${implAddress}`);
   console.log(`> 🟢 PCSV3Executor01 proxy deployed at: ${pcsV3Executor01.address}`);
 
-  configFileHelper.setPancakeV3VaultOracle(pcsV3Executor01.address, implAddress);
+  configFileHelper.setPancakeV3Executor(pcsV3Executor01.address, implAddress);
 };
 
 export default func;
