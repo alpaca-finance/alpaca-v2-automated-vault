@@ -26,7 +26,6 @@ export interface Pancake {
 export interface PancakeV3Vault {
   vaultOracle: UpgradableContract;
   executor01: UpgradableContract;
-  pancakeV3VaultReader: string;
   vaults: Vault[];
 }
 
@@ -45,10 +44,15 @@ export interface AutomatedVault {
   pancakeV3Vault: PancakeV3Vault;
 }
 
+export interface Reader {
+  pancakeV3VaultReader: string;
+}
+
 export interface Config {
   proxyAdmin: string;
   performanceFeeBucket: string;
   tokens: Tokens;
+  readers: Reader;
   automatedVault: AutomatedVault;
   dependencies: Dependency;
 }

@@ -35,6 +35,11 @@ export class ConfigFileHelper {
     this._writeConfigFile(this.config);
   }
 
+  public setPancakeV3VaultReader(address: string) {
+    this.config.readers.pancakeV3VaultReader = address;
+    this._writeConfigFile(this.config);
+  }
+
   public setPancakeV3VaultOracle(proxy: string, implementation: string) {
     this.config.automatedVault.pancakeV3Vault.vaultOracle.proxy = proxy;
     this.config.automatedVault.pancakeV3Vault.vaultOracle.implementation = implementation;
