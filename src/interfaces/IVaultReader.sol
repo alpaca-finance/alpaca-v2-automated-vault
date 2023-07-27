@@ -13,6 +13,8 @@ interface IVaultReader {
     uint256 token1Debt;
     uint256 lowerPrice; // quote token0/token1
     uint256 upperPrice; // quote token0/token1
+    int24 tickLower;
+    int24 tickUpper;
   }
 
   struct TokenAmount {
