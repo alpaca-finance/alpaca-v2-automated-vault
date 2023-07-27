@@ -2,6 +2,8 @@
 cache/
 out/
 forge_cache/
+typechain/
+artifacts/
 
 # Ignores all broadcast logs
 broadcast/
@@ -15,3 +17,5 @@ docs/
 
 .vscode/
 node_modules/
+yarn-error.log
+
