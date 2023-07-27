@@ -30,6 +30,11 @@ export class ConfigFileHelper {
     this._writeConfigFile(this.config);
   }
 
+  public setAutomatedVaultGateway(address: string) {
+    this.config.automatedVault.avManagerV3Gateway = address;
+    this._writeConfigFile(this.config);
+  }
+
   public setPancakeV3VaultOracle(proxy: string, implementation: string) {
     this.config.automatedVault.pancakeV3Vault.vaultOracle.proxy = proxy;
     this.config.automatedVault.pancakeV3Vault.vaultOracle.implementation = implementation;
