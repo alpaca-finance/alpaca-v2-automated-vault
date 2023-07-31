@@ -10,7 +10,7 @@ import { MulticallUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { IBank } from "src/interfaces/IBank.sol";
 
-abstract contract Executor is Initializable, Ownable2StepUpgradeable,MulticallUpgradeable {
+abstract contract Executor is Initializable, Ownable2StepUpgradeable, MulticallUpgradeable {
   error Executor_NotVaultManager();
   error Executor_NoCurrentWorker();
   error Executor_NoCurrentVaultToken();
