@@ -430,8 +430,8 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     if (_nftTokenId == 0) {
       revert PancakeV3Worker_PositionNotExist();
     }
+
     (_amount0, _amount1) = _decreaseLiquidity(_nftTokenId, masterChef, _liquidity);
-    emit LogDecreasePosition(_nftTokenId, msg.sender, _amount0, _amount1, _liquidity);
   }
 
   function _decreaseLiquidity(uint256 _nftTokenId, IPancakeV3MasterChef _masterChef, uint128 _liquidity)
@@ -441,23 +441,26 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     // claim all rewards accrued before removing liquidity from LP
     _harvest();
 
-    _masterChef.decreaseLiquidity(
-      IPancakeV3MasterChef.DecreaseLiquidityParams({
-        tokenId: _nftTokenId,
-        liquidity: _liquidity,
-        amount0Min: 0,
-        amount1Min: 0,
-        deadline: block.timestamp
-      })
-    );
-    (_amount0, _amount1) = _masterChef.collect(
-      IPancakeV3MasterChef.CollectParams({
-        tokenId: _nftTokenId,
-        recipient: address(this),
-        amount0Max: type(uint128).max,
-        amount1Max: type(uint128).max
-      })
-    );
+    if (_liquidity != 0) {
+      _masterChef.decreaseLiquidity(
+        IPancakeV3MasterChef.DecreaseLiquidityParams({
+          tokenId: _nftTokenId,
+          liquidity: _liquidity,
+          amount0Min: 0,
+          amount1Min: 0,
+          deadline: block.timestamp
+        })
+      );
+      (_amount0, _amount1) = _masterChef.collect(
+        IPancakeV3MasterChef.CollectParams({
+          tokenId: _nftTokenId,
+          recipient: address(this),
+          amount0Max: type(uint128).max,
+          amount1Max: type(uint128).max
+        })
+      );
+      emit LogDecreasePosition(_nftTokenId, msg.sender, _amount0, _amount1, _liquidity);
+    }
   }
 
   /// @notice claim trading fee and harvest reward from masterchef.
