@@ -15,7 +15,6 @@
     "exec:bsc_mainnet:money-market-mock:config:withdraw-tokens": "forge script ./script/deployments/MoneyMarketForTest/config/WithdrawTokens.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:money-market-mock:config:set-interest-rate-per-sec": "forge script ./script/deployments/MoneyMarketForTest/config/SetInterestRatePerSec.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:money-market-mock:config:set-borrower": "forge script ./script/deployments/MoneyMarketForTest/config/SetBorrower.s.sol --rpc-url bsc_mainnet --broadcast --slow",
-    "exec:bsc_mainnet:automated-vault-manager:config:set-vault-manager": "forge script ./script/deployments/AutomatedVaultManager/config/SetVaultManager.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:automated-vault-manager:config:set-allow-token": "forge script ./script/deployments/AutomatedVaultManager/config/SetAllowToken.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:automated-vault-manager:config:manage": "forge script ./script/deployments/AutomatedVaultManager/config/Manage.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "----------Deploy Hardhat -------------": "----------Deploy Hardhat -------------",
