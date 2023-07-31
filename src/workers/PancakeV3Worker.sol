@@ -363,7 +363,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
             recipient: address(this),
             amountIn: _amountIn0,
             amountOutMinimum: 0,
-            sqrtPriceLimitX96: LibTickMath.getSqrtRatioAtTick(_tickUpper - _tickSpacing - 1)
+            sqrtPriceLimitX96: LibTickMath.getSqrtRatioAtTick(_tickUpper) - 1
           })
         );
         // Update optimal amount
@@ -383,7 +383,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
             recipient: address(this),
             amountIn: _amountIn1,
             amountOutMinimum: 0,
-            sqrtPriceLimitX96: LibTickMath.getSqrtRatioAtTick(_tickLower + _tickSpacing + 1)
+            sqrtPriceLimitX96: LibTickMath.getSqrtRatioAtTick(_tickLower) + 1
           })
         );
         // Update optimal amount
