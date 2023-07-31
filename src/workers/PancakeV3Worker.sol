@@ -361,7 +361,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
             amountIn: _amountIn0,
             amountOutMinimum: 0,
             sqrtPriceLimitX96: LibTickMath.getSqrtRatioAtTick(_tickUpper) - 1 // swap until hit upper tick
-          })
+           })
         );
         // Update optimal amount
         _optimalAmount0 = _amountIn0 + ERC20(_token0).balanceOf(address(this)) - _token0Before;
@@ -381,7 +381,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
             amountIn: _amountIn1,
             amountOutMinimum: 0,
             sqrtPriceLimitX96: LibTickMath.getSqrtRatioAtTick(_tickLower) + 1 // swap until hit lower tick
-          })
+           })
         );
         // Update optimal amount
         _optimalAmount0 = _amountIn0 + _amountOut;
