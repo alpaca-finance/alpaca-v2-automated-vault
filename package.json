@@ -18,8 +18,6 @@
     "exec:bsc_mainnet:automated-vault-manager:config:set-vault-manager": "forge script ./script/deployments/AutomatedVaultManager/config/SetVaultManager.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:automated-vault-manager:config:set-allow-token": "forge script ./script/deployments/AutomatedVaultManager/config/SetAllowToken.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "exec:bsc_mainnet:automated-vault-manager:config:manage": "forge script ./script/deployments/AutomatedVaultManager/config/Manage.s.sol --rpc-url bsc_mainnet --broadcast --slow",
-    "exec:bsc_mainnet:pcs-v3-vault-reader:deploy": "forge script ./script/deployments/VaultReader/deploy/DeployPancakeV3VaultReader.s.sol --rpc-url bsc_mainnet --broadcast --slow",
-    "exec:bsc_mainnet:av-manager-v3-gateway:deploy": "forge script ./script/deployments/AVManagerV3Gateway/deploy/AVManagerV3Gateway.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "----------Deploy Hardhat -------------": "----------Deploy Hardhat -------------",
     "exec:bsc_mainnet:proxy-admin:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags ProxyAdminDeploy",
     "exec:bsc_mainnet:automated-vault-token-implementation:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AutomatedVaultImplementationDeploy",
@@ -29,7 +27,9 @@
     "exec:bsc_mainnet:pcs-v3-vault-oracle:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3VaultOracleDeploy",
     "exec:bsc_mainnet:pcs-v3-vault-oracle:config:set-price-feed": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags SetPriceFeedOf",
     "exec:bsc_mainnet:pcs-v3-executor01:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3Executor01Deploy",
-    "exec:bsc_mainnet:pcs-v3-worker:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3WorkerDeploy"
+    "exec:bsc_mainnet:pcs-v3-worker:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3WorkerDeploy",
+    "exec:bsc_mainnet:av-gateway:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AutomatedVaultGatewayDeploy",
+    "exec:bsc_mainnet:pcs-v3-vault-reader:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3VaultReaderDeploy"
   },
   "devDependencies": {
     "@typechain/hardhat": "^5.0.0",

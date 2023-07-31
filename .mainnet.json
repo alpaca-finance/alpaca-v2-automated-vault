@@ -6,6 +6,9 @@
     "usdt": "0x55d398326f99059fF775485246999027B3197955",
     "cake": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82"
   },
+  "readers": {
+    "pancakeV3VaultReader": ""
+  },
   "automatedVault": {
     "automatedVaultERC20Implementation": "",
     "avManagerV3Gateway": "",
@@ -26,7 +29,6 @@
         "proxy": "",
         "implementation": ""
       },
-      "pancakeV3VaultReader": "",
       "vaults": []
     }
   },
