@@ -7,7 +7,7 @@ import { SafeTransferLib } from "@solmate/utils/SafeTransferLib.sol";
 import { Initializable } from "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
 import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/access/Ownable2StepUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import { Clones } from "@openzeppelin/proxy/Clones.sol";
+import { ClonesUpgradeable } from "@openzeppelin-upgradeable/proxy/ClonesUpgradeable.sol";
 
 // contracts
 import { AutomatedVaultERC20 } from "src/AutomatedVaultERC20.sol";
@@ -447,7 +447,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     }
 
     // Deploy vault token with ERC-1167 minimal proxy
-    _vaultToken = Clones.clone(vaultTokenImplementation);
+    _vaultToken = ClonesUpgradeable.clone(vaultTokenImplementation);
     AutomatedVaultERC20(_vaultToken).initialize(_name, _symbol);
 
     // Update states

@@ -2,5 +2,5 @@ ds-test/=lib/forge-std/lib/ds-test/src/
 @forge-std/=lib/forge-std/src/
 @alpaca-mm/=lib/alpaca-v2-money-market/solidity/contracts/
 @solmate/=lib/solmate/src/
-@openzeppelin/=lib/openzeppelin-contracts/contracts/
-@openzeppelin-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
+@openzeppelin/=node_modules/@openzeppelin/contracts/
+@openzeppelin-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/

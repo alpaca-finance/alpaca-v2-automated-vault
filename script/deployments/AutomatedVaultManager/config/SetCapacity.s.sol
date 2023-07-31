@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import "script/BaseScript.sol";
 
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
-import { TransparentUpgradeableProxy } from "@openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract SetCapacityScript is BaseScript {
   function run() public {
