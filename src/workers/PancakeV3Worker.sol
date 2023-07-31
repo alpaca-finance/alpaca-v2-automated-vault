@@ -343,9 +343,6 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     uint256 _amountIn0,
     uint256 _amountIn1
   ) internal returns (uint256 _optimalAmount0, uint256 _optimalAmount1) {
-    // SLOAD
-    int24 _tickSpacing = pool.tickSpacing();
-
     // If out of upper range (currTick > tickUpper), we swap token0 for token1
     // and vice versa, to push price closer to range.
     // We only want to swap until price move back in range so
@@ -363,7 +360,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
             recipient: address(this),
             amountIn: _amountIn0,
             amountOutMinimum: 0,
-            sqrtPriceLimitX96: LibTickMath.getSqrtRatioAtTick(_tickUpper) - 1
+            sqrtPriceLimitX96: LibTickMath.getSqrtRatioAtTick(_tickUpper) - 1 // swap until hit upper tick
           })
         );
         // Update optimal amount
@@ -383,7 +380,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
             recipient: address(this),
             amountIn: _amountIn1,
             amountOutMinimum: 0,
-            sqrtPriceLimitX96: LibTickMath.getSqrtRatioAtTick(_tickLower) + 1
+            sqrtPriceLimitX96: LibTickMath.getSqrtRatioAtTick(_tickLower) + 1 // swap until hit lower tick
           })
         );
         // Update optimal amount
