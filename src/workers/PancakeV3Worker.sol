@@ -360,7 +360,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
             recipient: address(this),
             amountIn: _amountIn0,
             amountOutMinimum: 0,
-            sqrtPriceLimitX96: LibTickMath.getSqrtRatioAtTick(_tickUpper) - 1 // swap until hit upper tick
+            sqrtPriceLimitX96: LibTickMath.getSqrtRatioAtTick(_tickUpper) - 1 // swap until passed upper tick
            })
         );
         // Update optimal amount
