@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
-import { Clones } from "@openzeppelin/proxy/Clones.sol";
+import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 import { AutomatedVaultERC20 } from "src/AutomatedVaultERC20.sol";
 
 contract AutomatedVaultERC20Test is Test {

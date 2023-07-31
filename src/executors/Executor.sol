@@ -2,17 +2,15 @@
 pragma solidity 0.8.19;
 
 // dependencies
-import { Multicall } from "@openzeppelin/utils/Multicall.sol";
-import { Initializable } from "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
-import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/access/Ownable2StepUpgradeable.sol";
-
-import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import { MulticallUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
 
 // interfaces
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { IBank } from "src/interfaces/IBank.sol";
 
-abstract contract Executor is Multicall, Initializable, Ownable2StepUpgradeable {
+abstract contract Executor is Initializable, Ownable2StepUpgradeable, MulticallUpgradeable {
   error Executor_NotVaultManager();
   error Executor_NoCurrentWorker();
   error Executor_NoCurrentVaultToken();
