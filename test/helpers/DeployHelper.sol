@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import { Vm } from "@forge-std/Vm.sol";
-import { TransparentUpgradeableProxy } from "@openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
+import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 library DeployHelper {
   Vm private constant vm = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);

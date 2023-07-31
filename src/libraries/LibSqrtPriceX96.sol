@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 // dependencies
 import { FixedPointMathLib } from "@solmate/utils/FixedPointMathLib.sol";
-import { SafeCastUpgradeable } from "@openzeppelin-upgradeable/utils/math/SafeCastUpgradeable.sol";
+import { SafeCastUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/math/SafeCastUpgradeable.sol";
 
 // libraries
 import { LibFullMath } from "src/libraries/LibFullMath.sol";

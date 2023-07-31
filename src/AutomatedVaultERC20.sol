@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import { ERC20 } from "@solmate/tokens/ERC20.sol";
-import { Initializable } from "@openzeppelin/proxy/utils/Initializable.sol";
+import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 contract AutomatedVaultERC20 is ERC20, Initializable {
   address public vaultManager;

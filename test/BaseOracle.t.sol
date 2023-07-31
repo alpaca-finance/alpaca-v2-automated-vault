@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 // dependencies
-import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/access/Ownable2StepUpgradeable.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 // contracts
 import { BaseOracle } from "src/oracles/BaseOracle.sol";

@@ -5,10 +5,11 @@ pragma solidity 0.8.19;
 import { ERC20 } from "@solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "@solmate/utils/SafeTransferLib.sol";
 import { SafeCastLib } from "@solmate/utils/SafeCastLib.sol";
-import { EnumerableSet } from "@openzeppelin/utils/structs/EnumerableSet.sol";
-import { Initializable } from "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
-import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/access/Ownable2StepUpgradeable.sol";
-import { ReentrancyGuardUpgradeable } from "@openzeppelin-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { EnumerableSetUpgradeable } from
+  "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { IMoneyMarket } from "@alpaca-mm/money-market/interfaces/IMoneyMarket.sol";
 
 // contracts
@@ -21,7 +22,7 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
   using SafeCastLib for uint256;
   using SafeTransferLib for ERC20;
   using LibShareUtil for uint256;
-  using EnumerableSet for EnumerableSet.AddressSet;
+  using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
   error Bank_ExecutorNotInScope();
   error Bank_RepayMoreThanDebt();
@@ -30,7 +31,7 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
   AutomatedVaultManager public vaultManager;
 
   // vault token => list of borrowed tokens
-  mapping(address => EnumerableSet.AddressSet) internal vaultDebtTokens;
+  mapping(address => EnumerableSetUpgradeable.AddressSet) internal vaultDebtTokens;
   // vault token => borrowed token => debt shares
   mapping(address => mapping(address => uint256)) public vaultDebtShares;
   // token => total debt shares
