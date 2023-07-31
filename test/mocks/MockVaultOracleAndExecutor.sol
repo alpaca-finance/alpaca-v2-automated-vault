@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { IERC20 } from "src/interfaces/IERC20.sol";
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";

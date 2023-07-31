@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import "./fixtures/E2EFixture.f.sol";
 import { AutomatedVaultManager, MAX_BPS } from "src/AutomatedVaultManager.sol";

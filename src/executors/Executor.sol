@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 // dependencies
 import { Multicall } from "@openzeppelin/utils/Multicall.sol";
