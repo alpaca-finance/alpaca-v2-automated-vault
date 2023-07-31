@@ -113,4 +113,17 @@ contract PancakeV3WorkerDecreasePositionTest is PancakeV3WorkerFixture {
     assertEq(worker.posTickLower(), TICK_LOWER);
     assertEq(worker.posTickUpper(), TICK_UPPER);
   }
+
+  function testCorrectness_DecreaseZeroLiquidity_ShouldWork() public {
+    // Open position
+    deal(address(token0), address(worker), 1 ether);
+    deal(address(token1), address(worker), 1 ether);
+    vm.prank(IN_SCOPE_EXECUTOR);
+    worker.openPosition(TICK_LOWER, TICK_UPPER, 1 ether, 1 ether);
+
+    assertNotEq(worker.nftTokenId(), 0);
+
+    vm.prank(IN_SCOPE_EXECUTOR);
+    worker.decreasePosition(0);
+  }
 }
