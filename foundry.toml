@@ -7,6 +7,7 @@ optimizer = true
 optimizer-runs = 1
 fuzz = { runs = 50, max_test_rejects = 100_000, seed = 0x5eed }
 cache_path = './forge_cache'
+solc = "0.8.21"
 
 [profile.ci]
 fuzz = { runs = 256, max_test_rejects = 1_000_000 }

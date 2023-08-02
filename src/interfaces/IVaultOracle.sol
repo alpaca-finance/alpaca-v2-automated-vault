@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 interface IVaultOracle {
   function getEquityAndDebt(address _vaultToken, address _worker)

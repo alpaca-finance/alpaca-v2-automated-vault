@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 interface IAlpacaV2Oracle {
   /// @dev Return value of given token in USD.
