@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL
-pragma solidity 0.8.21;
+pragma solidity 0.8.19;
 
 // dependencies
 import { FixedPointMathLib } from "@solmate/utils/FixedPointMathLib.sol";
