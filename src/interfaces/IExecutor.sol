@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL
-pragma solidity 0.8.21;
+pragma solidity 0.8.19;
 
 import { IMulticall } from "src/interfaces/IMulticall.sol";
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";

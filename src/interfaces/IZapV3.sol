@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL
-pragma solidity 0.8.21;
+pragma solidity 0.8.19;
 
 interface IZapV3 {
   struct CalcParams {

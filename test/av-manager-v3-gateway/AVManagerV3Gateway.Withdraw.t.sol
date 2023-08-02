@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.21;
+pragma solidity 0.8.19;
 
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { AVManagerV3Gateway, ERC20 } from "src/gateway/AVManagerV3Gateway.sol";
