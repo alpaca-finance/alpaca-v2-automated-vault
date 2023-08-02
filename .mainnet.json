@@ -1,35 +1,42 @@
 {
-  "proxyAdmin": "",
-  "performanceFeeBucket": "",
+  "proxyAdmin": "0x743a4c3f70C629a8BB27c8cf61651fc7BfC25c27",
+  "performanceFeeBucket": "0x000110EFa9fcCBbbad103BFF2cFd6Fe70008Fb6A",
   "tokens": {
     "wbnb": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
     "usdt": "0x55d398326f99059fF775485246999027B3197955",
     "cake": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82"
   },
   "readers": {
-    "pancakeV3VaultReader": ""
+    "pancakeV3VaultReader": "0xEf8527a929BeA01ba42bf2Aa732aA79E2684fc43"
   },
   "automatedVault": {
-    "automatedVaultERC20Implementation": "",
-    "avManagerV3Gateway": "",
+    "automatedVaultERC20Implementation": "0x88eAE6b0aBd2De5fEae319B286B3F078a1d7Efdd",
+    "avManagerV3Gateway": "0x62a9D8825C71D8761f26b30249aA89F223e9818D",
     "automatedVaultManager": {
-      "proxy": "",
-      "implementation": ""
+      "proxy": "0x2A9614504A12de8a85207199CdE1860269411F71",
+      "implementation": "0x04Cbe4116a23a5AF2f67DBBd04F3e18dF20457E7"
     },
     "bank": {
-      "proxy": "",
-      "implementation": ""
+      "proxy": "0xD0dfE9277B1DB02187557eAeD7e25F74eF2DE8f3",
+      "implementation": "0xF790a2132551372C721f8711BBCA03482848BbaF"
     },
     "pancakeV3Vault": {
       "vaultOracle": {
-        "proxy": "",
-        "implementation": ""
+        "proxy": "0xa51b8f7dF8474111C6beA5eB2Fe60061C03FCEaf",
+        "implementation": "0xF4Ee308165eE8685dda84FD68857ab4D38F75386"
       },
       "executor01": {
-        "proxy": "",
-        "implementation": ""
+        "proxy": "0x7B33803D350293b271080ea78bE9CB0395d6d7E1",
+        "implementation": "0x0F77E9f9cC8a9D2a9210a98AAAd2c9fc6E9dEcf4"
       },
-      "vaults": []
+      "vaults": [
+        {
+          "name": "Saving USDT-BNB 05 PCS1",
+          "symbol": "L-USDTBNB05-PCS1",
+          "vaultToken": "0xb08eE41e88A2820cd572B4f2DFc459549790F2D7",
+          "worker": "0x463039266657602f60fc70De00553772f3cf4392"
+        }
+      ]
     }
   },
   "dependencies": {
