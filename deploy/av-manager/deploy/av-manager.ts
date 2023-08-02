@@ -16,8 +16,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   Check all variables below before execute the deployment script
   */
 
-  const MANAGEMENT_FEE_TREASURY = "";
-  const WITHDRAWAL_FEE_TREASURY = "";
+  const MANAGEMENT_FEE_TREASURY = "0x3d1DeAcC412D33Dab57Af5A4c08BD9cc8D8441Be";
+  const WITHDRAWAL_FEE_TREASURY = "0x478702dE01B57B6C43D14055a7debf5B2623EC95";
 
   const deployer = await getDeployer();
 

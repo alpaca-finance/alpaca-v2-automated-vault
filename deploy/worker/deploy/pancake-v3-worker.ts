@@ -45,7 +45,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const OTHER_TOKEN = config.tokens.usdt;
   const TRADING_FEE_PERFORMANCE = 1500;
   const REWARD_FEE_PERFORMANCE = 1500;
-  const PERFORMANCE_FEE_BUCKER = "";
+  const PERFORMANCE_FEE_BUCKER = "0x000110EFa9fcCBbbad103BFF2cFd6Fe70008Fb6A";
   const CAKE_TO_TOKEN0_PATH = ethers.utils.solidityPack(
     ["address", "uint24", "address"],
     [config.tokens.cake, 2500, config.tokens.usdt]
