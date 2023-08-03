@@ -19,7 +19,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const vaultTokenAddress = "0xb08eE41e88A2820cd572B4f2DFc459549790F2D7";
 
-  const newCapacity = 250_000; // 250,000 USD
+  const newCompressedCapacity = 250_000; // 250,000 USD
 
   const deployer = await getDeployer();
 
@@ -30,8 +30,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const ops = isFork() ? { gasLimit: 2000000 } : {};
 
   console.log(`> 📝 Vault Token: ${vaultTokenAddress}`);
-  console.log(`> 📝 Setting Capacity ... (${newCapacity})`);
-  const setCapacityTx = await automatedVaultManager.setCapacity(vaultTokenAddress, newCapacity, ops);
+  console.log(`> 📝 Setting Capacity ... (${newCompressedCapacity})`);
+  const setCapacityTx = await automatedVaultManager.setCapacity(vaultTokenAddress, newCompressedCapacity, ops);
   const setCapacityReceipt = await setCapacityTx.wait();
 
   if (setCapacityReceipt.status === 1) {
