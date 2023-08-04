@@ -9,7 +9,7 @@ Instead of holding crypto assets and constructing a portfolio by themselves, inv
 - Vault - The abstraction of mutual funds where investors can invest into.
 - Position Value - The value of deployed funds to destination protocol denominated by US Dollar. In the first version, the position value is calculated by pricing the PancakeSwapV3’s LP position.
 - Debt Value - The value of borrowed funds denominated by US Dollar.
-Undeployed Funds - The value of tokens pending to be deployed into the position denominated by US Dollar. 
+- Undeployed Funds - The value of tokens pending to be deployed into the position denominated by US Dollar. 
 - Equity - The value that belongs to the vault. This can be calculated by (Position Value + Undeployed Funds) - Debt
 - AUM - The value of assets under management. This can be calculated by Position Value + Undeployed Funds + Debt Value.
 - Debt Ratio - The ratio of debt over overall Aum. This can be calculated by Debt Value / AUM
