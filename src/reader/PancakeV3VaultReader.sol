@@ -62,6 +62,7 @@ contract PancakeV3VaultReader is IVaultReader {
         _liquidity
       );
 
+      _vaultSummary.liquidity = _liquidity;
       _vaultSummary.tickLower = _tickLower;
       _vaultSummary.tickUpper = _tickUpper;
       _vaultSummary.lowerPrice = _tickToPrice(_tickLower, _token0.decimals(), _token1.decimals());

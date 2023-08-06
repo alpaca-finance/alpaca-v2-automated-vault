@@ -19,3 +19,6 @@ bracket_spacing = true
 [rpc_endpoints]
 bsc_mainnet = "${BSC_RPC_URL}"
 local = "http://localhost:8545"
+
+[etherscan]
+bsc = { key = "${BSC_SCAN_API_KEY}", url = "https://api.bscscan.com/api" }

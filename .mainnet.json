@@ -7,7 +7,7 @@
     "cake": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82"
   },
   "readers": {
-    "pancakeV3VaultReader": "0xEf8527a929BeA01ba42bf2Aa732aA79E2684fc43"
+    "pancakeV3VaultReader": "0xC954F8A26E96adF982226092ca564f7e81d2d71D"
   },
   "automatedVault": {
     "automatedVaultERC20Implementation": "0x88eAE6b0aBd2De5fEae319B286B3F078a1d7Efdd",
