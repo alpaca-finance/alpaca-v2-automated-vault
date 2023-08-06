@@ -196,17 +196,38 @@ contract PancakeV3VaultReader is IVaultReader {
     (,, uint256 lowerFeeGrowthOutside0X128, uint256 lowerFeeGrowthOutside1X128,,,,) = pool.ticks(tickLower);
     (,, uint256 upperFeeGrowthOutside0X128, uint256 upperFeeGrowthOutside1X128,,,,) = pool.ticks(tickUpper);
 
-    if (tickCurrent < tickLower) {
-      feeGrowthInside0X128 = lowerFeeGrowthOutside0X128 - upperFeeGrowthOutside0X128;
-      feeGrowthInside1X128 = lowerFeeGrowthOutside1X128 - upperFeeGrowthOutside1X128;
-    } else if (tickCurrent < tickUpper) {
-      uint256 feeGrowthGlobal0X128 = pool.feeGrowthGlobal0X128();
-      uint256 feeGrowthGlobal1X128 = pool.feeGrowthGlobal1X128();
-      feeGrowthInside0X128 = feeGrowthGlobal0X128 - lowerFeeGrowthOutside0X128 - upperFeeGrowthOutside0X128;
-      feeGrowthInside1X128 = feeGrowthGlobal1X128 - lowerFeeGrowthOutside1X128 - upperFeeGrowthOutside1X128;
+    uint256 feeGrowthGlobal0X128 = pool.feeGrowthGlobal0X128();
+    uint256 feeGrowthGlobal1X128 = pool.feeGrowthGlobal1X128();
+
+    uint256 feeGrowthBelow0X128;
+    uint256 feeGrowthBelow1X128;
+    if (tickCurrent >= tickLower) {
+      feeGrowthBelow0X128 = lowerFeeGrowthOutside0X128;
+      feeGrowthBelow1X128 = lowerFeeGrowthOutside1X128;
     } else {
-      feeGrowthInside0X128 = upperFeeGrowthOutside0X128 - lowerFeeGrowthOutside0X128;
-      feeGrowthInside1X128 = upperFeeGrowthOutside1X128 - lowerFeeGrowthOutside1X128;
+      unchecked {
+        feeGrowthBelow0X128 = feeGrowthGlobal0X128 - lowerFeeGrowthOutside0X128;
+        feeGrowthBelow1X128 = feeGrowthGlobal1X128 - lowerFeeGrowthOutside1X128;
+      }
+    }
+
+    // calculate fee growth above
+    uint256 feeGrowthAbove0X128;
+    uint256 feeGrowthAbove1X128;
+    if (tickCurrent < tickUpper) {
+      feeGrowthAbove0X128 = upperFeeGrowthOutside0X128;
+      feeGrowthAbove1X128 = upperFeeGrowthOutside1X128;
+    } else {
+      unchecked {
+        feeGrowthAbove0X128 = feeGrowthGlobal0X128 - upperFeeGrowthOutside0X128;
+        feeGrowthAbove1X128 = feeGrowthGlobal1X128 - upperFeeGrowthOutside1X128;
+      }
+    }
+
+    // feeGrowth can go above max uint256
+    unchecked {
+      feeGrowthInside0X128 = feeGrowthGlobal0X128 - feeGrowthBelow0X128 - feeGrowthAbove0X128;
+      feeGrowthInside1X128 = feeGrowthGlobal1X128 - feeGrowthBelow1X128 - feeGrowthAbove1X128;
     }
   }
 
