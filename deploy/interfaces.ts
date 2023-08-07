@@ -4,9 +4,12 @@ interface UpgradableContract {
 }
 
 export interface Tokens {
-  wbnb: string;
-  usdt: string;
+  btcb: string;
   cake: string;
+  eth: string;
+  usdc: string;
+  usdt: string;
+  wbnb: string;
 }
 
 export interface Dependency {
