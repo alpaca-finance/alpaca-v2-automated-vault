@@ -24,7 +24,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const deployer = await getDeployer();
 
-  const opMultiSig = "0x18F59e8dDDef9e000863082a37fc56a2a5475D01";
+  const opMultiSig = config.opMultiSig;
 
   const proxyAdminFactory = getProxyAdminFactory(hre, deployer);
   const proxyAdmin = (await proxyAdminFactory).attach(config.proxyAdmin);

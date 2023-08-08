@@ -1,6 +1,7 @@
 {
   "proxyAdmin": "0x743a4c3f70C629a8BB27c8cf61651fc7BfC25c27",
   "performanceFeeBucket": "0x000110EFa9fcCBbbad103BFF2cFd6Fe70008Fb6A",
+  "opMultiSig": "0x18F59e8dDDef9e000863082a37fc56a2a5475D01",
   "tokens": {
     "wbnb": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
     "usdt": "0x55d398326f99059fF775485246999027B3197955",
