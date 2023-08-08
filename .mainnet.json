@@ -38,6 +38,12 @@
           "symbol": "L-USDTBNB05-PCS1",
           "vaultToken": "0xb08eE41e88A2820cd572B4f2DFc459549790F2D7",
           "worker": "0x463039266657602f60fc70De00553772f3cf4392"
+        },
+        {
+          "name": "Market Neutral USDC-USDT 01 PCS1",
+          "symbol": "N-USDCUSDT01-PCS1",
+          "vaultToken": "0x8Ee3A53720ED344e7CBfAe63292c18E4183CCE8a",
+          "worker": "0x884Aa0332800dB0a15527682b8FE26C2444E4200"
         }
       ]
     }
