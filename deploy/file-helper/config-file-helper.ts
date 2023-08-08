@@ -1,6 +1,7 @@
 import { Config, Vault } from "../interfaces";
 import MainnetConfig from "../../.mainnet.json";
 import * as fs from "fs";
+import { compare } from "../utils/address";
 
 export class ConfigFileHelper {
   private filePath: string;
@@ -63,12 +64,15 @@ export class ConfigFileHelper {
     this._writeConfigFile(this.config);
   }
 
-  public addOrSetPCSV3VaultByWorker(vault: Vault) {
-    const index = this.config.automatedVault.pancakeV3Vault.vaults.findIndex((vault) => vault.worker);
+  public addOrSetPCSV3VaultByWorker(newVault: Vault) {
+    const index = this.config.automatedVault.pancakeV3Vault.vaults.findIndex((vault) =>
+      compare(vault.worker, newVault.worker)
+    );
+
     if (index === -1) {
-      this.config.automatedVault.pancakeV3Vault.vaults.push(vault);
+      this.config.automatedVault.pancakeV3Vault.vaults.push(newVault);
     } else {
-      this.config.automatedVault.pancakeV3Vault.vaults[index] = vault;
+      this.config.automatedVault.pancakeV3Vault.vaults[index] = newVault;
     }
     this._writeConfigFile(this.config);
   }
