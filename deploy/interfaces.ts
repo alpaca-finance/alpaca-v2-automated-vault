@@ -29,7 +29,6 @@ export interface Pancake {
 export interface PancakeV3Vault {
   vaultOracle: UpgradableContract;
   executor01: UpgradableContract;
-  vaults: Vault[];
 }
 
 export interface Vault {
@@ -45,6 +44,7 @@ export interface AutomatedVault {
   automatedVaultManager: UpgradableContract;
   bank: UpgradableContract;
   pancakeV3Vault: PancakeV3Vault;
+  vaults: Vault[];
 }
 
 export interface Reader {

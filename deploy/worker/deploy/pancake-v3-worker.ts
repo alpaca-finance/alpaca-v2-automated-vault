@@ -84,7 +84,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   console.log(`> 🟢 PancakeV3Worker implementation deployed at: ${implAddress}`);
   console.log(`> 🟢 PancakeV3Worker proxy deployed at: ${pancakeV3Worker.address}`);
 
-  configFileHelper.addPCSV3Worker(pancakeV3Worker.address);
+  configFileHelper.addVaultWorker(pancakeV3Worker.address);
 };
 
 export default func;
