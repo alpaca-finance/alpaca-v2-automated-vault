@@ -29,21 +29,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   Check all variables below before execute the deployment script
   */
 
-  const NAME = "Saving USDT-BNB-250 PCS1";
-  const SYMBOL = "L-USDTBNB250-PCS1";
-  const param: OpenVaultParams = {
-    worker: "",
+  const NAME = "Market Neutral USDC-USDT 01 PCS1";
+const SYMBOL = "N-USDCUSDT01-PCS1";
+const param: OpenVaultParams = {
+    worker: "0x884Aa0332800dB0a15527682b8FE26C2444E4200",
     vaultOracle: config.automatedVault.pancakeV3Vault.vaultOracle.proxy,
     executor: config.automatedVault.pancakeV3Vault.executor01.proxy,
     compressedMinimumDeposit: 5000, // 50 USD
-    compressedCapacity: 500_000, // 500,000 USD
+    compressedCapacity: 250_000, // 250,000 USD
     managementFeePerSec: 634195840, // 2% per year
-    withdrawalFeeBps: 20,
+    withdrawalFeeBps: 30, // 0.3%
     toleranceBps: 9975, // inverse 25 bps
     maxLeverage: 8,
   };
-  const VAULT_MANAGER = "";
-  const INVEST_TOKEN = config.tokens.wbnb;
+const VAULT_MANAGER = "0x6EB9bC094CC57e56e91f3bec4BFfe7D9B1802e38";
+const INVEST_TOKEN = config.tokens.usdt;
 
   console.log("Open Vault param", param);
 
