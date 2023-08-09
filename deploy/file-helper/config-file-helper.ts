@@ -59,20 +59,18 @@ export class ConfigFileHelper {
     this._writeConfigFile(this.config);
   }
 
-  public addPCSV3Worker(address: string) {
-    this.config.automatedVault.pancakeV3Vault.vaults.push({ name: "", symbol: "", vaultToken: "", worker: address });
+  public addVaultWorker(address: string) {
+    this.config.automatedVault.vaults.push({ name: "", symbol: "", vaultToken: "", worker: address });
     this._writeConfigFile(this.config);
   }
 
-  public addOrSetPCSV3VaultByWorker(newVault: Vault) {
-    const index = this.config.automatedVault.pancakeV3Vault.vaults.findIndex((vault) =>
-      compare(vault.worker, newVault.worker)
-    );
+  public addOrSetVaultByWorker(newVault: Vault) {
+    const index = this.config.automatedVault.vaults.findIndex((vault) => compare(vault.worker, newVault.worker));
 
     if (index === -1) {
-      this.config.automatedVault.pancakeV3Vault.vaults.push(newVault);
+      this.config.automatedVault.vaults.push(newVault);
     } else {
-      this.config.automatedVault.pancakeV3Vault.vaults[index] = newVault;
+      this.config.automatedVault.vaults[index] = newVault;
     }
     this._writeConfigFile(this.config);
   }

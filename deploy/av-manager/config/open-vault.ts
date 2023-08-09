@@ -30,8 +30,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   */
 
   const NAME = "Market Neutral USDC-USDT 01 PCS1";
-const SYMBOL = "N-USDCUSDT01-PCS1";
-const param: OpenVaultParams = {
+  const SYMBOL = "N-USDCUSDT01-PCS1";
+  const param: OpenVaultParams = {
     worker: "0x884Aa0332800dB0a15527682b8FE26C2444E4200",
     vaultOracle: config.automatedVault.pancakeV3Vault.vaultOracle.proxy,
     executor: config.automatedVault.pancakeV3Vault.executor01.proxy,
@@ -42,8 +42,8 @@ const param: OpenVaultParams = {
     toleranceBps: 9975, // inverse 25 bps
     maxLeverage: 8,
   };
-const VAULT_MANAGER = "0x6EB9bC094CC57e56e91f3bec4BFfe7D9B1802e38";
-const INVEST_TOKEN = config.tokens.usdt;
+  const VAULT_MANAGER = "0x6EB9bC094CC57e56e91f3bec4BFfe7D9B1802e38";
+  const INVEST_TOKEN = config.tokens.usdt;
 
   console.log("Open Vault param", param);
 
@@ -62,15 +62,13 @@ const INVEST_TOKEN = config.tokens.usdt;
 
   if (openVaultReceipt.status === 1) {
     console.log(`> 🟢 Done Open Vualt: ${openVaultReceipt.transactionHash}`);
-    const vaultConfig = config.automatedVault.pancakeV3Vault.vaults.find((vault) =>
-      compare(vault.worker, param.worker)
-    );
+    const vaultConfig = config.automatedVault.vaults.find((vault) => compare(vault.worker, param.worker));
 
     if (vaultConfig) {
       vaultConfig.name = NAME;
       vaultConfig.symbol = SYMBOL;
       vaultConfig.vaultToken = newVaultToken;
-      configFileHelper.addOrSetPCSV3VaultByWorker(vaultConfig);
+      configFileHelper.addOrSetVaultByWorker(vaultConfig);
     }
 
     console.log("> Setting Allow Token ...");
