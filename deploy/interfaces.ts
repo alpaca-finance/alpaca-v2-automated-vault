@@ -54,6 +54,7 @@ export interface Reader {
 export interface Config {
   proxyAdmin: string;
   performanceFeeBucket: string;
+  opMultiSig: string;
   tokens: Tokens;
   readers: Reader;
   automatedVault: AutomatedVault;

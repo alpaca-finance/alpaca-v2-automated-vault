@@ -1,6 +1,7 @@
 {
   "proxyAdmin": "0x743a4c3f70C629a8BB27c8cf61651fc7BfC25c27",
   "performanceFeeBucket": "0x000110EFa9fcCBbbad103BFF2cFd6Fe70008Fb6A",
+  "opMultiSig": "0x18F59e8dDDef9e000863082a37fc56a2a5475D01",
   "tokens": {
     "btcb": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
     "cake": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
