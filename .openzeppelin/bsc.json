@@ -1,0 +1,328 @@
+{
+  "manifestVersion": "3.2",
+  "admin": {
+    "address": "0xdAb7a2cca461F88eedBadF448C3957Ff20Cea1a7",
+    "txHash": "0xed909f1828cf3513bc15708bb995b658b98d64ebc48b2de1865204d2b197a10c"
+  },
+  "proxies": [
+    {
+      "address": "0x884Aa0332800dB0a15527682b8FE26C2444E4200",
+      "txHash": "0x8f79e311d94895da37390f58b42ddcaf9986859f66a17734d9d07dbb8e12325c",
+      "kind": "transparent"
+    }
+  ],
+  "impls": {
+    "63bda3103bb69b8ddd0a31cc8389979da66c1b8025c712969c164db90f679251": {
+      "address": "0x188033081DB272Bcf04Cc62053b4135F00EB80C1",
+      "txHash": "0xf4596192e38e32bdf03d3911b0f000cfafd5082b55d84ab6f9b2df3b4de75959",
+      "layout": {
+        "solcVersion": "0.8.19",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:63",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:68"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_pendingOwner",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "Ownable2StepUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol:27"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "Ownable2StepUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol:70"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:88"
+          },
+          {
+            "label": "token0",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_contract(ERC20)5315",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:31"
+          },
+          {
+            "label": "token1",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_contract(ERC20)5315",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:32"
+          },
+          {
+            "label": "pool",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_contract(ICommonV3Pool)13261",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:35"
+          },
+          {
+            "label": "poolFee",
+            "offset": 20,
+            "slot": "203",
+            "type": "t_uint24",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:36"
+          },
+          {
+            "label": "posTickLower",
+            "offset": 23,
+            "slot": "203",
+            "type": "t_int24",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:37"
+          },
+          {
+            "label": "posTickUpper",
+            "offset": 26,
+            "slot": "203",
+            "type": "t_int24",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:38"
+          },
+          {
+            "label": "isToken0Base",
+            "offset": 29,
+            "slot": "203",
+            "type": "t_bool",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:39"
+          },
+          {
+            "label": "performanceFeeBucket",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_address",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:42"
+          },
+          {
+            "label": "tradingPerformanceFeeBps",
+            "offset": 20,
+            "slot": "204",
+            "type": "t_uint16",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:43"
+          },
+          {
+            "label": "rewardPerformanceFeeBps",
+            "offset": 22,
+            "slot": "204",
+            "type": "t_uint16",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:44"
+          },
+          {
+            "label": "lastHarvest",
+            "offset": 24,
+            "slot": "204",
+            "type": "t_uint40",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:45"
+          },
+          {
+            "label": "nftTokenId",
+            "offset": 0,
+            "slot": "205",
+            "type": "t_uint256",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:47"
+          },
+          {
+            "label": "zapV3",
+            "offset": 0,
+            "slot": "206",
+            "type": "t_contract(IZapV3)13622",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:49"
+          },
+          {
+            "label": "cake",
+            "offset": 0,
+            "slot": "207",
+            "type": "t_contract(ERC20)5315",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:50"
+          },
+          {
+            "label": "nftPositionManager",
+            "offset": 0,
+            "slot": "208",
+            "type": "t_contract(ICommonV3PositionManager)13358",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:51"
+          },
+          {
+            "label": "router",
+            "offset": 0,
+            "slot": "209",
+            "type": "t_contract(IPancakeV3Router)14119",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:52"
+          },
+          {
+            "label": "masterChef",
+            "offset": 0,
+            "slot": "210",
+            "type": "t_contract(IPancakeV3MasterChef)13937",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:53"
+          },
+          {
+            "label": "vaultManager",
+            "offset": 0,
+            "slot": "211",
+            "type": "t_contract(AutomatedVaultManager)8132",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:54"
+          },
+          {
+            "label": "cakeToTokenPath",
+            "offset": 0,
+            "slot": "212",
+            "type": "t_mapping(t_address,t_bytes_storage)",
+            "contract": "PancakeV3Worker",
+            "src": "src/workers/PancakeV3Worker.sol:56"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes_storage": {
+            "label": "bytes",
+            "numberOfBytes": "32"
+          },
+          "t_contract(AutomatedVaultManager)8132": {
+            "label": "contract AutomatedVaultManager",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ERC20)5315": {
+            "label": "contract ERC20",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ICommonV3Pool)13261": {
+            "label": "contract ICommonV3Pool",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ICommonV3PositionManager)13358": {
+            "label": "contract ICommonV3PositionManager",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IPancakeV3MasterChef)13937": {
+            "label": "contract IPancakeV3MasterChef",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IPancakeV3Router)14119": {
+            "label": "contract IPancakeV3Router",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IZapV3)13622": {
+            "label": "contract IZapV3",
+            "numberOfBytes": "20"
+          },
+          "t_int24": {
+            "label": "int24",
+            "numberOfBytes": "3"
+          },
+          "t_mapping(t_address,t_bytes_storage)": {
+            "label": "mapping(address => bytes)",
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint24": {
+            "label": "uint24",
+            "numberOfBytes": "3"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint40": {
+            "label": "uint40",
+            "numberOfBytes": "5"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    }
+  }
+}
