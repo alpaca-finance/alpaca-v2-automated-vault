@@ -16,6 +16,7 @@ interface IVaultReader {
     int24 tickLower;
     int24 tickUpper;
     uint128 liquidity;
+    uint256 poolSqrtPriceX96;
   }
 
   struct TokenAmount {

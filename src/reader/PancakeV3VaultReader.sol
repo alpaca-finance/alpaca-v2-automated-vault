@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import { ERC20 } from "@solmate/tokens/ERC20.sol";
-
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 import { PancakeV3VaultOracle } from "src/oracles/PancakeV3VaultOracle.sol";
@@ -11,6 +10,7 @@ import { ICommonV3Pool } from "src/interfaces/ICommonV3Pool.sol";
 import { ICommonV3PositionManager } from "src/interfaces/ICommonV3PositionManager.sol";
 import { IPancakeV3MasterChef } from "src/interfaces/pancake-v3/IPancakeV3MasterChef.sol";
 import { IChainlinkAggregator } from "src/interfaces/IChainlinkAggregator.sol";
+import { IMoneyMarket } from "@alpaca-mm/money-market/interfaces/IMoneyMarket.sol";
 
 import { LibTickMath } from "src/libraries/LibTickMath.sol";
 import { LibSqrtPriceX96 } from "src/libraries/LibSqrtPriceX96.sol";
@@ -23,15 +23,17 @@ import { IVaultReader } from "src/interfaces/IVaultReader.sol";
 contract PancakeV3VaultReader is IVaultReader {
   AutomatedVaultManager internal immutable automatedVaultManager;
   PancakeV3VaultOracle internal immutable pancakeV3VaultOracle;
+  IMoneyMarket internal immutable moneyMarket;
   Bank internal immutable bank;
   address internal constant cake = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
   IChainlinkAggregator internal constant cakePriceFeed =
     IChainlinkAggregator(0xB6064eD41d4f67e353768aA239cA86f4F73665a1);
 
-  constructor(address _automatedVaultManager, address _bank, address _pancakeV3VaultOracle) {
+  constructor(address _automatedVaultManager, address _bank, address _pancakeV3VaultOracle, address _moneyMarket) {
     automatedVaultManager = AutomatedVaultManager(_automatedVaultManager);
     bank = Bank(_bank);
     pancakeV3VaultOracle = PancakeV3VaultOracle(_pancakeV3VaultOracle);
+    moneyMarket = IMoneyMarket(_moneyMarket);
   }
 
   function getVaultSummary(address _vaultToken) public view returns (VaultSummary memory _vaultSummary) {
@@ -67,6 +69,7 @@ contract PancakeV3VaultReader is IVaultReader {
       _vaultSummary.tickUpper = _tickUpper;
       _vaultSummary.lowerPrice = _tickToPrice(_tickLower, _token0.decimals(), _token1.decimals());
       _vaultSummary.upperPrice = _tickToPrice(_tickUpper, _token0.decimals(), _token1.decimals());
+      _vaultSummary.poolSqrtPriceX96 = _poolSqrtPriceX96;
     }
   }
 
@@ -100,7 +103,7 @@ contract PancakeV3VaultReader is IVaultReader {
         uint256 _pendingCake = IPancakeV3MasterChef(PancakeV3Worker(_worker).masterChef()).pendingCake(_tokenId);
         (, int256 _cakePrice,,,) = cakePriceFeed.latestRoundData();
         // cake price is 8 decimals, cake itself is 18 decimals
-        _cakeEquity = _pendingCake * uint256(_cakePrice) / 1e8;
+        _cakeEquity = (_pendingCake * uint256(_cakePrice)) / 1e8;
       }
 
       // Find uncollected trading fee amount
@@ -108,12 +111,14 @@ contract PancakeV3VaultReader is IVaultReader {
         _getPositionFees(_tokenId, PancakeV3Worker(_worker).nftPositionManager(), PancakeV3Worker(_worker).pool());
 
       // TODO: include pending interest after upgrade mm
-      uint256 _token0PositionValue = (_vautlSummary.token0Undeployed + _vautlSummary.token0Farmed + _token0TradingFee)
-        * _vautlSummary.token0price / 1e18;
-      uint256 _token0DebtValue = _vautlSummary.token0Debt * _vautlSummary.token0price / 1e18;
-      uint256 _token1PositionValue = (_vautlSummary.token1Undeployed + _vautlSummary.token1Farmed + _token1TradingFee)
-        * _vautlSummary.token1price / 1e18;
-      uint256 _token1DebtValue = _vautlSummary.token1Debt * _vautlSummary.token1price / 1e18;
+      uint256 _token0PositionValue = (
+        (_vautlSummary.token0Undeployed + _vautlSummary.token0Farmed + _token0TradingFee) * _vautlSummary.token0price
+      ) / 1e18;
+      uint256 _token0DebtValue = (_vautlSummary.token0Debt * _vautlSummary.token0price) / 1e18;
+      uint256 _token1PositionValue = (
+        (_vautlSummary.token1Undeployed + _vautlSummary.token1Farmed + _token1TradingFee) * _vautlSummary.token1price
+      ) / 1e18;
+      uint256 _token1DebtValue = (_vautlSummary.token1Debt * _vautlSummary.token1price) / 1e18;
       _totalEquity = _token0PositionValue + _token1PositionValue + _cakeEquity - _token0DebtValue - _token1DebtValue;
     }
 
@@ -122,8 +127,8 @@ contract PancakeV3VaultReader is IVaultReader {
 
     // Return value
     if (_vaultTotalSupply != 0) {
-      _sharePrice = _totalEquity * 1e18 / _vaultTotalSupply;
-      _sharePriceWithManagementFee = _totalEquity * 1e18 / (_vaultTotalSupply + _pendingManagementFee);
+      _sharePrice = (_totalEquity * 1e18) / _vaultTotalSupply;
+      _sharePriceWithManagementFee = (_totalEquity * 1e18) / (_vaultTotalSupply + _pendingManagementFee);
     }
   }
 
@@ -244,6 +249,8 @@ contract PancakeV3VaultReader is IVaultReader {
     uint256 stableTokenFees;
     uint256 assetTokenFees;
     uint256 cakeFarmed;
+    uint256 token0Available;
+    uint256 token1Available;
     // vault summary
     uint256 token0price;
     uint256 token1price;
@@ -255,6 +262,7 @@ contract PancakeV3VaultReader is IVaultReader {
     uint256 token1Debt;
     uint256 lowerPrice;
     uint256 upperPrice;
+    uint256 liquidity;
   }
 
   function getRepurchaseSummary(address _vaultToken) external view returns (RepurchaseSummary memory _result) {
@@ -272,24 +280,29 @@ contract PancakeV3VaultReader is IVaultReader {
     _result.token1Debt = _vaultSummary.token1Debt;
     _result.lowerPrice = _vaultSummary.lowerPrice;
     _result.upperPrice = _vaultSummary.upperPrice;
+    _result.liquidity = _vaultSummary.liquidity;
 
     // repurchase summary
 
     address _worker = automatedVaultManager.getWorker(_vaultToken);
+    address _token0 = address(PancakeV3Worker(_worker).token0());
+    address _token1 = address(PancakeV3Worker(_worker).token1());
 
     bool _isToken0Base = PancakeV3Worker(_worker).isToken0Base();
     if (_isToken0Base) {
-      _result.stableToken = address(PancakeV3Worker(_worker).token0());
-      _result.assetToken = address(PancakeV3Worker(_worker).token1());
+      _result.stableToken = _token0;
+      _result.assetToken = _token1;
       _result.stableTokenFees = _pendingRewards[0].amount;
       _result.assetTokenFees = _pendingRewards[1].amount;
     } else {
-      _result.stableToken = address(PancakeV3Worker(_worker).token1());
-      _result.assetToken = address(PancakeV3Worker(_worker).token0());
+      _result.stableToken = _token1;
+      _result.assetToken = _token0;
       _result.stableTokenFees = _pendingRewards[1].amount;
       _result.assetTokenFees = _pendingRewards[0].amount;
     }
     _result.cakeFarmed = _pendingRewards[2].amount;
+    _result.token0Available = moneyMarket.getProtocolReserve(_token0);
+    _result.token1Available = moneyMarket.getProtocolReserve(_token1);
 
     _result.exposureAmount = pancakeV3VaultOracle.getExposure(_vaultToken, _worker);
     // if exposure is long, borrow asset token to decrease exposure, vice versa
