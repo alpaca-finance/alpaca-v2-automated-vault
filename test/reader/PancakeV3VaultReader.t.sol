@@ -12,7 +12,12 @@ contract PancakeV3VaultReaderTest is E2EFixture {
   uint256 constant MAX_BPS = 10000;
 
   constructor() E2EFixture() {
-    vaultReader = new PancakeV3VaultReader(address(vaultManager), address(bank), address(pancakeV3VaultOracle));
+    vaultReader = new PancakeV3VaultReader(
+      address(vaultManager),
+      address(bank),
+      address(pancakeV3VaultOracle),
+      address(moneyMarket)
+    );
   }
 
   function _swapExactInput(address tokenIn_, address tokenOut_, uint24 fee_, uint256 swapAmount) internal {
