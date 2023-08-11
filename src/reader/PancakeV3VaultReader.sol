@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { ERC20 } from "@solmate/tokens/ERC20.sol";
+
 import { AutomatedVaultManager } from "src/AutomatedVaultManager.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 import { PancakeV3VaultOracle } from "src/oracles/PancakeV3VaultOracle.sol";
@@ -52,8 +53,9 @@ contract PancakeV3VaultReader is IVaultReader {
     (, _vaultSummary.token1Debt) = bank.getVaultDebt(_vaultToken, address(_token1));
 
     uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
+    (uint160 _poolSqrtPriceX96,,,,,,) = ICommonV3Pool(PancakeV3Worker(_worker).pool()).slot0();
+    _vaultSummary.poolSqrtPriceX96 = _poolSqrtPriceX96;
     if (_tokenId != 0) {
-      (uint160 _poolSqrtPriceX96,,,,,,) = ICommonV3Pool(PancakeV3Worker(_worker).pool()).slot0();
       (,,,,, int24 _tickLower, int24 _tickUpper, uint128 _liquidity,,,,) =
         PancakeV3Worker(_worker).nftPositionManager().positions(_tokenId);
 
@@ -69,7 +71,6 @@ contract PancakeV3VaultReader is IVaultReader {
       _vaultSummary.tickUpper = _tickUpper;
       _vaultSummary.lowerPrice = _tickToPrice(_tickLower, _token0.decimals(), _token1.decimals());
       _vaultSummary.upperPrice = _tickToPrice(_tickUpper, _token0.decimals(), _token1.decimals());
-      _vaultSummary.poolSqrtPriceX96 = _poolSqrtPriceX96;
     }
   }
 
@@ -103,7 +104,7 @@ contract PancakeV3VaultReader is IVaultReader {
         uint256 _pendingCake = IPancakeV3MasterChef(PancakeV3Worker(_worker).masterChef()).pendingCake(_tokenId);
         (, int256 _cakePrice,,,) = cakePriceFeed.latestRoundData();
         // cake price is 8 decimals, cake itself is 18 decimals
-        _cakeEquity = (_pendingCake * uint256(_cakePrice)) / 1e8;
+        _cakeEquity = _pendingCake * uint256(_cakePrice) / 1e8;
       }
 
       // Find uncollected trading fee amount
@@ -111,10 +112,9 @@ contract PancakeV3VaultReader is IVaultReader {
         _getPositionFees(_tokenId, PancakeV3Worker(_worker).nftPositionManager(), PancakeV3Worker(_worker).pool());
 
       // TODO: include pending interest after upgrade mm
-      uint256 _token0PositionValue = (
-        (_vautlSummary.token0Undeployed + _vautlSummary.token0Farmed + _token0TradingFee) * _vautlSummary.token0price
-      ) / 1e18;
-      uint256 _token0DebtValue = (_vautlSummary.token0Debt * _vautlSummary.token0price) / 1e18;
+      uint256 _token0PositionValue = (_vautlSummary.token0Undeployed + _vautlSummary.token0Farmed + _token0TradingFee)
+        * _vautlSummary.token0price / 1e18;
+      uint256 _token0DebtValue = _vautlSummary.token0Debt * _vautlSummary.token0price / 1e18;
       uint256 _token1PositionValue = (
         (_vautlSummary.token1Undeployed + _vautlSummary.token1Farmed + _token1TradingFee) * _vautlSummary.token1price
       ) / 1e18;
@@ -242,6 +242,7 @@ contract PancakeV3VaultReader is IVaultReader {
     address borrowToken; // token to borrow when repurchase, the other token will be repay token
     address stableToken;
     address assetToken;
+    address poolAddress;
     int256 exposureAmount; // in assetToken
     uint256 stableTokenPrice;
     uint256 assetTokenPrice;
@@ -262,7 +263,7 @@ contract PancakeV3VaultReader is IVaultReader {
     uint256 token1Debt;
     uint256 lowerPrice;
     uint256 upperPrice;
-    uint256 liquidity;
+    uint128 liquidity;
   }
 
   function getRepurchaseSummary(address _vaultToken) external view returns (RepurchaseSummary memory _result) {
@@ -301,8 +302,9 @@ contract PancakeV3VaultReader is IVaultReader {
       _result.assetTokenFees = _pendingRewards[0].amount;
     }
     _result.cakeFarmed = _pendingRewards[2].amount;
-    _result.token0Available = moneyMarket.getProtocolReserve(_token0);
-    _result.token1Available = moneyMarket.getProtocolReserve(_token1);
+    _result.token0Available = moneyMarket.getFloatingBalance(_token0);
+    _result.token1Available = moneyMarket.getFloatingBalance(_token1);
+    _result.poolAddress = address(PancakeV3Worker(_worker).pool());
 
     _result.exposureAmount = pancakeV3VaultOracle.getExposure(_vaultToken, _worker);
     // if exposure is long, borrow asset token to decrease exposure, vice versa
