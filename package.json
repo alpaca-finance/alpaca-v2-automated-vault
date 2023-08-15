@@ -31,7 +31,8 @@
     "exec:bsc_mainnet:pcs-v3-worker:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3WorkerDeploy",
     "exec:bsc_mainnet:av-gateway:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AutomatedVaultGatewayDeploy",
     "exec:bsc_mainnet:pcs-v3-vault-reader:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3VaultReaderDeploy",
-    "exec:bsc_mainnet:config:transfer-ownership": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags TransferOwnership"
+    "exec:bsc_mainnet:config:transfer-ownership": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags TransferOwnership",
+    "exec:bsc_mainnet:config:accept-ownership": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AcceptOwnership"
   },
   "devDependencies": {
     "@typechain/hardhat": "^5.0.0",
