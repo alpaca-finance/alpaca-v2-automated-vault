@@ -29,10 +29,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   Check all variables below before execute the deployment script
   */
 
-  const NAME = "Market Neutral USDC-USDT 01 PCS1";
-  const SYMBOL = "N-USDCUSDT01-PCS1";
+  const NAME = "Saving ETH-BTCB 25 PCS1";
+  const SYMBOL = "L-ETHBTCB25-PCS1";
   const param: OpenVaultParams = {
-    worker: "0x884Aa0332800dB0a15527682b8FE26C2444E4200",
+    worker: "0x831849c40B651F6E8C11108CF648f34a9C3add7A",
     vaultOracle: config.automatedVault.pancakeV3Vault.vaultOracle.proxy,
     executor: config.automatedVault.pancakeV3Vault.executor01.proxy,
     compressedMinimumDeposit: 5000, // 50 USD
@@ -43,7 +43,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     maxLeverage: 8,
   };
   const VAULT_MANAGER = "0x6EB9bC094CC57e56e91f3bec4BFfe7D9B1802e38";
-  const INVEST_TOKEN = config.tokens.usdt;
+  const INVEST_TOKEN = config.tokens.btcb;
 
   console.log("Open Vault param", param);
 
