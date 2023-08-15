@@ -40,23 +40,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   Check all variables below before execute the deployment script
   */
 
-  const POOL_FEE = 100;
-  const BASE_TOKEN = config.tokens.usdt;
-  const OTHER_TOKEN = config.tokens.usdc;
+  const POOL_FEE = 2500;
+  const BASE_TOKEN = config.tokens.eth;
+  const OTHER_TOKEN = config.tokens.btcb;
   const TRADING_FEE_PERFORMANCE = 1500;
   const REWARD_FEE_PERFORMANCE = 1500;
   const PERFORMANCE_FEE_BUCKER = config.performanceFeeBucket;
   const CAKE_TO_TOKEN0_PATH = ethers.utils.solidityPack(
-    ["address", "uint24", "address"],
-    [config.tokens.cake, 2500, config.tokens.usdt]
+    ["address", "uint24", "address", "uint24", "address"],
+    [config.tokens.cake, 500, config.tokens.wbnb, 500, config.tokens.eth]
   );
   const CAKE_TO_TOKEN1_PATH = ethers.utils.solidityPack(
     ["address", "uint24", "address", "uint24", "address"],
-    [config.tokens.cake, 2500, config.tokens.usdt, 100, config.tokens.usdc]
+    [config.tokens.cake, 500, config.tokens.wbnb, 500, config.tokens.btcb]
   );
 
   const POOL_ADDRESS = await pancakeV3Factory.getPool(BASE_TOKEN, OTHER_TOKEN, POOL_FEE);
   const TOKEN0 = await ICommonV3Pool__factory.connect(POOL_ADDRESS, deployer).token0();
+  const TOKEN1 = await ICommonV3Pool__factory.connect(POOL_ADDRESS, deployer).token1();
 
   const param: PCSV3WorkerInitializeParam = {
     vaultManager: config.automatedVault.automatedVaultManager.proxy,
@@ -84,7 +85,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   console.log(`> 🟢 PancakeV3Worker implementation deployed at: ${implAddress}`);
   console.log(`> 🟢 PancakeV3Worker proxy deployed at: ${pancakeV3Worker.address}`);
 
-  configFileHelper.addVaultWorker(pancakeV3Worker.address);
+  configFileHelper.addVaultWorker(pancakeV3Worker.address, TOKEN0, TOKEN1);
 };
 
 export default func;

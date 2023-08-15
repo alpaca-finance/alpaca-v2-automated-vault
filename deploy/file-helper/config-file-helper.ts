@@ -59,8 +59,15 @@ export class ConfigFileHelper {
     this._writeConfigFile(this.config);
   }
 
-  public addVaultWorker(address: string) {
-    this.config.automatedVault.vaults.push({ name: "", symbol: "", vaultToken: "", worker: address });
+  public addVaultWorker(address: string, token0Address: string, token1Address: string) {
+    this.config.automatedVault.vaults.push({
+      name: "",
+      symbol: "",
+      vaultToken: "",
+      worker: address,
+      token0: token0Address,
+      token1: token1Address,
+    });
     this._writeConfigFile(this.config);
   }
 
