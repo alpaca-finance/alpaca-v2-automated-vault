@@ -18,7 +18,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   */
 
   const PRICE_FEED_LIST = [
-    { token: config.tokens.usdc, priceFeed: "0x51597f405303c4377e36123cbc172b13269ea163" }
+    { token: config.tokens.btcb, priceFeed: "0x264990fbd0a4796a3e3d8e37c4d5f87a3aca5ebf" },
+    { token: config.tokens.eth, priceFeed: "0x9ef1b8c0e4f7dc8bf5719ea496883dc6401d5b2e" },
+    { token: config.tokens.cake, priceFeed: "0xb6064ed41d4f67e353768aa239ca86f4f73665a1" },
   ];
 
   const deployer = await getDeployer();
