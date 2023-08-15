@@ -14,7 +14,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const pancakeV3VaultReader = await PancakeV3VaultReaderFactory.deploy(
     config.automatedVault.automatedVaultManager.proxy,
     config.automatedVault.bank.proxy,
-    config.automatedVault.pancakeV3Vault.vaultOracle.proxy
+    config.automatedVault.pancakeV3Vault.vaultOracle.proxy,
+    config.dependencies.moneyMarket
   );
   console.log(`> 🟢 PancakeV3VaultReader deployed at: ${pancakeV3VaultReader.address}`);
 
