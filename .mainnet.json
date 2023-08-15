@@ -48,8 +48,8 @@
         "symbol": "N-USDCUSDT01-PCS1",
         "vaultToken": "0x8Ee3A53720ED344e7CBfAe63292c18E4183CCE8a",
         "worker": "0x884Aa0332800dB0a15527682b8FE26C2444E4200",
-        "token0": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
-        "token1": "0x55d398326f99059fF775485246999027B3197955"
+        "token0": "0x55d398326f99059fF775485246999027B3197955",
+        "token1": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"
       },
       {
         "name": "Saving ETH-BTCB 25 PCS1",
