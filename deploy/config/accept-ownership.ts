@@ -24,7 +24,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   */
 
   const contractToAcceptOwnership = [
-    config.proxyAdmin,
     config.automatedVault.automatedVaultManager.proxy,
     config.automatedVault.pancakeV3Vault.executor01.proxy,
     config.automatedVault.pancakeV3Vault.vaultOracle.proxy,
