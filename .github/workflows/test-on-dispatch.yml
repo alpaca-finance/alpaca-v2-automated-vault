@@ -34,7 +34,7 @@ jobs:
 
       - name: Run Forge tests
         env:
-          BSC_RPC_URL: https://bsc-dataseed3.binance.org/
+          BSC_RPC_URL: https://bsc-dataseed1.ninicoin.io/
         run: |
           forge test -vvv
         id: test
