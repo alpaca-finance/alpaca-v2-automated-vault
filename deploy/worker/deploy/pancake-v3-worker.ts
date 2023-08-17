@@ -41,8 +41,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   */
 
   const POOL_FEE = 2500;
-  const BASE_TOKEN = config.tokens.btcb;
-  const OTHER_TOKEN = config.tokens.eth;
+  const BASE_TOKEN = config.tokens.eth;
+  const OTHER_TOKEN = config.tokens.btcb;
   const TRADING_FEE_PERFORMANCE = 1500;
   const REWARD_FEE_PERFORMANCE = 1500;
   const PERFORMANCE_FEE_BUCKER = config.performanceFeeBucket;
