@@ -18,30 +18,23 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   Check all variables below before execute the deployment script
   */
 
+  const pcsV3Executor01 = config.automatedVault.pancakeV3Vault.executor01.proxy;
+
   const deployer = await getDeployer();
 
   const PCSV3Executor01Factory = await ethers.getContractFactory("PCSV3Executor01", deployer);
 
-  const preparedNewPCSV3Executor01 = await upgrades.prepareUpgrade(
-    config.automatedVault.pancakeV3Vault.executor01.proxy,
-    PCSV3Executor01Factory
-  );
+  const preparedNewPCSV3Executor01 = await upgrades.prepareUpgrade(pcsV3Executor01, PCSV3Executor01Factory);
   console.log(`> New Implementation address: ${preparedNewPCSV3Executor01}`);
 
   const proxyAdmin = ProxyAdmin__factory.connect(config.proxyAdmin, deployer);
-  const upgradeTx = await proxyAdmin.upgrade(
-    config.automatedVault.pancakeV3Vault.executor01.proxy,
-    preparedNewPCSV3Executor01
-  );
+  const upgradeTx = await proxyAdmin.upgrade(pcsV3Executor01, preparedNewPCSV3Executor01);
 
   const upgradeReceipt = await upgradeTx.wait();
 
   console.log(`> 🟢 Done PCSV3Executor01 implementation upgraded tx ${upgradeReceipt.transactionHash}`);
 
-  configFileHelper.setPancakeV3Executor(
-    config.automatedVault.pancakeV3Vault.executor01.proxy,
-    preparedNewPCSV3Executor01
-  );
+  configFileHelper.setPancakeV3Executor(pcsV3Executor01, preparedNewPCSV3Executor01);
 };
 
 export default func;
