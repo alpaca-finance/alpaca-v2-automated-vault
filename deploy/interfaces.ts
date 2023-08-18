@@ -36,6 +36,8 @@ export interface Vault {
   symbol: string;
   vaultToken: string;
   worker: string;
+  token0: string;
+  token1: string;
 }
 
 export interface AutomatedVault {
