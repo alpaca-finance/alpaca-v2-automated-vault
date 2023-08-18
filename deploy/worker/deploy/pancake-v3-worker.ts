@@ -41,8 +41,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   */
 
   const POOL_FEE = 2500;
-  const BASE_TOKEN = config.tokens.btcb;
-  const OTHER_TOKEN = config.tokens.eth;
+  const BASE_TOKEN = config.tokens.eth;
+  const OTHER_TOKEN = config.tokens.btcb;
   const TRADING_FEE_PERFORMANCE = 1500;
   const REWARD_FEE_PERFORMANCE = 1500;
   const PERFORMANCE_FEE_BUCKER = config.performanceFeeBucket;
@@ -57,6 +57,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const POOL_ADDRESS = await pancakeV3Factory.getPool(BASE_TOKEN, OTHER_TOKEN, POOL_FEE);
   const TOKEN0 = await ICommonV3Pool__factory.connect(POOL_ADDRESS, deployer).token0();
+  const TOKEN1 = await ICommonV3Pool__factory.connect(POOL_ADDRESS, deployer).token1();
 
   const param: PCSV3WorkerInitializeParam = {
     vaultManager: config.automatedVault.automatedVaultManager.proxy,
@@ -84,7 +85,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   console.log(`> 🟢 PancakeV3Worker implementation deployed at: ${implAddress}`);
   console.log(`> 🟢 PancakeV3Worker proxy deployed at: ${pancakeV3Worker.address}`);
 
-  configFileHelper.addVaultWorker(pancakeV3Worker.address);
+  configFileHelper.addVaultWorker(pancakeV3Worker.address, TOKEN0, TOKEN1);
 };
 
 export default func;
