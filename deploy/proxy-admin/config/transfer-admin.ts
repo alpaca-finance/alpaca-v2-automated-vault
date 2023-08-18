@@ -1,12 +1,14 @@
-import { ethers, upgrades } from "hardhat";
 import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { ConfigFileHelper } from "../../file-helper/config-file-helper";
 import { getDeployer } from "../../utils/deployer-helper";
+import { ProxyAdmin__factory } from "../../../typechain/factories/src/upgradable/ProxyAdmin.sol/ProxyAdmin__factory";
+import { ConfigFileHelper } from "../../file-helper/config-file-helper";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+  const deployer = await getDeployer();
   const configFileHelper = new ConfigFileHelper();
   const config = configFileHelper.getConfig();
+
   /*
   ░██╗░░░░░░░██╗░█████╗░██████╗░███╗░░██╗██╗███╗░░██╗░██████╗░
   ░██║░░██╗░░██║██╔══██╗██╔══██╗████╗░██║██║████╗░██║██╔════╝░
@@ -17,20 +19,30 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   Check all variables below before execute the deployment script
   */
 
-  const pcsV3Executor01 = config.automatedVault.pancakeV3Vault.executor01.proxy;
+  const newProxyAdmin = "0xdAb7a2cca461F88eedBadF448C3957Ff20Cea1a7";
+  const contractToChangeAdmin = [
+    config.automatedVault.bank.proxy,
+    config.automatedVault.pancakeV3Vault.executor01.proxy,
+  ];
 
-  const deployer = await getDeployer();
+  const proxyAdmin = ProxyAdmin__factory.connect(config.proxyAdmin, deployer);
 
-  const PCSV3Executor01Factory = await ethers.getContractFactory("PCSV3Executor01", deployer);
+  for (const contractAddress of contractToChangeAdmin) {
+    const contract = ProxyAdmin__factory.connect(contractAddress, deployer);
 
-  const preparedNewPCSV3Executor01 = await upgrades.prepareUpgrade(pcsV3Executor01, PCSV3Executor01Factory);
-  console.log(`> New Implementation address: ${preparedNewPCSV3Executor01}`);
+    const currentProxyAdmin = await contract.getProxyAdmin(contractAddress);
+    if (currentProxyAdmin.toLowerCase() === newProxyAdmin.toLowerCase()) {
+      console.log(` Already transfer ... skip ${contractAddress}`);
+      continue;
+    }
+    const transferAdminTx = await proxyAdmin.changeProxyAdmin(contractAddress, newProxyAdmin);
+    const transferReceipt = await transferAdminTx.wait();
 
-  await upgrades.upgradeProxy(pcsV3Executor01, PCSV3Executor01Factory);
-  console.log("✅ Done");
+    console.log(`🟢 Done transfer tx ${transferReceipt.transactionHash}`);
+  }
 
-  configFileHelper.setPancakeV3Executor(pcsV3Executor01, preparedNewPCSV3Executor01);
+  configFileHelper.setProxyAdmin(newProxyAdmin);
 };
 
 export default func;
-func.tags = ["PancakeV3Executor01Upgrade"];
+func.tags = ["TransferProxyAdmin"];

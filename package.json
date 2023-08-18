@@ -19,6 +19,7 @@
     "exec:bsc_mainnet:automated-vault-manager:config:manage": "forge script ./script/deployments/AutomatedVaultManager/config/Manage.s.sol --rpc-url bsc_mainnet --broadcast --slow",
     "----------Deploy Hardhat -------------": "----------Deploy Hardhat -------------",
     "exec:bsc_mainnet:proxy-admin:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags ProxyAdminDeploy",
+    "exec:bsc_mainnet:proxy-admin:config:transfer-admin": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags TransferProxyAdmin",
     "exec:bsc_mainnet:automated-vault-token-implementation:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AutomatedVaultImplementationDeploy",
     "exec:bsc_mainnet:automated-vault-manager:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AutomatedVaultManagerDeploy",
     "exec:bsc_mainnet:automated-vault-manager:config:open-vault": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags OpenVault",
