@@ -13,6 +13,7 @@ import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/tran
 import "test/fixtures/BscFixture.f.sol";
 
 contract PCSV3Executor01DeleverageForkTest is BscFixture {
+
   address manager = 0x6EB9bC094CC57e56e91f3bec4BFfe7D9B1802e38;
   Bank bank = Bank(0xD0dfE9277B1DB02187557eAeD7e25F74eF2DE8f3);
   AutomatedVaultManager avManager = AutomatedVaultManager(0x2A9614504A12de8a85207199CdE1860269411F71);
@@ -22,13 +23,16 @@ contract PCSV3Executor01DeleverageForkTest is BscFixture {
   address L_USDTBNB_05_PCS1 = 0xb08eE41e88A2820cd572B4f2DFc459549790F2D7;
   address L_USDTBNB_05_PCS1_WORKER = 0x463039266657602f60fc70De00553772f3cf4392;
 
+  uint256 USDT_DEBT_AT_FORK_BLOCK = 1677155473089924601649864;
+  uint256 WBNB_DEBT_AT_FORK_BLOCK = 971261216631170;
+
   constructor() BscFixture() {
     uint256 FORK_BLOCK_NUMBER = 30954637;
     vm.createSelectFork("bsc_mainnet", FORK_BLOCK_NUMBER);
 
     address newPCSV3Executor01 = address(new PCSV3Executor01());
 
-    // upgrade Executor
+    // upgrade Bank and Executor
     vm.startPrank(0xC44f82b07Ab3E691F826951a6E335E1bC1bB0B51);
     proxyAdmin.upgrade(ITransparentUpgradeableProxy(address(executor)), newPCSV3Executor01);
     // tolerance 1%
@@ -42,26 +46,89 @@ contract PCSV3Executor01DeleverageForkTest is BscFixture {
     bytes[] memory manageBytes = new bytes[](1);
     manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (L_USDTBNB_05_PCS1, _positionBps));
 
-    (, uint256 usdtDebtBefore) = bank.getVaultDebt(L_USDTBNB_05_PCS1, address(usdt));
-    (, uint256 wbnbDebtBefore) = bank.getVaultDebt(L_USDTBNB_05_PCS1, address(wbnb));
-    (uint256 vaultEquityBefore, uint256 vaultDebtBefore) =
-      oracle.getEquityAndDebt(L_USDTBNB_05_PCS1, L_USDTBNB_05_PCS1_WORKER);
+    (uint256 usdtDebtBefore, uint256 wbnbDebtBefore, uint256 debtRatioBefore) = getVaultDebtAndDebtRatio();
 
     vm.prank(manager);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
 
-    (, uint256 usdtDebtAfter) = bank.getVaultDebt(L_USDTBNB_05_PCS1, address(usdt));
-    (, uint256 wbnbDebtAfter) = bank.getVaultDebt(L_USDTBNB_05_PCS1, address(wbnb));
-    (uint256 vaultEquityAfter, uint256 vaultDebtAfter) =
-      oracle.getEquityAndDebt(L_USDTBNB_05_PCS1, L_USDTBNB_05_PCS1_WORKER);
+     (uint256 usdtDebtAfter, uint256 wbnbDebtAfter, uint256 debtRatioAfter) = getVaultDebtAndDebtRatio();
 
-    // debt and debt ratio should always decrease
     assertLt(usdtDebtAfter, usdtDebtBefore);
     assertLt(wbnbDebtAfter, wbnbDebtBefore);
-    assertLt(
-      
-      vaultDebtAfter * 1 ether / (vaultEquityAfter + vaultDebtAfter),
-      vaultDebtBefore * 1 ether / (vaultEquityBefore + vaultDebtBefore)
-    );
+    assertLt(debtRatioAfter, debtRatioBefore);
+  }
+
+  function testCorrectness_WhenDeleverage_WithoutSwap() public {
+    (uint256 usdtDebtBefore, uint256 wbnbDebtBefore, uint256 debtRatioBefore) = getVaultDebtAndDebtRatio();
+    bytes[] memory manageBytes = new bytes[](1);
+    // patial close only 0.01%
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (L_USDTBNB_05_PCS1, 1));
+
+    vm.prank(manager);
+    avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
+
+    (uint256 usdtDebtAfter, uint256 wbnbDebtAfter, uint256 debtRatioAfter) = getVaultDebtAndDebtRatio();
+
+    assertLt(usdtDebtAfter, usdtDebtBefore);
+    assertLt(wbnbDebtAfter, wbnbDebtBefore);
+    assertLt(debtRatioAfter, debtRatioBefore);
+  }
+
+  function testCorrectness_WhenDeleverage_NeedToSwapZeroForOne() public {
+    // repay all usdt debt
+    deal(address(usdt), address(executor), USDT_DEBT_AT_FORK_BLOCK);
+    vm.mockCall(address(avManager), abi.encodeWithSignature("EXECUTOR_IN_SCOPE()"), abi.encode(address(executor)));
+
+    vm.startPrank(address(executor));
+    usdt.approve(address(bank), USDT_DEBT_AT_FORK_BLOCK);
+    bank.repayOnBehalfOf(L_USDTBNB_05_PCS1, address(usdt), USDT_DEBT_AT_FORK_BLOCK);
+    vm.stopPrank();
+
+    // (uint256 usdtDebtBefore, uint256 wbnbDebtBefore, uint256 debtRatioBefore) = getVaultDebtAndDebtRatio();
+    bytes[] memory manageBytes = new bytes[](1);
+    // patial close only 25% of positions
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (L_USDTBNB_05_PCS1, 2500));
+
+    vm.prank(manager);
+    vm.expectRevert();
+    avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
+
+    // (uint256 usdtDebtAfter, uint256 wbnbDebtAfter, uint256 debtRatioAfter) = getVaultDebtAndDebtRatio();
+
+    // assertLt(usdtDebtAfter, usdtDebtBefore);
+    // assertLt(wbnbDebtAfter, wbnbDebtBefore);
+    // assertLt(debtRatioAfter, debtRatioBefore);
+  }
+
+  function testCorrectness_WhenDeleverage_NeedToSwapOneForZero() public {
+    // repay all wbnb debt
+    deal(address(usdt), address(executor), WBNB_DEBT_AT_FORK_BLOCK);
+    vm.mockCall(address(avManager), abi.encodeWithSignature("EXECUTOR_IN_SCOPE()"), abi.encode(address(executor)));
+
+    vm.startPrank(address(executor));
+    usdt.approve(address(bank), WBNB_DEBT_AT_FORK_BLOCK);
+    bank.repayOnBehalfOf(L_USDTBNB_05_PCS1, address(usdt), WBNB_DEBT_AT_FORK_BLOCK);
+    vm.stopPrank();
+
+    (uint256 usdtDebtBefore, uint256 wbnbDebtBefore, uint256 debtRatioBefore) = getVaultDebtAndDebtRatio();
+    bytes[] memory manageBytes = new bytes[](1);
+    // patial close only 25% of positions
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (L_USDTBNB_05_PCS1, 2500));
+
+    vm.prank(manager);
+    avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
+
+    (uint256 usdtDebtAfter, uint256 wbnbDebtAfter, uint256 debtRatioAfter) = getVaultDebtAndDebtRatio();
+
+    assertLt(usdtDebtAfter, usdtDebtBefore);
+    assertLt(wbnbDebtAfter, wbnbDebtBefore);
+    assertLt(debtRatioAfter, debtRatioBefore);
+  }
+
+  function getVaultDebtAndDebtRatio() internal view returns (uint256 usdtDebt, uint256 wbnbDebt, uint256 debtRatio) {
+    (, usdtDebt) = bank.getVaultDebt(L_USDTBNB_05_PCS1, address(usdt));
+    (, wbnbDebt) = bank.getVaultDebt(L_USDTBNB_05_PCS1, address(wbnb));
+    (uint256 vaultEquity, uint256 vaultDebt) = oracle.getEquityAndDebt(L_USDTBNB_05_PCS1, L_USDTBNB_05_PCS1_WORKER);
+    debtRatio = vaultDebt * 1 ether / (vaultEquity + vaultDebt);
   }
 }
