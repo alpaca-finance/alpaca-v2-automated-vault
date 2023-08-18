@@ -3,6 +3,7 @@ import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { ConfigFileHelper } from "../../file-helper/config-file-helper";
 import { getDeployer, isFork } from "../../utils/deployer-helper";
+import { ContractTransaction } from "ethers";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const configFileHelper = new ConfigFileHelper();
@@ -16,9 +17,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   ░░░╚═╝░░░╚═╝░░╚═╝░░╚═╝╚═╝░░╚═╝╚═╝░░╚══╝╚═╝╚═╝░░╚══╝░╚═════╝░
   Check all variables below before execute the deployment script
   */
-
-  const vaultTokenAddress = "0xb08eE41e88A2820cd572B4f2DFc459549790F2D7";
-  const newCompressedCapacity = 1_250_000; // 250,000 USD
+  const PARAMS = [
+    {
+      vaultTokenAddress: "0xb08eE41e88A2820cd572B4f2DFc459549790F2D7",
+      newCompressedCapacity: 1_500_000,
+    },
+    {
+      vaultTokenAddress: "0x8Ee3A53720ED344e7CBfAe63292c18E4183CCE8a",
+      newCompressedCapacity: 1_000_000,
+    },
+    {
+      vaultTokenAddress: "0xdEBe96323D54d4D58F4bB526e58627Fb0651Bb00",
+      newCompressedCapacity: 1_000_000,
+    },
+  ];
 
   const deployer = await getDeployer();
 
@@ -27,15 +39,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     deployer
   );
   const ops = isFork() ? { gasLimit: 2000000 } : {};
+  let nonce = await deployer.getTransactionCount();
 
-  console.log(`> 📝 Vault Token: ${vaultTokenAddress}`);
-  console.log(`> 📝 Setting Capacity ... (${newCompressedCapacity})`);
-  const setCapacityTx = await automatedVaultManager.setCapacity(vaultTokenAddress, newCompressedCapacity, ops);
-  const setCapacityReceipt = await setCapacityTx.wait();
-
-  if (setCapacityReceipt.status === 1) {
-    console.log(`> 🟢 Done Setting Capacity: ${setCapacityReceipt.transactionHash}`);
+  const promises: Array<Promise<ContractTransaction>> = [];
+  for (const pam of PARAMS) {
+    console.log(`> 📝 Vault Token: ${pam.vaultTokenAddress}`);
+    console.log(`> 📝 Setting Capacity ... (${pam.newCompressedCapacity})`);
+    promises.push(
+      automatedVaultManager.setCapacity(pam.vaultTokenAddress, pam.newCompressedCapacity, {
+        ...ops,
+        nonce: nonce++,
+      })
+    );
   }
+  console.log(`> Submitting txs...`);
+  const txs = await Promise.all(promises);
+  console.log(`> Waiting for confirmations...`);
+  await txs[txs.length - 1].wait(3);
+  console.log(`> ✅ Done!`);
 };
 
 export default func;
