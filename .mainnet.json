@@ -58,6 +58,14 @@
         "worker": "0x831849c40B651F6E8C11108CF648f34a9C3add7A",
         "token0": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
         "token1": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c"
+      },
+      {
+        "name": "Saving BTCB-ETH 25 PCS1",
+        "symbol": "L-BTCBETH25-PCS1",
+        "vaultToken": "0x0C8ECaE87711d766fAA18047B3450479b4e822d4",
+        "worker": "0xC5978748e0812744F9E7ef9aEB30548C7cE7ED6f",
+        "token0": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+        "token1": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c"
       }
     ]
   },
