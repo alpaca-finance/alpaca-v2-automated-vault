@@ -3,6 +3,7 @@ import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { ConfigFileHelper } from "../../file-helper/config-file-helper";
 import { getDeployer } from "../../utils/deployer-helper";
+import { ProxyAdmin__factory } from "./../../../typechain/factories/src/upgradable/ProxyAdmin.sol/ProxyAdmin__factory";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const configFileHelper = new ConfigFileHelper();
@@ -27,12 +28,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   );
   console.log(`> New Implementation address: ${preparedNewPCSV3Executor01}`);
 
-  const pcsV3Executor01 = await upgrades.upgradeProxy(
+  const proxyAdmin = ProxyAdmin__factory.connect(config.proxyAdmin, deployer);
+  const upgradeTx = await proxyAdmin.upgrade(
     config.automatedVault.pancakeV3Vault.executor01.proxy,
-    PCSV3Executor01Factory
+    preparedNewPCSV3Executor01
   );
 
-  console.log(`> 🟢 Done PCSV3Executor01 implementation upgraded`);
+  const upgradeReceipt = await upgradeTx.wait();
+
+  console.log(`> 🟢 Done PCSV3Executor01 implementation upgraded tx ${upgradeReceipt.transactionHash}`);
 
   configFileHelper.setPancakeV3Executor(
     config.automatedVault.pancakeV3Vault.executor01.proxy,

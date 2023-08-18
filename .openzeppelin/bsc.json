@@ -328,6 +328,165 @@
           }
         }
       }
+    },
+    "781db0ed2df032642bcee7f7a6b0e2326da0e3efd78a5c2a4249111d07cfcf8b": {
+      "address": "0x0F77E9f9cC8a9D2a9210a98AAAd2c9fc6E9dEcf4",
+      "layout": {
+        "solcVersion": "0.8.19",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:63",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:68"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_pendingOwner",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "Ownable2StepUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol:27"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "Ownable2StepUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol:70"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "MulticallUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol:37"
+          },
+          {
+            "label": "vaultManager",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_address",
+            "contract": "Executor",
+            "src": "src/executors/Executor.sol:20"
+          },
+          {
+            "label": "bank",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_contract(IBank)10485",
+            "contract": "Executor",
+            "src": "src/executors/Executor.sol:21"
+          },
+          {
+            "label": "CURRENT_WORKER",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_address",
+            "contract": "Executor",
+            "src": "src/executors/Executor.sol:22"
+          },
+          {
+            "label": "CURRENT_VAULT_TOKEN",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_address",
+            "contract": "Executor",
+            "src": "src/executors/Executor.sol:23"
+          },
+          {
+            "label": "vaultOracle",
+            "offset": 0,
+            "slot": "205",
+            "type": "t_contract(PancakeV3VaultOracle)13322",
+            "contract": "PCSV3Executor01",
+            "src": "src/executors/PCSV3Executor01.sol:63"
+          },
+          {
+            "label": "repurchaseSlippageBps",
+            "offset": 20,
+            "slot": "205",
+            "type": "t_uint16",
+            "contract": "PCSV3Executor01",
+            "src": "src/executors/PCSV3Executor01.sol:64"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_contract(IBank)10485": {
+            "label": "contract IBank",
+            "numberOfBytes": "20"
+          },
+          "t_contract(PancakeV3VaultOracle)13322": {
+            "label": "contract PancakeV3VaultOracle",
+            "numberOfBytes": "20"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
     }
   }
 }
