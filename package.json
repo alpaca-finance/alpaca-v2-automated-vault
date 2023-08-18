@@ -31,9 +31,14 @@
     "exec:bsc_mainnet:pcs-v3-worker:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3WorkerDeploy",
     "exec:bsc_mainnet:av-gateway:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AutomatedVaultGatewayDeploy",
     "exec:bsc_mainnet:pcs-v3-vault-reader:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3VaultReaderDeploy",
-    "exec:bsc_mainnet:config:transfer-ownership": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags TransferOwnership"
+    "exec:bsc_mainnet:config:transfer-ownership": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags TransferOwnership",
+    "exec:bsc_mainnet:config:accept-ownership": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AcceptOwnership"
   },
   "devDependencies": {
+    "@safe-global/safe-core-sdk": "^3.3.3",
+    "@safe-global/safe-core-sdk-types": "^1.9.1",
+    "@safe-global/safe-ethers-lib": "^1.9.3",
+    "@safe-global/safe-service-client": "^2.0.1",
     "@typechain/hardhat": "^5.0.0",
     "@types/mocha": "^9.1.0",
     "@types/readline-sync": "^1.4.4",

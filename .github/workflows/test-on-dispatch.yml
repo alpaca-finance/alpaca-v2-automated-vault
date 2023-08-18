@@ -1,4 +1,4 @@
-name: test
+name: test-on-dispatch
 
 on: workflow_dispatch
 
@@ -11,7 +11,7 @@ jobs:
       fail-fast: true
 
     name: Foundry project
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
@@ -34,7 +34,7 @@ jobs:
 
       - name: Run Forge tests
         env:
-          BSC_RPC_URL: https://bsc-dataseed1.defibit.io
+          BSC_RPC_URL: https://bsc-dataseed1.ninicoin.io/
         run: |
           forge test -vvv
         id: test
