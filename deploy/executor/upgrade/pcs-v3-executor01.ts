@@ -29,7 +29,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const pcsV3Executor01 = await upgrades.upgradeProxy(
     config.automatedVault.pancakeV3Vault.executor01.proxy,
-    preparedNewPCSV3Executor01
+    PCSV3Executor01Factory
   );
 
   console.log(`> 🟢 Done PCSV3Executor01 implementation upgraded`);
