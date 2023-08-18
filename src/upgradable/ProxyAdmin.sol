@@ -141,12 +141,8 @@ abstract contract Proxy {
 
       switch result
       // delegatecall returns 0 on error.
-      case 0 {
-        revert(0, returndatasize())
-      }
-      default {
-        return(0, returndatasize())
-      }
+      case 0 { revert(0, returndatasize()) }
+      default { return(0, returndatasize()) }
     }
   }
 
@@ -155,7 +151,7 @@ abstract contract Proxy {
    * Can be redefined in derived contracts to add functionality.
    * Redefinitions must call super._willFallback().
    */
-  function _willFallback() internal virtual {}
+  function _willFallback() internal virtual { }
 
   /**
    * @dev fallback implementation.
@@ -221,7 +217,7 @@ library Address {
     require(address(this).balance >= amount, "Address: insufficient balance");
 
     // solhint-disable-next-line avoid-low-level-calls, avoid-call-value
-    (bool success, ) = recipient.call{ value: amount }("");
+    (bool success,) = recipient.call{ value: amount }("");
     require(success, "Address: unable to send value, recipient may have reverted");
   }
 
@@ -253,11 +249,7 @@ library Address {
    *
    * _Available since v3.1._
    */
-  function functionCall(
-    address target,
-    bytes memory data,
-    string memory errorMessage
-  ) internal returns (bytes memory) {
+  function functionCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {
     return functionCallWithValue(target, data, 0, errorMessage);
   }
 
@@ -272,11 +264,7 @@ library Address {
    *
    * _Available since v3.1._
    */
-  function functionCallWithValue(
-    address target,
-    bytes memory data,
-    uint256 value
-  ) internal returns (bytes memory) {
+  function functionCallWithValue(address target, bytes memory data, uint256 value) internal returns (bytes memory) {
     return functionCallWithValue(target, data, value, "Address: low-level call with value failed");
   }
 
@@ -286,12 +274,10 @@ library Address {
    *
    * _Available since v3.1._
    */
-  function functionCallWithValue(
-    address target,
-    bytes memory data,
-    uint256 value,
-    string memory errorMessage
-  ) internal returns (bytes memory) {
+  function functionCallWithValue(address target, bytes memory data, uint256 value, string memory errorMessage)
+    internal
+    returns (bytes memory)
+  {
     require(address(this).balance >= value, "Address: insufficient balance for call");
     require(isContract(target), "Address: call to non-contract");
 
@@ -316,11 +302,11 @@ library Address {
    *
    * _Available since v3.3._
    */
-  function functionStaticCall(
-    address target,
-    bytes memory data,
-    string memory errorMessage
-  ) internal view returns (bytes memory) {
+  function functionStaticCall(address target, bytes memory data, string memory errorMessage)
+    internal
+    view
+    returns (bytes memory)
+  {
     require(isContract(target), "Address: static call to non-contract");
 
     // solhint-disable-next-line avoid-low-level-calls
@@ -328,11 +314,11 @@ library Address {
     return _verifyCallResult(success, returndata, errorMessage);
   }
 
-  function _verifyCallResult(
-    bool success,
-    bytes memory returndata,
-    string memory errorMessage
-  ) private pure returns (bytes memory) {
+  function _verifyCallResult(bool success, bytes memory returndata, string memory errorMessage)
+    private
+    pure
+    returns (bytes memory)
+  {
     if (success) {
       return returndata;
     } else {
@@ -371,7 +357,7 @@ contract UpgradeabilityProxy is Proxy {
     assert(IMPLEMENTATION_SLOT == bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1));
     _setImplementation(_logic);
     if (_data.length > 0) {
-      (bool success, ) = _logic.delegatecall(_data);
+      (bool success,) = _logic.delegatecall(_data);
       require(success);
     }
   }
@@ -442,11 +428,7 @@ contract AdminUpgradeabilityProxy is UpgradeabilityProxy {
    * https://solidity.readthedocs.io/en/v0.4.24/abi-spec.html#function-selector-and-argument-encoding.
    * This parameter is optional, if no data is given the initialization call to proxied contract will be skipped.
    */
-  constructor(
-    address _logic,
-    address __admin,
-    bytes memory _data
-  ) UpgradeabilityProxy(_logic, _data) {
+  constructor(address _logic, address __admin, bytes memory _data) UpgradeabilityProxy(_logic, _data) {
     assert(ADMIN_SLOT == bytes32(uint256(keccak256("eip1967.proxy.admin")) - 1));
     _setAdmin(__admin);
   }
@@ -524,7 +506,7 @@ contract AdminUpgradeabilityProxy is UpgradeabilityProxy {
    */
   function upgradeToAndCall(address newImplementation, bytes calldata data) external payable ifAdmin {
     _upgradeTo(newImplementation);
-    (bool success, ) = newImplementation.delegatecall(data);
+    (bool success,) = newImplementation.delegatecall(data);
     require(success);
   }
 
@@ -617,11 +599,11 @@ contract ProxyAdmin is Ownable {
    * It should include the signature and the parameters of the function to be called, as described in
    * https://solidity.readthedocs.io/en/v0.4.24/abi-spec.html#function-selector-and-argument-encoding.
    */
-  function upgradeAndCall(
-    AdminUpgradeabilityProxy proxy,
-    address implementation,
-    bytes memory data
-  ) public payable onlyOwner {
+  function upgradeAndCall(AdminUpgradeabilityProxy proxy, address implementation, bytes memory data)
+    public
+    payable
+    onlyOwner
+  {
     proxy.upgradeToAndCall{ value: msg.value }(implementation, data);
   }
 }

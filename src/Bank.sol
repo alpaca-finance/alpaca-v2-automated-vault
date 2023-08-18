@@ -144,6 +144,8 @@ contract Bank is Initializable, Ownable2StepUpgradeable, ReentrancyGuardUpgradea
       }
     }
 
+    if (_actualRepayAmount == 0) return 0;
+
     // Transfer capped amount
     ERC20(_token).safeTransferFrom(msg.sender, address(this), _actualRepayAmount);
 

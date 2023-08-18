@@ -13,7 +13,6 @@ import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/tran
 import "test/fixtures/BscFixture.f.sol";
 
 contract PCSV3Executor01DeleverageForkTest is BscFixture {
-
   address manager = 0x6EB9bC094CC57e56e91f3bec4BFfe7D9B1802e38;
   Bank bank = Bank(0xD0dfE9277B1DB02187557eAeD7e25F74eF2DE8f3);
   AutomatedVaultManager avManager = AutomatedVaultManager(0x2A9614504A12de8a85207199CdE1860269411F71);
@@ -30,10 +29,12 @@ contract PCSV3Executor01DeleverageForkTest is BscFixture {
     uint256 FORK_BLOCK_NUMBER = 30954637;
     vm.createSelectFork("bsc_mainnet", FORK_BLOCK_NUMBER);
 
+    address newBank = address(new Bank());
     address newPCSV3Executor01 = address(new PCSV3Executor01());
 
     // upgrade Bank and Executor
     vm.startPrank(0xC44f82b07Ab3E691F826951a6E335E1bC1bB0B51);
+    proxyAdmin.upgrade(ITransparentUpgradeableProxy(address(bank)), newBank);
     proxyAdmin.upgrade(ITransparentUpgradeableProxy(address(executor)), newPCSV3Executor01);
     // tolerance 1%
     avManager.setToleranceBps(L_USDTBNB_05_PCS1, 9900);
@@ -51,7 +52,7 @@ contract PCSV3Executor01DeleverageForkTest is BscFixture {
     vm.prank(manager);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
 
-     (uint256 usdtDebtAfter, uint256 wbnbDebtAfter, uint256 debtRatioAfter) = getVaultDebtAndDebtRatio();
+    (uint256 usdtDebtAfter, uint256 wbnbDebtAfter, uint256 debtRatioAfter) = getVaultDebtAndDebtRatio();
 
     assertLt(usdtDebtAfter, usdtDebtBefore);
     assertLt(wbnbDebtAfter, wbnbDebtBefore);
@@ -84,20 +85,20 @@ contract PCSV3Executor01DeleverageForkTest is BscFixture {
     bank.repayOnBehalfOf(L_USDTBNB_05_PCS1, address(usdt), USDT_DEBT_AT_FORK_BLOCK);
     vm.stopPrank();
 
-    // (uint256 usdtDebtBefore, uint256 wbnbDebtBefore, uint256 debtRatioBefore) = getVaultDebtAndDebtRatio();
+    (uint256 usdtDebtBefore, uint256 wbnbDebtBefore, uint256 debtRatioBefore) = getVaultDebtAndDebtRatio();
     bytes[] memory manageBytes = new bytes[](1);
     // patial close only 25% of positions
     manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (L_USDTBNB_05_PCS1, 2500));
 
     vm.prank(manager);
-    vm.expectRevert();
+
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
 
-    // (uint256 usdtDebtAfter, uint256 wbnbDebtAfter, uint256 debtRatioAfter) = getVaultDebtAndDebtRatio();
+    (uint256 usdtDebtAfter, uint256 wbnbDebtAfter, uint256 debtRatioAfter) = getVaultDebtAndDebtRatio();
 
-    // assertLt(usdtDebtAfter, usdtDebtBefore);
-    // assertLt(wbnbDebtAfter, wbnbDebtBefore);
-    // assertLt(debtRatioAfter, debtRatioBefore);
+    assertLt(usdtDebtAfter, usdtDebtBefore);
+    assertLt(wbnbDebtAfter, wbnbDebtBefore);
+    assertLt(debtRatioAfter, debtRatioBefore);
   }
 
   function testCorrectness_WhenDeleverage_NeedToSwapOneForZero() public {
