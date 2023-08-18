@@ -208,7 +208,7 @@ contract PCSV3Executor01 is Executor {
 
       uint256 _token0Balance = _token0.balanceOf(address(this));
       if (_token0Balance != 0) {
-        _swap(PancakeV3Worker(_worker).pool(), false, int256(_token0Balance));
+        _swap(PancakeV3Worker(_worker).pool(), true, int256(_token0Balance));
         _repay(_vaultToken, address(_token1), _token1.balanceOf(address(this)));
       }
     }
