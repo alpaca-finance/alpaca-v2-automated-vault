@@ -181,6 +181,58 @@ contract PCSV3Executor01 is Executor {
     return _results;
   }
 
+  /// @notice Decrease liquidity and repay debt
+  function deleverage(address _worker, address _vaultToken, uint256 _positionBps) external onlyVaultManager {
+    ERC20 _token0 = PancakeV3Worker(_worker).token0();
+    ERC20 _token1 = PancakeV3Worker(_worker).token1();
+
+    uint256 _amount0Decreased;
+    uint256 _amount1Decreased;
+    {
+      uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
+      if (_tokenId != 0) {
+        (,,,,,,, uint128 _liquidity,,,,) = PancakeV3Worker(_worker).nftPositionManager().positions(_tokenId);
+        if (_liquidity != 0) {
+          (_amount0Decreased, _amount1Decreased) =
+            PancakeV3Worker(_worker).decreasePosition(uint128(_liquidity * _positionBps / 10000));
+        }
+      }
+    }
+    // Withdraw undeployed funds and decreased liquidity if any
+    if (_amount0Decreased != 0) {
+      PancakeV3Worker(_worker).transferToExecutor(address(_token0), _amount0Decreased);
+      // if there's remaining, swap to token1 and repay all
+      _repay(_vaultToken, address(_token0), _amount0Decreased);
+
+      if (ERC20(_token0).balanceOf(address(this)) != 0) {
+        _swapAndRepay(_worker, _vaultToken, _token1, _token0);
+      }
+    }
+    if (_amount1Decreased != 0) {
+      PancakeV3Worker(_worker).transferToExecutor(address(_token1), _amount1Decreased);
+      _repay(_vaultToken, address(_token1), _amount1Decreased);
+      // if there's remaining, swap to token0 and repay all
+      if (ERC20(_token1).balanceOf(address(this)) != 0) {
+        _swapAndRepay(_worker, _vaultToken, _token0, _token1);
+      }
+    }
+  }
+
+  function _swapAndRepay(address _worker, address _vaultToken, ERC20 _repayToken, ERC20 _otherToken) internal {
+    bool _zeroForOne = address(_otherToken) < address(_repayToken);
+
+    ICommonV3Pool _pool = PancakeV3Worker(_worker).pool();
+    _pool.swap(
+      address(this),
+      _zeroForOne,
+      int256(_otherToken.balanceOf(address(this))), // positive = exact input
+      _zeroForOne ? LibTickMath.MIN_SQRT_RATIO + 1 : LibTickMath.MAX_SQRT_RATIO - 1, // no price limit
+      abi.encode(_pool.token0(), _pool.token1(), _pool.fee())
+    );
+
+    _repay(_vaultToken, address(_repayToken), _repayToken.balanceOf(address(this)));
+  }
+
   function _repayOnWithdraw(
     address _worker,
     address _vaultToken,
