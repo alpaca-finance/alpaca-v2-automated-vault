@@ -22,11 +22,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const newProxyAdmin = "0xdAb7a2cca461F88eedBadF448C3957Ff20Cea1a7";
   const contractToChangeAdmin = [
     config.automatedVault.bank.proxy,
+    config.automatedVault.automatedVaultManager.proxy,
+    config.automatedVault.pancakeV3Vault.vaultOracle.proxy,
     config.automatedVault.pancakeV3Vault.executor01.proxy,
+    config.automatedVault.vaults[0].worker,
+    config.automatedVault.vaults[1].worker,
+    config.automatedVault.vaults[2].worker,
+    config.automatedVault.vaults[3].worker,
   ];
 
   const proxyAdmin = ProxyAdmin__factory.connect(config.proxyAdmin, deployer);
-
+  let nonce = await deployer.getTransactionCount();
   for (const contractAddress of contractToChangeAdmin) {
     const contract = ProxyAdmin__factory.connect(contractAddress, deployer);
 
@@ -35,7 +41,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       console.log(` Already transfer ... skip ${contractAddress}`);
       continue;
     }
-    const transferAdminTx = await proxyAdmin.changeProxyAdmin(contractAddress, newProxyAdmin);
+    const transferAdminTx = await proxyAdmin.changeProxyAdmin(contractAddress, newProxyAdmin, { nonce: nonce++ });
     const transferReceipt = await transferAdminTx.wait();
 
     console.log(`🟢 Done transfer tx ${transferReceipt.transactionHash}`);
