@@ -20,23 +20,23 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const PARAMS = [
     {
-      vaultTokenAddress: "0xb08eE41e88A2820cd572B4f2DFc459549790F2D7se",
-      manager: "0xe45216ac4816a5ec5378b1d13de8aa9f262ce9de",
+      vaultTokenAddress: "0xb08eE41e88A2820cd572B4f2DFc459549790F2D7",
+      manager: "0xe45216Ac4816A5Ec5378B1D13dE8aA9F262ce9De",
       isOk: true,
     },
     {
       vaultTokenAddress: "0x8Ee3A53720ED344e7CBfAe63292c18E4183CCE8a",
-      manager: "0xe45216ac4816a5ec5378b1d13de8aa9f262ce9de",
+      manager: "0xe45216Ac4816A5Ec5378B1D13dE8aA9F262ce9De",
       isOk: true,
     },
     {
       vaultTokenAddress: "0xdEBe96323D54d4D58F4bB526e58627Fb0651Bb00",
-      manager: "0xe45216ac4816a5ec5378b1d13de8aa9f262ce9de",
+      manager: "0xe45216Ac4816A5Ec5378B1D13dE8aA9F262ce9De",
       isOk: true,
     },
     {
       vaultTokenAddress: "0x0C8ECaE87711d766fAA18047B3450479b4e822d4",
-      manager: "0xe45216ac4816a5ec5378b1d13de8aa9f262ce9de",
+      manager: "0xe45216Ac4816A5Ec5378B1D13dE8aA9F262ce9De",
       isOk: true,
     },
   ];
@@ -61,6 +61,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       })
     );
   }
+
   console.log(`> Submitting txs...`);
   const txs = await Promise.all(promises);
   console.log(`> Waiting for confirmations...`);
