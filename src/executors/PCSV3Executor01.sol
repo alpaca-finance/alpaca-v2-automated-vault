@@ -233,7 +233,7 @@ contract PCSV3Executor01 is Executor {
     (_amount0, _amount1) = ICommonV3Pool(_pool).swap(
       address(this),
       _zeroForOne,
-      amount, // negative = exact output
+      amount, // positive = exact input, negative = exact output
       _zeroForOne ? LibTickMath.MIN_SQRT_RATIO + 1 : LibTickMath.MAX_SQRT_RATIO - 1, // no price limit
       abi.encode(_pool.token0(), _pool.token1(), _pool.fee())
     );
