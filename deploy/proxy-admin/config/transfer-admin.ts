@@ -26,21 +26,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     config.automatedVault.pancakeV3Vault.vaultOracle.proxy,
     config.automatedVault.pancakeV3Vault.executor01.proxy,
     config.automatedVault.vaults[0].worker,
-    config.automatedVault.vaults[1].worker,
-    config.automatedVault.vaults[2].worker,
-    config.automatedVault.vaults[3].worker,
   ];
 
   const proxyAdmin = ProxyAdmin__factory.connect(config.proxyAdmin, deployer);
   let nonce = await deployer.getTransactionCount();
   for (const contractAddress of contractToChangeAdmin) {
-    const contract = ProxyAdmin__factory.connect(contractAddress, deployer);
-
-    const currentProxyAdmin = await contract.getProxyAdmin(contractAddress);
-    if (currentProxyAdmin.toLowerCase() === newProxyAdmin.toLowerCase()) {
-      console.log(` Already transfer ... skip ${contractAddress}`);
-      continue;
-    }
     const transferAdminTx = await proxyAdmin.changeProxyAdmin(contractAddress, newProxyAdmin, { nonce: nonce++ });
     const transferReceipt = await transferAdminTx.wait();
 
