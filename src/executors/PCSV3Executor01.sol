@@ -204,10 +204,11 @@ contract PCSV3Executor01 is Executor {
     // Withdraw undeployed funds and decreased liquidity if any
     if (_amount0Decreased != 0) {
       PancakeV3Worker(_worker).transferToExecutor(address(_token0), _amount0Decreased);
-      // if there's remaining, swap to token1 and repay all
+
       _repay(_vaultToken, address(_token0), _amount0Decreased);
 
       uint256 _token0Balance = _token0.balanceOf(address(this));
+      // if there's remaining, swap to token1 and repay all
       if (_token0Balance != 0) {
         _swap(PancakeV3Worker(_worker).pool(), true, int256(_token0Balance));
         _repay(_vaultToken, address(_token1), _token1.balanceOf(address(this)));
@@ -216,8 +217,9 @@ contract PCSV3Executor01 is Executor {
     if (_amount1Decreased != 0) {
       PancakeV3Worker(_worker).transferToExecutor(address(_token1), _amount1Decreased);
       _repay(_vaultToken, address(_token1), _amount1Decreased);
-      // if there's remaining, swap to token0 and repay all
+
       uint256 _token1Balance = ERC20(_token1).balanceOf(address(this));
+      // if there's remaining, swap to token0 and repay all
       if (_token1Balance != 0) {
         _swap(PancakeV3Worker(_worker).pool(), false, int256(_token1Balance));
         _repay(_vaultToken, address(_token0), _token0.balanceOf(address(this)));
