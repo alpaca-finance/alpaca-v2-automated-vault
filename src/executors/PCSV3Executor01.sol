@@ -206,8 +206,9 @@ contract PCSV3Executor01 is Executor {
       // if there's remaining, swap to token1 and repay all
       _repay(_vaultToken, address(_token0), _amount0Decreased);
 
-      if (ERC20(_token0).balanceOf(address(this)) != 0) {
-        _swap(PancakeV3Worker(_worker).pool(), false, int256(_token0.balanceOf(address(this))));
+      uint256 _token0Balance = _token0.balanceOf(address(this));
+      if (_token0Balance != 0) {
+        _swap(PancakeV3Worker(_worker).pool(), false, int256(_token0Balance));
         _repay(_vaultToken, address(_token1), _token1.balanceOf(address(this)));
       }
     }
@@ -215,8 +216,9 @@ contract PCSV3Executor01 is Executor {
       PancakeV3Worker(_worker).transferToExecutor(address(_token1), _amount1Decreased);
       _repay(_vaultToken, address(_token1), _amount1Decreased);
       // if there's remaining, swap to token0 and repay all
-      if (ERC20(_token1).balanceOf(address(this)) != 0) {
-        _swap(PancakeV3Worker(_worker).pool(), false, int256(_token1.balanceOf(address(this))));
+      uint256 _token1Balance = ERC20(_token1).balanceOf(address(this));
+      if (_token1Balance != 0) {
+        _swap(PancakeV3Worker(_worker).pool(), false, int256(_token1Balance));
         _repay(_vaultToken, address(_token0), _token0.balanceOf(address(this)));
       }
     }
@@ -224,8 +226,11 @@ contract PCSV3Executor01 is Executor {
     emit LogDeleverage(_vaultToken, _positionBps);
   }
 
-  function _swap(ICommonV3Pool _pool, bool _zeroForOne, int256 amount) internal {
-    ICommonV3Pool(_pool).swap(
+  function _swap(ICommonV3Pool _pool, bool _zeroForOne, int256 amount)
+    internal
+    returns (int256 _amount0, int256 _amount1)
+  {
+    (_amount0, _amount1) = ICommonV3Pool(_pool).swap(
       address(this),
       _zeroForOne,
       amount, // negative = exact output
@@ -394,14 +399,8 @@ contract PCSV3Executor01 is Executor {
     // Swap
     uint256 _swapAmountOut;
     {
-      ICommonV3Pool _pool = PancakeV3Worker(_vars.worker).pool();
-      (int256 _amount0, int256 _amount1) = _pool.swap(
-        address(this),
-        _vars.zeroForOne,
-        int256(_borrowAmount), // positive = exact input
-        _vars.zeroForOne ? LibTickMath.MIN_SQRT_RATIO + 1 : LibTickMath.MAX_SQRT_RATIO - 1, // no price limit
-        abi.encode(address(_vars.token0), address(_vars.token1), _pool.fee())
-      );
+      (int256 _amount0, int256 _amount1) =
+        _swap(PancakeV3Worker(_vars.worker).pool(), _vars.zeroForOne, int256(_borrowAmount));
       _swapAmountOut = uint256(_vars.zeroForOne ? -_amount1 : -_amount0);
     }
 
