@@ -19,16 +19,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   */
   const PARAMS = [
     {
-      vaultTokenAddress: "0xb08eE41e88A2820cd572B4f2DFc459549790F2D7",
-      newCompressedCapacity: 1_500_000,
-    },
-    {
-      vaultTokenAddress: "0x8Ee3A53720ED344e7CBfAe63292c18E4183CCE8a",
-      newCompressedCapacity: 1_000_000,
-    },
-    {
       vaultTokenAddress: "0xdEBe96323D54d4D58F4bB526e58627Fb0651Bb00",
-      newCompressedCapacity: 1_000_000,
+      newCompressedCapacity: 3_000_000,
     },
   ];
 
