@@ -184,7 +184,8 @@ contract PCSV3Executor01 is Executor {
 
   /// @notice Decrease liquidity and repay debt
   /// @param _positionBps Basis Points to partial close lp in potision
-  function deleverage(address _worker, address _vaultToken, uint256 _positionBps) external onlyVaultManager {
+  function deleverage(address _vaultToken, uint256 _positionBps) external onlyVaultManager {
+    address _worker = _getCurrentWorker();
     uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
     if (_tokenId == 0) return;
 
