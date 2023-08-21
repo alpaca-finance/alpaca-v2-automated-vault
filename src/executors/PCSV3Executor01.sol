@@ -26,6 +26,7 @@ contract PCSV3Executor01 is Executor {
   error PCSV3Executor01_NotPool();
   error PCSV3Executor01_BadExposure();
   error PCSV3Executor01_TooLittleReceived();
+  error PCSV3Executor01_InvalidParams();
 
   event LogOnDeposit(address indexed _vaultToken, address indexed _worker, uint256 _amountIn0, uint256 _amountIn1);
   event LogOnWithdraw(
@@ -185,6 +186,9 @@ contract PCSV3Executor01 is Executor {
   /// @notice Decrease liquidity and repay debt
   /// @param _positionBps Basis Points to partial close lp position and transfer undeployed fund to executor for repay debt
   function deleverage(address _vaultToken, uint256 _positionBps) external onlyVaultManager {
+    if (_positionBps > 10000) {
+      revert PCSV3Executor01_InvalidParams();
+    }
     address _worker = _getCurrentWorker();
     ERC20 _token0 = PancakeV3Worker(_worker).token0();
     ERC20 _token1 = PancakeV3Worker(_worker).token1();
