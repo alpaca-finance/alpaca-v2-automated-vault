@@ -189,27 +189,22 @@ contract PCSV3Executor01 is Executor {
     ERC20 _token0 = PancakeV3Worker(_worker).token0();
     ERC20 _token1 = PancakeV3Worker(_worker).token1();
 
-    uint256 _amount0ToExecutor;
-    uint256 _amount1ToExecutor;
+    uint256 _amount0ToExecutor = (_token0.balanceOf(_worker) * _positionBps / 10000);
+    uint256 _amount1ToExecutor = (_token1.balanceOf(_worker) * _positionBps / 10000);
     {
-      uint256 _workerToken0Balance = _token0.balanceOf(_worker);
-      uint256 _workerToken1Balance = _token1.balanceOf(_worker);
-
-      uint256 _amount0Decreased;
-      uint256 _amount1Decreased;
-
       uint256 _tokenId = PancakeV3Worker(_worker).nftTokenId();
       // partial close lp positon
       if (_tokenId != 0) {
         (,,,,,,, uint128 _liquidity,,,,) = PancakeV3Worker(_worker).nftPositionManager().positions(_tokenId);
 
         if (_liquidity != 0) {
-          (_amount0Decreased, _amount1Decreased) =
+          (uint256 _amount0Decreased, uint256 _amount1Decreased) =
             PancakeV3Worker(_worker).decreasePosition(uint128(_liquidity * _positionBps / 10000));
+
+          _amount0ToExecutor += _amount0Decreased;
+          _amount1ToExecutor += _amount1Decreased;
         }
       }
-      _amount0ToExecutor = _amount0Decreased + (_workerToken0Balance * _positionBps / 10000);
-      _amount1ToExecutor = _amount1Decreased + (_workerToken1Balance * _positionBps / 10000);
     }
 
     // repay debt by executor floating balance.
@@ -223,19 +218,24 @@ contract PCSV3Executor01 is Executor {
       _repay(_vaultToken, address(_token1), _amount1ToExecutor);
     }
 
-    // if there's remaining token1Debt, swap token0 to token1 and repay all
-    (, uint256 _token1Debt) = bank.getVaultDebt(_vaultToken, address(_token1));
     uint256 _token0Balance = _token0.balanceOf(address(this));
-    if (_token1Debt != 0 && _token0Balance != 0) {
-      _swap(PancakeV3Worker(_worker).pool(), true, int256(_token0Balance));
-      _repay(_vaultToken, address(_token1), _token1.balanceOf(address(this)));
+    if (_token0Balance != 0) {
+      (, uint256 _token1Debt) = bank.getVaultDebt(_vaultToken, address(_token1));
+      // if there's remaining token1Debt, swap token0 to token1 and repay all
+      if (_token1Debt != 0) {
+        _swap(PancakeV3Worker(_worker).pool(), true, int256(_token0Balance));
+        _repay(_vaultToken, address(_token1), _token1.balanceOf(address(this)));
+      }
     }
-    // if there's remaining token0Debt, swap token1 to token0 and repay all
-    (, uint256 _token0Debt) = bank.getVaultDebt(_vaultToken, address(_token0));
+
     uint256 _token1Balance = _token1.balanceOf(address(this));
-    if (_token0Debt != 0 && _token1Balance != 0) {
-      _swap(PancakeV3Worker(_worker).pool(), false, int256(_token1Balance));
-      _repay(_vaultToken, address(_token0), _token0.balanceOf(address(this)));
+    if (_token1Balance != 0) {
+      (, uint256 _token0Debt) = bank.getVaultDebt(_vaultToken, address(_token0));
+      // if there's remaining token0Debt, swap token1 to token0 and repay all
+      if (_token0Debt != 0) {
+        _swap(PancakeV3Worker(_worker).pool(), false, int256(_token1Balance));
+        _repay(_vaultToken, address(_token0), _token0.balanceOf(address(this)));
+      }
     }
 
     emit LogDeleverage(_vaultToken, _positionBps);
