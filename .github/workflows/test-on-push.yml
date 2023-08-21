@@ -45,7 +45,7 @@ jobs:
 
       - name: Run Forge tests
         env:
-          BSC_RPC_URL: https://bsc-dataseed1.ninicoin.io/
+          BSC_RPC_URL: ${{secrets.BSC_RPC_URL}}
         run: |
           forge test -vvv
         id: test
