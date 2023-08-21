@@ -31,7 +31,7 @@
       },
       "executor01": {
         "proxy": "0x7B33803D350293b271080ea78bE9CB0395d6d7E1",
-        "implementation": "0xF7EBe7b0a55C45bc372404A0035A3E3E7baee90b"
+        "implementation": "0xC8cC9a125b0cDc6863Ca0f7541199B3bAd8E8c55"
       }
     },
     "vaults": [
