@@ -186,7 +186,7 @@ contract PCSV3Executor01 is Executor {
   /// @notice Decrease liquidity and repay debt
   /// @param _positionBps Basis Points to partial close lp position and transfer undeployed fund to executor for repay debt
   function deleverage(address _vaultToken, uint256 _positionBps) external onlyVaultManager {
-    if (_positionBps > 10000) {
+    if (_positionBps == 0 || _positionBps > 10000) {
       revert PCSV3Executor01_InvalidParams();
     }
     address _worker = _getCurrentWorker();
