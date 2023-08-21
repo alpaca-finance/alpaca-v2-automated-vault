@@ -18,7 +18,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   */
 
   const vaultTokenAddress = "0xb08eE41e88A2820cd572B4f2DFc459549790F2D7";
-  const withdrawalFeeBps = 30; // 0.3%
+  const withdrawalFeeBps = 0; // 0.3%
 
   const deployer = await getDeployer();
 
