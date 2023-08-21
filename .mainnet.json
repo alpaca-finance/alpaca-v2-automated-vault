@@ -1,5 +1,5 @@
 {
-  "proxyAdmin": "0x743a4c3f70C629a8BB27c8cf61651fc7BfC25c27",
+  "proxyAdmin": "0xdAb7a2cca461F88eedBadF448C3957Ff20Cea1a7",
   "performanceFeeBucket": "0x000110EFa9fcCBbbad103BFF2cFd6Fe70008Fb6A",
   "opMultiSig": "0x18F59e8dDDef9e000863082a37fc56a2a5475D01",
   "tokens": {
@@ -22,7 +22,7 @@
     },
     "bank": {
       "proxy": "0xD0dfE9277B1DB02187557eAeD7e25F74eF2DE8f3",
-      "implementation": "0xF790a2132551372C721f8711BBCA03482848BbaF"
+      "implementation": "0xcAF574235C488a9E0aBf968FE3F01C089108941B"
     },
     "pancakeV3Vault": {
       "vaultOracle": {
@@ -31,7 +31,7 @@
       },
       "executor01": {
         "proxy": "0x7B33803D350293b271080ea78bE9CB0395d6d7E1",
-        "implementation": "0x0F77E9f9cC8a9D2a9210a98AAAd2c9fc6E9dEcf4"
+        "implementation": "0xC8cC9a125b0cDc6863Ca0f7541199B3bAd8E8c55"
       }
     },
     "vaults": [
