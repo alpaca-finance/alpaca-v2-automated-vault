@@ -46,7 +46,7 @@ contract PCSV3Executor01DeleverageForkTest is BscFixture {
     _positionBps = bound(_positionBps, 1, 2500);
 
     bytes[] memory manageBytes = new bytes[](1);
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (L_USDTBNB_05_PCS1, _positionBps));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, ( _positionBps));
 
     (uint256 usdtDebtBefore, uint256 wbnbDebtBefore, uint256 debtRatioBefore) = getVaultDebtAndDebtRatio();
 
@@ -63,7 +63,7 @@ contract PCSV3Executor01DeleverageForkTest is BscFixture {
     (uint256 usdtDebtBefore, uint256 wbnbDebtBefore, uint256 debtRatioBefore) = getVaultDebtAndDebtRatio();
     bytes[] memory manageBytes = new bytes[](1);
     // patial close only 0.01%
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (L_USDTBNB_05_PCS1, 1));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, ( 1));
 
     vm.prank(manager);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
@@ -88,7 +88,7 @@ contract PCSV3Executor01DeleverageForkTest is BscFixture {
     (uint256 usdtDebtBefore, uint256 wbnbDebtBefore, uint256 debtRatioBefore) = getVaultDebtAndDebtRatio();
     bytes[] memory manageBytes = new bytes[](1);
     // patial close only 25% of positions
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (L_USDTBNB_05_PCS1, 2500));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, ( 2500));
 
     vm.prank(manager);
 
@@ -114,7 +114,7 @@ contract PCSV3Executor01DeleverageForkTest is BscFixture {
     (uint256 usdtDebtBefore, uint256 wbnbDebtBefore, uint256 debtRatioBefore) = getVaultDebtAndDebtRatio();
     bytes[] memory manageBytes = new bytes[](1);
     // patial close only 25% of positions
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (L_USDTBNB_05_PCS1, 2500));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, ( 2500));
 
     vm.prank(manager);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
@@ -132,23 +132,23 @@ contract PCSV3Executor01DeleverageForkTest is BscFixture {
 
     // decrease position multiple times
     bytes[] memory manageBytes = new bytes[](1);
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (L_USDTBNB_05_PCS1, 5000));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (5000));
     vm.prank(manager);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
 
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (L_USDTBNB_05_PCS1, 5000));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (5000));
     vm.prank(manager);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
 
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (L_USDTBNB_05_PCS1, 5000));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (5000));
     vm.prank(manager);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
 
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (L_USDTBNB_05_PCS1, 5000));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (5000));
     vm.prank(manager);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
 
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (L_USDTBNB_05_PCS1, 10000));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (10000));
     vm.prank(manager);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
 
@@ -175,7 +175,7 @@ contract PCSV3Executor01DeleverageForkTest is BscFixture {
 
     uint256 _partialCloseBps = 1000;
 
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (L_USDTBNB_05_PCS1, _partialCloseBps));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (_partialCloseBps));
     vm.prank(manager);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
 
@@ -191,7 +191,7 @@ contract PCSV3Executor01DeleverageForkTest is BscFixture {
 
   function testRevert_WhenDeleverage_MoreThanMaxBps_ShouldRevert() public {
     bytes[] memory manageBytes = new bytes[](1);
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (L_USDTBNB_05_PCS1, 10001));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (10001));
     vm.prank(manager);
     vm.expectRevert(abi.encodeWithSelector(PCSV3Executor01.PCSV3Executor01_InvalidParams.selector));
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);

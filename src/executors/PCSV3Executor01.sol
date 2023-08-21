@@ -185,10 +185,11 @@ contract PCSV3Executor01 is Executor {
 
   /// @notice Decrease liquidity and repay debt
   /// @param _positionBps Basis Points to partial close lp position and transfer undeployed fund to executor for repay debt
-  function deleverage(address _vaultToken, uint256 _positionBps) external onlyVaultManager {
+  function deleverage(uint256 _positionBps) external onlyVaultManager {
     if (_positionBps == 0 || _positionBps > 10000) {
       revert PCSV3Executor01_InvalidParams();
     }
+    address _vaultToken = _getCurrentVaultToken();
     address _worker = _getCurrentWorker();
     ERC20 _token0 = PancakeV3Worker(_worker).token0();
     ERC20 _token1 = PancakeV3Worker(_worker).token1();
