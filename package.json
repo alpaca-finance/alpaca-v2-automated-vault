@@ -27,6 +27,7 @@
     "exec:bsc_mainnet:automated-vault-manager:config:set-withdraw-fee": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags SetWithdrawalFeeBps",
     "exec:bsc_mainnet:automated-vault-manager:config:set-vault-manager": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags SetVaultManager",
     "exec:bsc_mainnet:automated-vault-manager:config:set-tolerance-bps": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags SetToleranceBps",
+    "exec:bsc_mainnet:automated-vault-manager:config:set-max-leverage": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags SetMaxLeverage",
     "exec:bsc_mainnet:bank:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags BankDeploy",
     "exec:bsc_mainnet:bank:upgrade": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags BankUpgrade",
     "exec:bsc_mainnet:pcs-v3-vault-oracle:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3VaultOracleDeploy",
