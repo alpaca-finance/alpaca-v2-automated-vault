@@ -26,7 +26,6 @@ contract PCSV3Executor01 is Executor {
   error PCSV3Executor01_NotPool();
   error PCSV3Executor01_BadExposure();
   error PCSV3Executor01_TooLittleReceived();
-  error PCSV3Executor01_InvalidParams();
 
   event LogOnDeposit(address indexed _vaultToken, address indexed _worker, uint256 _amountIn0, uint256 _amountIn1);
   event LogOnWithdraw(
@@ -61,6 +60,9 @@ contract PCSV3Executor01 is Executor {
   event LogSetRepurchaseSlippage(uint16 _repurchaseSlippageBps);
   event LogSetVaultOracle(address _vaultOracle);
   event LogDeleverage(address indexed _vaultToken, uint256 _positionBps);
+  event LogSwap(
+    address indexed _vaultToken, address _tokenIn, address _tokenOut, uint256 _amountIn, uint256 _amountOut
+  );
 
   PancakeV3VaultOracle public vaultOracle;
   uint16 public repurchaseSlippageBps;
@@ -187,7 +189,7 @@ contract PCSV3Executor01 is Executor {
   /// @param _positionBps Basis Points to partial close lp position and transfer undeployed fund to executor for repay debt
   function deleverage(uint256 _positionBps) external onlyVaultManager {
     if (_positionBps == 0 || _positionBps > 10000) {
-      revert PCSV3Executor01_InvalidParams();
+      revert Executor_InvalidParams();
     }
     address _vaultToken = _getCurrentVaultToken();
     address _worker = _getCurrentWorker();
@@ -456,6 +458,96 @@ contract PCSV3Executor01 is Executor {
     uint256 _actualRepayAmount = _repay(_vars.vaultToken, _vars.repayToken, _swapAmountOut);
 
     emit LogRepurchase(_vars.vaultToken, _borrowToken, _borrowAmount, _actualRepayAmount);
+  }
+
+  struct SwapLocalVars {
+    address vaultToken;
+    address worker;
+    ERC20 token0;
+    ERC20 token1;
+    bool zeroForOne;
+    address tokenOut;
+    bool increaseExposure;
+  }
+
+  /// @notice Adjust vault exposure by swap to another token.
+  /// @param _tokenIn Token to swap.
+  /// @param _amountIn Amount to swap.
+  /// @param _swapAndRepay Flag for repay tokenOut after swap.
+  function swap(address _tokenIn, uint256 _amountIn, bool _swapAndRepay) external onlyVaultManager {
+    SwapLocalVars memory _vars;
+
+    // Check
+    _vars.vaultToken = _getCurrentVaultToken();
+    _vars.worker = _getCurrentWorker();
+    _vars.token0 = PancakeV3Worker(_vars.worker).token0();
+    _vars.token1 = PancakeV3Worker(_vars.worker).token1();
+    if (_tokenIn == address(_vars.token0)) {
+      _vars.zeroForOne = true;
+      _vars.tokenOut = address(_vars.token1);
+      _vars.increaseExposure = PancakeV3Worker(_vars.worker).isToken0Base();
+    } else if (_tokenIn == address(_vars.token1)) {
+      _vars.zeroForOne = false;
+      _vars.tokenOut = address(_vars.token0);
+      _vars.increaseExposure = !PancakeV3Worker(_vars.worker).isToken0Base();
+    } else {
+      revert Executor_InvalidParams();
+    }
+
+    int256 _exposureBefore = vaultOracle.getExposure(_vars.vaultToken, _vars.worker)
+      + int256(_vars.increaseExposure ? _vars.token1.balanceOf(address(this)) : _vars.token0.balanceOf(address(this)));
+    // Swap not allow if exposure already 0
+    if (_exposureBefore == 0) {
+      revert PCSV3Executor01_BadExposure();
+    }
+
+    PancakeV3Worker(_vars.worker).transferToExecutor(_tokenIn, _amountIn);
+
+    // Swap
+    uint256 _swapAmountOut;
+    {
+      (int256 _amount0, int256 _amount1) =
+        _swap(PancakeV3Worker(_vars.worker).pool(), _vars.zeroForOne, int256(_amountIn));
+      _swapAmountOut = uint256(_vars.zeroForOne ? -_amount1 : -_amount0);
+    }
+
+    // Check slippage, compare with oracle prices
+    {
+      uint256 _expectedAmountOut = _amountIn * vaultOracle.getTokenPrice(_tokenIn)
+        * (10 ** ERC20(_vars.tokenOut).decimals())
+        / (vaultOracle.getTokenPrice(_vars.tokenOut) * (10 ** ERC20(_tokenIn).decimals()));
+
+      if (_swapAmountOut * MAX_BPS < _expectedAmountOut * (MAX_BPS - repurchaseSlippageBps)) {
+        revert PCSV3Executor01_TooLittleReceived();
+      }
+    }
+
+    // Check vault delta exposure
+    {
+      // If tokenIn is base, then delta exposure is swapAmountOut
+      // If tokenIn is not base, then delta exposure is -_amountIn
+      int256 _deltaExposure = _vars.increaseExposure ? int256(_swapAmountOut) : -int256(_amountIn);
+
+      // Revert if resulting exposure deviate further from 0 or causing exposure to flip sign
+      // Current exposure is long, can't make it longer or flip to short
+      if (_exposureBefore > 0 && (_deltaExposure > 0 || _exposureBefore + _deltaExposure < 0)) {
+        revert PCSV3Executor01_BadExposure();
+      }
+      // Current exposure is short, can't make it shorter or flip to long
+      if (_exposureBefore < 0 && (_deltaExposure < 0 || _exposureBefore + _deltaExposure > 0)) {
+        revert PCSV3Executor01_BadExposure();
+      }
+    }
+
+    // repay immediately after swap
+    if (_swapAndRepay) {
+      _repay(_vars.vaultToken, _vars.tokenOut, _swapAmountOut);
+    }
+
+    // sweep remaining tokenOut to worker for furthur actions
+    _sweepTo(ERC20(_vars.tokenOut), _vars.worker);
+
+    emit LogSwap(_vars.vaultToken, _tokenIn, _vars.tokenOut, _amountIn, _swapAmountOut);
   }
 
   function pancakeV3SwapCallback(int256 _amount0Delta, int256 _amount1Delta, bytes calldata _data) external {
