@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import { PCSV3Executor01 } from "src/executors/PCSV3Executor01.sol";
+import { PCSV3Executor01, Executor } from "src/executors/PCSV3Executor01.sol";
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
 import { PancakeV3VaultOracle } from "src/oracles/PancakeV3VaultOracle.sol";
 import { Bank } from "src/Bank.sol";
@@ -46,7 +46,7 @@ contract PCSV3Executor01DeleverageForkTest is BscFixture {
     _positionBps = bound(_positionBps, 1, 2500);
 
     bytes[] memory manageBytes = new bytes[](1);
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, ( _positionBps));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (_positionBps));
 
     (uint256 usdtDebtBefore, uint256 wbnbDebtBefore, uint256 debtRatioBefore) = getVaultDebtAndDebtRatio();
 
@@ -63,7 +63,7 @@ contract PCSV3Executor01DeleverageForkTest is BscFixture {
     (uint256 usdtDebtBefore, uint256 wbnbDebtBefore, uint256 debtRatioBefore) = getVaultDebtAndDebtRatio();
     bytes[] memory manageBytes = new bytes[](1);
     // patial close only 0.01%
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, ( 1));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (1));
 
     vm.prank(manager);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
@@ -88,7 +88,7 @@ contract PCSV3Executor01DeleverageForkTest is BscFixture {
     (uint256 usdtDebtBefore, uint256 wbnbDebtBefore, uint256 debtRatioBefore) = getVaultDebtAndDebtRatio();
     bytes[] memory manageBytes = new bytes[](1);
     // patial close only 25% of positions
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, ( 2500));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (2500));
 
     vm.prank(manager);
 
@@ -114,7 +114,7 @@ contract PCSV3Executor01DeleverageForkTest is BscFixture {
     (uint256 usdtDebtBefore, uint256 wbnbDebtBefore, uint256 debtRatioBefore) = getVaultDebtAndDebtRatio();
     bytes[] memory manageBytes = new bytes[](1);
     // patial close only 25% of positions
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, ( 2500));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (2500));
 
     vm.prank(manager);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
@@ -193,7 +193,7 @@ contract PCSV3Executor01DeleverageForkTest is BscFixture {
     bytes[] memory manageBytes = new bytes[](1);
     manageBytes[0] = abi.encodeCall(PCSV3Executor01.deleverage, (10001));
     vm.prank(manager);
-    vm.expectRevert(abi.encodeWithSelector(PCSV3Executor01.PCSV3Executor01_InvalidParams.selector));
+    vm.expectRevert(abi.encodeWithSelector(Executor.Executor_InvalidParams.selector));
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
   }
 
