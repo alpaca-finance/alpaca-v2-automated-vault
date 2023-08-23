@@ -45,7 +45,7 @@ contract PCSV3Executor01SwapForkTest is BscFixture {
 
   function testRevert_WhenSwapWithInvalidtoken_ShouldRevert() external {
     bytes[] memory manageBytes = new bytes[](1);
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(1), 10 ether));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(1), 10 ether, false));
 
     vm.prank(manager);
     vm.expectRevert(Executor.Executor_InvalidParams.selector);
@@ -55,7 +55,7 @@ contract PCSV3Executor01SwapForkTest is BscFixture {
   function testRevert_WhenSwapWithMoreThanWorkerBalance_ShouldRevert() external {
     uint256 _wbnbWorkerBalance = wbnb.balanceOf(L_USDTBNB_05_PCS1_WORKER);
     bytes[] memory manageBytes = new bytes[](1);
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(wbnb), _wbnbWorkerBalance + 100 ether));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(wbnb), _wbnbWorkerBalance + 100 ether, false));
 
     vm.prank(manager);
     vm.expectRevert();
@@ -66,7 +66,7 @@ contract PCSV3Executor01SwapForkTest is BscFixture {
     int256 exposure = oracle.getExposure(L_USDTBNB_05_PCS1, L_USDTBNB_05_PCS1_WORKER);
     assertLe(exposure, 0);
     bytes[] memory manageBytes = new bytes[](1);
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(usdt), 10 ether));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(usdt), 10 ether, false));
 
     vm.prank(manager);
     vm.expectRevert(PCSV3Executor01.PCSV3Executor01_BadExposure.selector);
@@ -89,7 +89,7 @@ contract PCSV3Executor01SwapForkTest is BscFixture {
 
     deal(address(wbnb), address(L_USDTBNB_05_PCS1_WORKER), 10 ether);
     bytes[] memory manageBytes = new bytes[](1);
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(wbnb), 10 ether));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(wbnb), 10 ether, false));
 
     vm.prank(manager);
     vm.expectRevert(PCSV3Executor01.PCSV3Executor01_BadExposure.selector);
@@ -102,7 +102,7 @@ contract PCSV3Executor01SwapForkTest is BscFixture {
     int256 exposure = oracle.getExposure(L_USDTBNB_05_PCS1, L_USDTBNB_05_PCS1_WORKER);
     assertGt(exposure, 0);
     bytes[] memory manageBytes = new bytes[](1);
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(wbnb), 2 ether));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(wbnb), 2 ether, false));
 
     vm.prank(manager);
     vm.expectRevert(PCSV3Executor01.PCSV3Executor01_BadExposure.selector);
@@ -115,7 +115,7 @@ contract PCSV3Executor01SwapForkTest is BscFixture {
     int256 exposure = oracle.getExposure(L_USDTBNB_05_PCS1, L_USDTBNB_05_PCS1_WORKER);
     assertGt(exposure, 0);
     bytes[] memory manageBytes = new bytes[](1);
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(usdt), 100 ether));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(usdt), 100 ether, false));
 
     vm.prank(manager);
     vm.expectRevert(PCSV3Executor01.PCSV3Executor01_BadExposure.selector);
@@ -127,12 +127,59 @@ contract PCSV3Executor01SwapForkTest is BscFixture {
     assertLe(exposureBefore, 0);
 
     bytes[] memory manageBytes = new bytes[](1);
-    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(wbnb), 10 ether));
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(wbnb), 10 ether, false));
 
     vm.prank(manager);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
 
     int256 exposureAfter = oracle.getExposure(L_USDTBNB_05_PCS1, L_USDTBNB_05_PCS1_WORKER);
     assertGt(exposureAfter, exposureBefore);
+  }
+
+  function testRevert_WhenExposureBeforeIsNegative_AfterSwap_TooLittleReceivedTokenOut_ShouldRevert() external {
+    // set very low slippage
+    vm.prank(0xC44f82b07Ab3E691F826951a6E335E1bC1bB0B51);
+    executor.setRepurchaseSlippageBps(1);
+
+    bytes[] memory manageBytes = new bytes[](1);
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(wbnb), 1000 ether, false));
+
+    vm.prank(manager);
+    vm.expectRevert(PCSV3Executor01.PCSV3Executor01_TooLittleReceived.selector);
+    avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
+
+  }
+
+  function testCorrectness_WhenSwapAndRepay_TokenOutDebtShouldDecrease() external {
+    (, uint256 usdtDebtBefore) = bank.getVaultDebt(L_USDTBNB_05_PCS1, address(usdt));
+
+    // swap wbnb to usdt and repay
+    bytes[] memory manageBytes = new bytes[](1);
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(wbnb), 100 ether, true));
+
+    vm.prank(manager);
+    avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
+
+    (,uint256 usdtDebtAfter) = bank.getVaultDebt(L_USDTBNB_05_PCS1, address(usdt));
+
+    assertLt(usdtDebtAfter,usdtDebtBefore);
+
+  }
+
+  function testCorrrectness_WhenSwapWithOutRepay_TokenOutShouldBeSweepToWorker_ShouldWork() external {
+    uint256 _usdtWorkerBalanceBefore = usdt.balanceOf(L_USDTBNB_05_PCS1_WORKER);
+
+    // swap wbnb to usdt and repay
+    bytes[] memory manageBytes = new bytes[](3);
+    // transfer all usdt from worker to executor
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.transferFromWorker, (address(usdt), _usdtWorkerBalanceBefore));
+    // swap some wbnb to usdt without repay debt
+    manageBytes[1] = abi.encodeCall(PCSV3Executor01.swap, (address(wbnb), 1 ether, false));
+    // transfer usdt from worker to executor again with extra usdt
+    manageBytes[2] = abi.encodeCall(PCSV3Executor01.transferFromWorker, (address(usdt), _usdtWorkerBalanceBefore + 100 ether));
+
+    vm.prank(manager);
+    avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
+
   }
 }

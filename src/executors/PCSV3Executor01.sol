@@ -473,7 +473,8 @@ contract PCSV3Executor01 is Executor {
   /// @notice Adjust vault exposure by swap to another token.
   /// @param _tokenIn Token to swap.
   /// @param _amountIn Amount to swap.
-  function swap(address _tokenIn, uint256 _amountIn) external onlyVaultManager {
+  /// @param _swapAndRepay Flag for repay tokenOut after swap.
+  function swap(address _tokenIn, uint256 _amountIn, bool _swapAndRepay) external onlyVaultManager {
     SwapLocalVars memory _vars;
 
     // Check
@@ -537,6 +538,14 @@ contract PCSV3Executor01 is Executor {
         revert PCSV3Executor01_BadExposure();
       }
     }
+
+    // repay immediately after swap
+    if(_swapAndRepay){
+      _repay(_vars.vaultToken, _vars.tokenOut,_swapAmountOut);
+    }
+
+    // sweep remaining tokenOut to worker for furthur actions
+    _sweepTo(ERC20(_vars.tokenOut), _vars.worker);
 
     emit LogSwap(_vars.vaultToken, _tokenIn, _vars.tokenOut, _amountIn, _swapAmountOut);
   }
