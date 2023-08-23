@@ -495,7 +495,7 @@ contract PCSV3Executor01 is Executor {
 
     int256 _exposureBefore = vaultOracle.getExposure(_vars.vaultToken, _vars.worker)
       + int256(_vars.increaseExposure ? _vars.token1.balanceOf(address(this)) : _vars.token0.balanceOf(address(this)));
-    // No repurchase if exposure already 0
+    // Swap not allow if exposure already 0
     if (_exposureBefore == 0) {
       revert PCSV3Executor01_BadExposure();
     }
@@ -523,8 +523,8 @@ contract PCSV3Executor01 is Executor {
 
     // Check vault delta exposure
     {
-      // If borrow token is base, then delta exposure is swapAmountOut (repay volatile token with swapAmountOut, increasing exposure)
-      // If borrow token is not base, then delta exposure is -borrowAmount (borrow volatile token, reducing exposure)
+      // If tokenIn is base, then delta exposure is swapAmountOut
+      // If tokenIn is not base, then delta exposure is -_amountIn
       int256 _deltaExposure = _vars.increaseExposure ? int256(_swapAmountOut) : -int256(_amountIn);
 
       // Revert if resulting exposure deviate further from 0 or causing exposure to flip sign
