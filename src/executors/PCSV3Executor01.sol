@@ -540,8 +540,8 @@ contract PCSV3Executor01 is Executor {
     }
 
     // repay immediately after swap
-    if(_swapAndRepay){
-      _repay(_vars.vaultToken, _vars.tokenOut,_swapAmountOut);
+    if (_swapAndRepay) {
+      _repay(_vars.vaultToken, _vars.tokenOut, _swapAmountOut);
     }
 
     // sweep remaining tokenOut to worker for furthur actions

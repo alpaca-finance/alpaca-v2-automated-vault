@@ -147,7 +147,6 @@ contract PCSV3Executor01SwapForkTest is BscFixture {
     vm.prank(manager);
     vm.expectRevert(PCSV3Executor01.PCSV3Executor01_TooLittleReceived.selector);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
-
   }
 
   function testCorrectness_WhenSwapAndRepay_TokenOutDebtShouldDecrease() external {
@@ -160,10 +159,9 @@ contract PCSV3Executor01SwapForkTest is BscFixture {
     vm.prank(manager);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
 
-    (,uint256 usdtDebtAfter) = bank.getVaultDebt(L_USDTBNB_05_PCS1, address(usdt));
+    (, uint256 usdtDebtAfter) = bank.getVaultDebt(L_USDTBNB_05_PCS1, address(usdt));
 
-    assertLt(usdtDebtAfter,usdtDebtBefore);
-
+    assertLt(usdtDebtAfter, usdtDebtBefore);
   }
 
   function testCorrrectness_WhenSwapWithOutRepay_TokenOutShouldBeSweepToWorker_ShouldWork() external {
@@ -176,10 +174,10 @@ contract PCSV3Executor01SwapForkTest is BscFixture {
     // swap some wbnb to usdt without repay debt
     manageBytes[1] = abi.encodeCall(PCSV3Executor01.swap, (address(wbnb), 1 ether, false));
     // transfer usdt from worker to executor again with extra usdt
-    manageBytes[2] = abi.encodeCall(PCSV3Executor01.transferFromWorker, (address(usdt), _usdtWorkerBalanceBefore + 100 ether));
+    manageBytes[2] =
+      abi.encodeCall(PCSV3Executor01.transferFromWorker, (address(usdt), _usdtWorkerBalanceBefore + 100 ether));
 
     vm.prank(manager);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
-
   }
 }
