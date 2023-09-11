@@ -47,12 +47,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const REWARD_FEE_PERFORMANCE = 1500;
   const PERFORMANCE_FEE_BUCKER = config.performanceFeeBucket;
   const CAKE_TO_TOKEN0_PATH = ethers.utils.solidityPack(
-    ["address", "uint24", "address"],
-    [config.tokens.cake, 500, config.tokens.wbnb]
-  );
-  const CAKE_TO_TOKEN1_PATH = ethers.utils.solidityPack(
     ["address", "uint24", "address", "uint24", "address"],
     [config.tokens.cake, 500, config.tokens.wbnb, 500, config.tokens.btcb]
+  );
+
+  const CAKE_TO_TOKEN1_PATH = ethers.utils.solidityPack(
+    ["address", "uint24", "address"],
+    [config.tokens.cake, 500, config.tokens.wbnb]
   );
 
   const POOL_ADDRESS = await pancakeV3Factory.getPool(BASE_TOKEN, OTHER_TOKEN, POOL_FEE);
