@@ -29,10 +29,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   Check all variables below before execute the deployment script
   */
 
-  const NAME = "Saving BTCB-ETH 25 PCS1";
-  const SYMBOL = "L-BTCBETH25-PCS1";
+  const NAME = "Saving BTCB-BNB 05 PCS1";
+  const SYMBOL = "L-BTCBBNB05-PCS1";
   const param: OpenVaultParams = {
-    worker: "0xC5978748e0812744F9E7ef9aEB30548C7cE7ED6f",
+    worker: "0xA6E0f790D2106ff336219C221a435b9154e28Fef",
     vaultOracle: config.automatedVault.pancakeV3Vault.vaultOracle.proxy,
     executor: config.automatedVault.pancakeV3Vault.executor01.proxy,
     compressedMinimumDeposit: 5000, // 50 USD
@@ -40,10 +40,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     managementFeePerSec: 634195840, // 2% per year
     withdrawalFeeBps: 30, // 0.3%
     toleranceBps: 9975, // inverse 25 bps
-    maxLeverage: 8,
+    maxLeverage: 6,
   };
-  const VAULT_MANAGER = "0x6EB9bC094CC57e56e91f3bec4BFfe7D9B1802e38";
-  const INVEST_TOKEN = config.tokens.eth;
+  const VAULT_MANAGER = ["0x6EB9bC094CC57e56e91f3bec4BFfe7D9B1802e38", "0xe45216Ac4816A5Ec5378B1D13dE8aA9F262ce9De"];
+  const INVEST_TOKEN = config.tokens.wbnb;
 
   console.log("Open Vault param", param);
 
@@ -54,10 +54,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     deployer
   );
   const ops = isFork() ? { gasLimit: 2000000 } : {};
+  let nonce = await deployer.getTransactionCount();
 
   const newVaultToken = await automatedVaultManager.callStatic.openVault(NAME, SYMBOL, param, ops);
 
-  const openVaultTx = await automatedVaultManager.openVault(NAME, SYMBOL, param, ops);
+  const openVaultTx = await automatedVaultManager.openVault(NAME, SYMBOL, param, { ...ops, nonce: nonce++ });
   const openVaultReceipt = await openVaultTx.wait();
 
   if (openVaultReceipt.status === 1) {
@@ -72,12 +73,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
 
     console.log("> Setting Allow Token ...");
-    const setAllowTokenTx = await automatedVaultManager.setAllowToken(newVaultToken, INVEST_TOKEN, true);
+    const setAllowTokenTx = await automatedVaultManager.setAllowToken(newVaultToken, INVEST_TOKEN, true, {
+      ...ops,
+      nonce: nonce++,
+    });
     console.log(`> 🟢 Done Setting Allow Token: ${setAllowTokenTx.hash}`);
 
     console.log("> Setting Vault Manager ...");
-    const setVaultManagetTx = await automatedVaultManager.setVaultManager(newVaultToken, VAULT_MANAGER, true);
-    console.log(`> 🟢 Done Setting Vault Manager: ${setVaultManagetTx.hash}`);
+    const setManagerTxs = await Promise.all(
+      VAULT_MANAGER.map((manager) =>
+        automatedVaultManager.setVaultManager(newVaultToken, manager, true, { ...ops, nonce: nonce++ })
+      )
+    );
+
+    console.log(`> 🟢 Done Setting Vault Manager}`);
   }
 };
 
