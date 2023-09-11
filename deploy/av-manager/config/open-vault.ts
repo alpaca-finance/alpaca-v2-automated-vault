@@ -43,7 +43,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     maxLeverage: 6,
   };
   const VAULT_MANAGER = ["0x6EB9bC094CC57e56e91f3bec4BFfe7D9B1802e38", "0xe45216Ac4816A5Ec5378B1D13dE8aA9F262ce9De"];
-  const INVEST_TOKEN = config.tokens.cake;
+  const INVEST_TOKEN = config.tokens.wbnb;
 
   console.log("Open Vault param", param);
 
