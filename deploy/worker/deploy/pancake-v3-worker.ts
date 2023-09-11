@@ -40,15 +40,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   Check all variables below before execute the deployment script
   */
 
-  const POOL_FEE = 2500;
-  const BASE_TOKEN = config.tokens.eth;
+  const POOL_FEE = 500;
+  const BASE_TOKEN = config.tokens.wbnb;
   const OTHER_TOKEN = config.tokens.btcb;
   const TRADING_FEE_PERFORMANCE = 1500;
   const REWARD_FEE_PERFORMANCE = 1500;
   const PERFORMANCE_FEE_BUCKER = config.performanceFeeBucket;
   const CAKE_TO_TOKEN0_PATH = ethers.utils.solidityPack(
-    ["address", "uint24", "address", "uint24", "address"],
-    [config.tokens.cake, 500, config.tokens.wbnb, 500, config.tokens.eth]
+    ["address", "uint24", "address"],
+    [config.tokens.cake, 500, config.tokens.wbnb]
   );
   const CAKE_TO_TOKEN1_PATH = ethers.utils.solidityPack(
     ["address", "uint24", "address", "uint24", "address"],
