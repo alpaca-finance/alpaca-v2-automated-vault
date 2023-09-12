@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 // dependencies
 import { ERC20 } from "@solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "@solmate/utils/SafeTransferLib.sol";
+import { SafeCastUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/math/SafeCastUpgradeable.sol";
 
 // contracts
 import { PancakeV3Worker } from "src/workers/PancakeV3Worker.sol";
@@ -22,6 +23,7 @@ import { MAX_BPS } from "src/libraries/Constants.sol";
 
 contract PCSV3Executor01 is Executor {
   using SafeTransferLib for ERC20;
+  using SafeCastUpgradeable for uint256;
 
   error PCSV3Executor01_NotPool();
   error PCSV3Executor01_BadExposure();
@@ -225,12 +227,16 @@ contract PCSV3Executor01 is Executor {
       _repay(_vaultToken, address(_token1), _amount1ToExecutor);
     }
 
+    // note: In deleverage process, we prioritize availability of swap function rather than slippage
+    // as we don't want to get reverted during the process
+    // Moreover, there will be an equity loss check at the very end of Vault Management process
+    // thus, we can neglect the slippage during the below swap
     uint256 _token0Balance = _token0.balanceOf(address(this));
     if (_token0Balance != 0) {
       (, uint256 _token1Debt) = bank.getVaultDebt(_vaultToken, address(_token1));
       // if there's remaining token1Debt, swap token0 to token1 and repay all
       if (_token1Debt != 0) {
-        _swap(PancakeV3Worker(_worker).pool(), true, int256(_token0Balance));
+        _swap(PancakeV3Worker(_worker).pool(), true, _token0Balance.toInt256());
         _repay(_vaultToken, address(_token1), _token1.balanceOf(address(this)));
       }
     }
@@ -240,7 +246,7 @@ contract PCSV3Executor01 is Executor {
       (, uint256 _token0Debt) = bank.getVaultDebt(_vaultToken, address(_token0));
       // if there's remaining token0Debt, swap token1 to token0 and repay all
       if (_token0Debt != 0) {
-        _swap(PancakeV3Worker(_worker).pool(), false, int256(_token1Balance));
+        _swap(PancakeV3Worker(_worker).pool(), false, _token1Balance.toInt256());
         _repay(_vaultToken, address(_token0), _token0.balanceOf(address(this)));
       }
     }
@@ -281,7 +287,7 @@ contract PCSV3Executor01 is Executor {
       _swap(
         PancakeV3Worker(_worker).pool(),
         address(_otherToken) < address(_repayToken),
-        -int256(_repayAmount - _repayTokenBalance)
+        -(_repayAmount - _repayTokenBalance).toInt256()
       );
     }
 
@@ -409,7 +415,7 @@ contract PCSV3Executor01 is Executor {
     }
 
     int256 _exposureBefore = vaultOracle.getExposure(_vars.vaultToken, _vars.worker)
-      + int256(_vars.increaseExposure ? _vars.token1.balanceOf(address(this)) : _vars.token0.balanceOf(address(this)));
+      + (_vars.increaseExposure ? _vars.token1.balanceOf(address(this)) : _vars.token0.balanceOf(address(this))).toInt256();
     // No repurchase if exposure already 0
     if (_exposureBefore == 0) {
       revert PCSV3Executor01_BadExposure();
@@ -422,7 +428,7 @@ contract PCSV3Executor01 is Executor {
     uint256 _swapAmountOut;
     {
       (int256 _amount0, int256 _amount1) =
-        _swap(PancakeV3Worker(_vars.worker).pool(), _vars.zeroForOne, int256(_borrowAmount));
+        _swap(PancakeV3Worker(_vars.worker).pool(), _vars.zeroForOne, _borrowAmount.toInt256());
       _swapAmountOut = uint256(_vars.zeroForOne ? -_amount1 : -_amount0);
     }
 
@@ -441,7 +447,7 @@ contract PCSV3Executor01 is Executor {
     {
       // If borrow token is base, then delta exposure is swapAmountOut (repay volatile token with swapAmountOut, increasing exposure)
       // If borrow token is not base, then delta exposure is -borrowAmount (borrow volatile token, reducing exposure)
-      int256 _deltaExposure = _vars.increaseExposure ? int256(_swapAmountOut) : -int256(_borrowAmount);
+      int256 _deltaExposure = _vars.increaseExposure ? _swapAmountOut.toInt256() : -_borrowAmount.toInt256();
 
       // Revert if resulting exposure deviate further from 0 or causing exposure to flip sign
       // Current exposure is long, can't make it longer or flip to short
@@ -495,7 +501,7 @@ contract PCSV3Executor01 is Executor {
     }
 
     int256 _exposureBefore = vaultOracle.getExposure(_vars.vaultToken, _vars.worker)
-      + int256(_vars.increaseExposure ? _vars.token1.balanceOf(address(this)) : _vars.token0.balanceOf(address(this)));
+      + (_vars.increaseExposure ? _vars.token1.balanceOf(address(this)) : _vars.token0.balanceOf(address(this))).toInt256();
     // Swap not allow if exposure already 0
     if (_exposureBefore == 0) {
       revert PCSV3Executor01_BadExposure();
@@ -507,7 +513,7 @@ contract PCSV3Executor01 is Executor {
     uint256 _swapAmountOut;
     {
       (int256 _amount0, int256 _amount1) =
-        _swap(PancakeV3Worker(_vars.worker).pool(), _vars.zeroForOne, int256(_amountIn));
+        _swap(PancakeV3Worker(_vars.worker).pool(), _vars.zeroForOne, _amountIn.toInt256());
       _swapAmountOut = uint256(_vars.zeroForOne ? -_amount1 : -_amount0);
     }
 
@@ -526,7 +532,7 @@ contract PCSV3Executor01 is Executor {
     {
       // If tokenIn is base, then delta exposure is swapAmountOut
       // If tokenIn is not base, then delta exposure is -_amountIn
-      int256 _deltaExposure = _vars.increaseExposure ? int256(_swapAmountOut) : -int256(_amountIn);
+      int256 _deltaExposure = _vars.increaseExposure ? _swapAmountOut.toInt256() : -_amountIn.toInt256();
 
       // Revert if resulting exposure deviate further from 0 or causing exposure to flip sign
       // Current exposure is long, can't make it longer or flip to short
