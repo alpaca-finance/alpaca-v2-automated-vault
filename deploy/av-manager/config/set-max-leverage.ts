@@ -20,7 +20,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const PARAMS = [
     {
       vaultTokenAddress: "0xb08eE41e88A2820cd572B4f2DFc459549790F2D7",
-      newMaxLeverage: 10,
+      newMaxLeverage: 8,
     },
   ];
 
