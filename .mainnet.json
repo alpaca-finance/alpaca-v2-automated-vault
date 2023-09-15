@@ -66,6 +66,14 @@
         "worker": "0xC5978748e0812744F9E7ef9aEB30548C7cE7ED6f",
         "token0": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
         "token1": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c"
+      },
+      {
+        "name": "Saving BTCB-BNB 05 PCS1",
+        "symbol": "L-BTCBBNB05-PCS1",
+        "vaultToken": "0xd99386173CF5A93d83d1958e985f361696A75A3e",
+        "worker": "0x69a86538419eA54E13b85235c19752FD6122BC85",
+        "token0": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+        "token1": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
       }
     ]
   },
