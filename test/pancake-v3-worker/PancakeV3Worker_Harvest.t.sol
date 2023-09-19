@@ -270,4 +270,27 @@ contract PancakeV3WorkerHarvestTest is PancakeV3WorkerFixture {
       "4"
     );
   }
+
+  function testCorrentness_Harvest_WhenPositionLiquidityIsZero_ShouldWork() external {
+    _setUpCAKEUSDTVault();
+
+    // Increase position by 100 TKN0 and 100 TKN1
+    deal(address(token0), address(worker), 100 ether);
+    deal(address(token1), address(worker), 100 ether);
+    // Current tick 12379, tickSpacing = 50
+    vm.startPrank(IN_SCOPE_EXECUTOR);
+    worker.openPosition(12000, 12400, 100 ether, 100 ether);
+
+    (,,,,,,, uint128 _liquidity,,,,) = worker.nftPositionManager().positions(worker.nftTokenId());
+
+    // remove all position's liquidity
+    worker.decreasePosition(_liquidity);
+
+    vm.stopPrank();
+
+    // warp 
+    vm.warp(block.timestamp + 1);
+    // harvest should not revert
+    worker.harvest();
+  }
 }
