@@ -32,7 +32,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const NAME = "Saving BTCB-BNB 05 PCS1";
   const SYMBOL = "L-BTCBBNB05-PCS1";
   const param: OpenVaultParams = {
-    worker: "0xA6E0f790D2106ff336219C221a435b9154e28Fef",
+    worker: "0x69a86538419eA54E13b85235c19752FD6122BC85",
     vaultOracle: config.automatedVault.pancakeV3Vault.vaultOracle.proxy,
     executor: config.automatedVault.pancakeV3Vault.executor01.proxy,
     compressedMinimumDeposit: 5000, // 50 USD
