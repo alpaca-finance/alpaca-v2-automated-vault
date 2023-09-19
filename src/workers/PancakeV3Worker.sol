@@ -487,7 +487,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     uint256 _nftTokenId = nftTokenId;
     // If tokenId is 0, then nothing to harvest
     if (_nftTokenId == 0) return;
-    // If liquidity is 0 but position is not close, return to prevent revent on harvest
+    // If liquidity is 0 but position is not close, return to prevent revert on harvest
     if (masterChef.userPositionInfos(_nftTokenId).liquidity == 0) return;
 
     HarvestFeeLocalVars memory _vars;
