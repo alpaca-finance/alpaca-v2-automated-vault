@@ -484,11 +484,13 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     if (block.timestamp == lastHarvest) return;
     lastHarvest = uint40(block.timestamp);
 
+    IPancakeV3MasterChef _masterChef = masterChef;
     uint256 _nftTokenId = nftTokenId;
+    
     // If tokenId is 0, then nothing to harvest
     if (_nftTokenId == 0) return;
     // If liquidity is 0 but position is not close, return to prevent revert on harvest
-    if (masterChef.userPositionInfos(_nftTokenId).liquidity == 0) return;
+    if (_masterChef.userPositionInfos(_nftTokenId).liquidity == 0) return;
 
     HarvestFeeLocalVars memory _vars;
 
@@ -497,7 +499,7 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     ERC20 _token0 = token0;
     ERC20 _token1 = token1;
     ERC20 _cake = cake;
-    IPancakeV3MasterChef _masterChef = masterChef;
+    
 
     // Handle trading fee
     (_vars.fee0, _vars.fee1) = _masterChef.collect(
