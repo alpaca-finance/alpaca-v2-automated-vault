@@ -1,13 +1,14 @@
-import { AutomatedVaultManager__factory } from "./../../../typechain/factories/src/AutomatedVaultManager__factory";
+import { ethers, upgrades } from "hardhat";
 import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { ConfigFileHelper } from "../../file-helper/config-file-helper";
-import { getDeployer, isFork } from "../../utils/deployer-helper";
-import { ContractTransaction } from "ethers";
+import { getDeployer } from "../../utils/deployer-helper";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const configFileHelper = new ConfigFileHelper();
   const config = configFileHelper.getConfig();
+  const deployer = await getDeployer();
+
   /*
   ░██╗░░░░░░░██╗░█████╗░██████╗░███╗░░██╗██╗███╗░░██╗░██████╗░
   ░██║░░██╗░░██║██╔══██╗██╔══██╗████╗░██║██║████╗░██║██╔════╝░
@@ -17,39 +18,26 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   ░░░╚═╝░░░╚═╝░░╚═╝░░╚═╝╚═╝░░╚═╝╚═╝░░╚══╝╚═╝╚═╝░░╚══╝░╚═════╝░
   Check all variables below before execute the deployment script
   */
-  const PARAMS = [
-    {
-      vaultTokenAddress: "0x8Ee3A53720ED344e7CBfAe63292c18E4183CCE8a",
-      newCompressedCapacity: 0,
-    },
+
+  const WORKERS = [
+    "0x463039266657602f60fc70De00553772f3cf4392",
+    "0x884Aa0332800dB0a15527682b8FE26C2444E4200",
+    "0x831849c40B651F6E8C11108CF648f34a9C3add7A",
+    "0xC5978748e0812744F9E7ef9aEB30548C7cE7ED6f",
+    "0x69a86538419eA54E13b85235c19752FD6122BC85",
   ];
 
-  const deployer = await getDeployer();
+  const PancakeV3WorkerFactory = await ethers.getContractFactory("PancakeV3Worker", deployer);
 
-  const automatedVaultManager = AutomatedVaultManager__factory.connect(
-    config.automatedVault.automatedVaultManager.proxy,
-    deployer
-  );
-  const ops = isFork() ? { gasLimit: 2000000 } : {};
-  let nonce = await deployer.getTransactionCount();
+  for (const worker of WORKERS) {
+    const preparedPancakeV3Worker = await upgrades.prepareUpgrade(worker, PancakeV3WorkerFactory);
 
-  const promises: Array<Promise<ContractTransaction>> = [];
-  for (const pam of PARAMS) {
-    console.log(`> 📝 Vault Token: ${pam.vaultTokenAddress}`);
-    console.log(`> 📝 Setting Capacity ... (${pam.newCompressedCapacity})`);
-    promises.push(
-      automatedVaultManager.setCapacity(pam.vaultTokenAddress, pam.newCompressedCapacity, {
-        ...ops,
-        nonce: nonce++,
-      })
-    );
+    console.log(`>> New implementation deployed at: ${preparedPancakeV3Worker}`);
+    await upgrades.upgradeProxy(worker, PancakeV3WorkerFactory);
+
+    console.log(`>> Done upgrade : ${worker}`);
   }
-  console.log(`> Submitting txs...`);
-  const txs = await Promise.all(promises);
-  console.log(`> Waiting for confirmations...`);
-  await txs[txs.length - 1].wait(3);
-  console.log(`> ✅ Done!`);
 };
 
 export default func;
-func.tags = ["SetCapacity"];
+func.tags = ["PancakeV3WorkerUpgrade"];

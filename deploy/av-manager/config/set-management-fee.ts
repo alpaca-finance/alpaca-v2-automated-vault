@@ -17,10 +17,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   ░░░╚═╝░░░╚═╝░░╚═╝░░╚═╝╚═╝░░╚═╝╚═╝░░╚══╝╚═╝╚═╝░░╚══╝░╚═════╝░
   Check all variables below before execute the deployment script
   */
+
   const PARAMS = [
     {
       vaultTokenAddress: "0x8Ee3A53720ED344e7CBfAe63292c18E4183CCE8a",
-      newCompressedCapacity: 0,
+      managementFee: 0,
     },
   ];
 
@@ -36,14 +37,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const promises: Array<Promise<ContractTransaction>> = [];
   for (const pam of PARAMS) {
     console.log(`> 📝 Vault Token: ${pam.vaultTokenAddress}`);
-    console.log(`> 📝 Setting Capacity ... (${pam.newCompressedCapacity})`);
+    console.log(`> 📝 Setting ManagementFeePerSec: ${pam.managementFee}`);
     promises.push(
-      automatedVaultManager.setCapacity(pam.vaultTokenAddress, pam.newCompressedCapacity, {
+      automatedVaultManager.setManagementFeePerSec(pam.vaultTokenAddress, pam.managementFee, {
         ...ops,
         nonce: nonce++,
       })
     );
   }
+
   console.log(`> Submitting txs...`);
   const txs = await Promise.all(promises);
   console.log(`> Waiting for confirmations...`);
@@ -52,4 +54,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ["SetCapacity"];
+func.tags = ["SetVaultManagementFeePerSec"];
