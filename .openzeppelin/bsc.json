@@ -338,10 +338,7 @@
           }
         }
       },
-      "allAddresses": [
-        "0x188033081DB272Bcf04Cc62053b4135F00EB80C1",
-        "0x2f44C3a223ccB3da6FCD9Abe4c3aeda79e4ebd34"
-      ]
+      "allAddresses": ["0x188033081DB272Bcf04Cc62053b4135F00EB80C1", "0x2f44C3a223ccB3da6FCD9Abe4c3aeda79e4ebd34"]
     },
     "781db0ed2df032642bcee7f7a6b0e2326da0e3efd78a5c2a4249111d07cfcf8b": {
       "address": "0x0F77E9f9cC8a9D2a9210a98AAAd2c9fc6E9dEcf4",
@@ -1713,7 +1710,7 @@
         }
       }
     },
-    "f7e11742513a5ca91361d552411aca79dab6aee1063ca1a72e1f5dc844c8e275": {
+    "610b4377dffeca7973a65e99511ff8fa18c59dbcca65a3f05746e04fc3ec793a": {
       "address": "0x04Cbe4116a23a5AF2f67DBBd04F3e18dF20457E7",
       "layout": {
         "solcVersion": "0.8.19",
