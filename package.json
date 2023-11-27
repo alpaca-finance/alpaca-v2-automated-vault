@@ -21,6 +21,7 @@
     "exec:bsc_mainnet:proxy-admin:config:transfer-admin": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags TransferProxyAdmin",
     "exec:bsc_mainnet:automated-vault-token-implementation:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AutomatedVaultImplementationDeploy",
     "exec:bsc_mainnet:automated-vault-manager:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AutomatedVaultManagerDeploy",
+    "exec:bsc_mainnet:automated-vault-manager:upgrade": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags AutomatedVaultManagerUpgrade",
     "exec:bsc_mainnet:automated-vault-manager:config:open-vault": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags OpenVault",
     "exec:bsc_mainnet:automated-vault-manager:config:set-capacity": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags SetCapacity",
     "exec:bsc_mainnet:automated-vault-manager:config:set-withdraw-fee": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags SetWithdrawalFeeBps",
