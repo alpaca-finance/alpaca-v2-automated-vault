@@ -479,6 +479,7 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     external
     onlyOwner
     onlyExistedVault(_vaultToken)
+    collectManagementFee(_vaultToken)
   {
     _validateManagementFeePerSec(_managementFeePerSec);
     vaultInfos[_vaultToken].managementFeePerSec = _managementFeePerSec;

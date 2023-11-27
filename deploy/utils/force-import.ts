@@ -7,8 +7,8 @@ import { ethers, upgrades } from "hardhat";
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const deployer = await getDeployer();
 
-  const contractName = "PancakeV3Worker";
-  const contractAddress = "0x2f44C3a223ccB3da6FCD9Abe4c3aeda79e4ebd34";
+  const contractName = "AutomatedVaultManager";
+  const contractAddress = "0x04Cbe4116a23a5AF2f67DBBd04F3e18dF20457E7";
 
   const ContractFactory = await ethers.getContractFactory(contractName, deployer);
   const forceimport = makeForceImport(hre);

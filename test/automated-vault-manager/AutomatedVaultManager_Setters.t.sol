@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import "./BaseAutomatedVaultUnitTest.sol";
 
 import { IERC20 } from "src/interfaces/IERC20.sol";
+import { IAutomatedVaultERC20 } from "src/interfaces/IAutomatedVaultERC20.sol";
 
 contract AutomatedVaultManagerSettersTest is BaseAutomatedVaultUnitTest {
   address vaultToken;
@@ -147,6 +148,34 @@ contract AutomatedVaultManagerSetFeePerSecTest is AutomatedVaultManagerSettersTe
     vaultManager.setManagementFeePerSec(vaultToken, 12);
     (,,,,,,, managementFeePerSec,,,,) = vaultManager.vaultInfos(vaultToken);
     assertEq(managementFeePerSec, 12);
+  }
+
+  function testCorrectness_WhenSetManagementFeePerSec_ShouldCollectPreviousPeriodBeforeSet() public {
+    uint256 _totalSupplyBefore =  100 ether;
+    vm.prank(DEPLOYER);
+    vaultManager.setManagementFeePerSec(vaultToken, 10000);
+    (,,,,,,, uint32 managementFeePerSec,,,,) = vaultManager.vaultInfos(vaultToken);
+    assertEq(managementFeePerSec, 10000);
+    
+    vm.prank(address(vaultManager));
+    IAutomatedVaultERC20(vaultToken).mint(address(this), _totalSupplyBefore);
+
+    uint256 warpTo = block.timestamp + 5;
+    vm.warp(warpTo);
+
+    vm.prank(DEPLOYER);
+    vaultManager.setManagementFeePerSec(vaultToken, 5000);
+    (,,,,,,, uint32 newmanagementFeePerSec,uint40 lastManagementFeeCollectedAt,,,) = vaultManager.vaultInfos(vaultToken);
+
+    // mintFee = totalSupply * feePerSec * (timeDiff) = (100.000000000000000000 * 10000 * 5)/1e18 = 5000000
+    assertEq(IAutomatedVaultERC20(vaultToken).totalSupply() - _totalSupplyBefore, 5000000);
+    assertEq(newmanagementFeePerSec, 5000);
+    assertEq(lastManagementFeeCollectedAt, warpTo);
+
+    vm.warp( block.timestamp + 2);
+    // pendingFee = (100.000000000005000000 * 5000 * 2) /1e18 = 1000000
+    assertEq(vaultManager.pendingManagementFee(vaultToken), 1000000);
+
   }
 }
 
