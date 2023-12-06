@@ -109,6 +109,21 @@ contract PCSV3Executor01SwapForkTest is BscFixture {
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
   }
 
+    function testRevert_WhenSkipExposureCheck_WhenExposureBecomeMorePositiveAfterSwap_ShouldWork() external {
+    deal(address(usdt), address(L_USDTBNB_05_PCS1_WORKER), USDT_DEBT_AT_FORK_BLOCK + 100 ether);
+
+    int256 exposure = oracle.getExposure(L_USDTBNB_05_PCS1, L_USDTBNB_05_PCS1_WORKER);
+    assertGt(exposure, 0);
+    bytes[] memory manageBytes = new bytes[](1);
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(wbnb), 2 ether, false));
+
+    vm.prank(executor.owner());
+    executor.setSkipExposureChecks(L_USDTBNB_05_PCS1, true);
+
+    vm.prank(manager);
+    avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
+  }
+
   function testRevert_WhenExposureBeforeIsPositive_AfterSwap_ExposureBecomeNagative_ShouldRevert() external {
     deal(address(usdt), address(L_USDTBNB_05_PCS1_WORKER), USDT_DEBT_AT_FORK_BLOCK + 100 ether);
 
@@ -119,6 +134,21 @@ contract PCSV3Executor01SwapForkTest is BscFixture {
 
     vm.prank(manager);
     vm.expectRevert(PCSV3Executor01.PCSV3Executor01_BadExposure.selector);
+    avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
+  }
+
+    function testRevert_WhenSkipExposureCheck_WhenExposureWentFromPositiveToNegative_ShouldWork() external {
+    deal(address(usdt), address(L_USDTBNB_05_PCS1_WORKER), USDT_DEBT_AT_FORK_BLOCK + 100 ether);
+
+    int256 exposure = oracle.getExposure(L_USDTBNB_05_PCS1, L_USDTBNB_05_PCS1_WORKER);
+    assertGt(exposure, 0);
+    bytes[] memory manageBytes = new bytes[](1);
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swap, (address(usdt), 100 ether, false));
+
+    vm.prank(executor.owner());
+    executor.setSkipExposureChecks(L_USDTBNB_05_PCS1, true);
+
+    vm.prank(manager);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
   }
 
@@ -148,6 +178,19 @@ contract PCSV3Executor01SwapForkTest is BscFixture {
     vm.expectRevert(PCSV3Executor01.PCSV3Executor01_TooLittleReceived.selector);
     avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
   }
+  function testRevert_WhenMinAmountIsLowerThanOracleSlippage_ShouldRevert() external {
+    // set very low slippage
+    vm.prank(0xC44f82b07Ab3E691F826951a6E335E1bC1bB0B51);
+    executor.setRepurchaseSlippageBps(1);
+
+    bytes[] memory manageBytes = new bytes[](1);
+    manageBytes[0] = abi.encodeCall(PCSV3Executor01.swapWithMinAmountOut, (address(wbnb), 1000 ether, false, 0));
+
+    vm.prank(manager);
+    vm.expectRevert(PCSV3Executor01.PCSV3Executor01_TooLittleReceived.selector);
+    avManager.manage(L_USDTBNB_05_PCS1, manageBytes);
+  }
+  
 
   function testCorrectness_WhenSwapAndRepay_TokenOutDebtShouldDecrease() external {
     (, uint256 usdtDebtBefore) = bank.getVaultDebt(L_USDTBNB_05_PCS1, address(usdt));
