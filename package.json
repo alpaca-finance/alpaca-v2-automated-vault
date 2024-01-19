@@ -35,6 +35,7 @@
     "exec:bsc_mainnet:pcs-v3-vault-oracle:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3VaultOracleDeploy",
     "exec:bsc_mainnet:pcs-v3-vault-oracle:config:set-price-feed": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags SetPriceFeedOf",
     "exec:bsc_mainnet:pcs-v3-executor01:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3Executor01Deploy",
+    "exec:bsc_mainnet:pcs-v3-executor01:set-skip-exposure-check": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags SetSkipExposureChecks",
     "exec:bsc_mainnet:pcs-v3-executor01:upgrade": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3Executor01Upgrade",
     "exec:bsc_mainnet:pcs-v3-worker:deploy": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3WorkerDeploy",
     "exec:bsc_mainnet:pcs-v3-worker:upgrade": "hardhat --network bsc_mainnet deploy --no-compile --reset --tags PancakeV3WorkerUpgrade",

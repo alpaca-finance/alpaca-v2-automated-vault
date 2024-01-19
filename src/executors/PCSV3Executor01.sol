@@ -65,9 +65,11 @@ contract PCSV3Executor01 is Executor {
   event LogSwap(
     address indexed _vaultToken, address _tokenIn, address _tokenOut, uint256 _amountIn, uint256 _amountOut
   );
+  event LogSetSkipExposureCheck(address indexed _vaultToken, bool _skip);
 
   PancakeV3VaultOracle public vaultOracle;
   uint16 public repurchaseSlippageBps;
+  mapping(address => bool) public skipExposureChecks; // vaultToken => bool
 
   function initialize(address _vaultManager, address _bank, address _vaultOracle, uint16 _repurchaseSlippageBps)
     external
@@ -477,10 +479,24 @@ contract PCSV3Executor01 is Executor {
   }
 
   /// @notice Adjust vault exposure by swap to another token.
+  /// @dev - TO BE DEPRECATED
   /// @param _tokenIn Token to swap.
   /// @param _amountIn Amount to swap.
   /// @param _swapAndRepay Flag for repay tokenOut after swap.
   function swap(address _tokenIn, uint256 _amountIn, bool _swapAndRepay) external onlyVaultManager {
+    _performSwapAndRepay(_tokenIn, _amountIn, _swapAndRepay, 0);
+  }
+
+  /// @notice Adjust vault exposure by swap to another token.
+  /// @param _tokenIn Token to swap.
+  /// @param _amountIn Amount to swap.
+  /// @param _swapAndRepay Flag for repay tokenOut after swap.
+  /// @param _minAmountOut The minimum of token from swapping
+  function swapWithMinAmountOut(address _tokenIn, uint256 _amountIn, bool _swapAndRepay, uint256 _minAmountOut) external onlyVaultManager {
+    _performSwapAndRepay(_tokenIn, _amountIn, _swapAndRepay, _minAmountOut);
+  }
+
+  function _performSwapAndRepay(address _tokenIn, uint256 _amountIn, bool _swapAndRepay, uint256 _minAmountOut) internal {
     SwapLocalVars memory _vars;
 
     // Check
@@ -517,8 +533,14 @@ contract PCSV3Executor01 is Executor {
       _swapAmountOut = uint256(_vars.zeroForOne ? -_amount1 : -_amount0);
     }
 
-    // Check slippage, compare with oracle prices
+    // Check slippage,
     {
+      // compare with input slipage
+      if (_swapAmountOut < _minAmountOut) {
+        revert PCSV3Executor01_TooLittleReceived();
+      }
+
+      // compare with oracle prices
       uint256 _expectedAmountOut = _amountIn * vaultOracle.getTokenPrice(_tokenIn)
         * (10 ** ERC20(_vars.tokenOut).decimals())
         / (vaultOracle.getTokenPrice(_vars.tokenOut) * (10 ** ERC20(_tokenIn).decimals()));
@@ -529,7 +551,7 @@ contract PCSV3Executor01 is Executor {
     }
 
     // Check vault delta exposure
-    {
+    if (!skipExposureChecks[_vars.vaultToken]) {
       // If tokenIn is base, then delta exposure is swapAmountOut
       // If tokenIn is not base, then delta exposure is -_amountIn
       int256 _deltaExposure = _vars.increaseExposure ? _swapAmountOut.toInt256() : -_amountIn.toInt256();
@@ -595,5 +617,10 @@ contract PCSV3Executor01 is Executor {
     PancakeV3VaultOracle(_vaultOracle).maxPriceAge();
     vaultOracle = PancakeV3VaultOracle(_vaultOracle);
     emit LogSetVaultOracle(_vaultOracle);
+  }
+
+  function setSkipExposureChecks(address _vaultToken, bool _skip) external onlyOwner {
+    skipExposureChecks[_vaultToken] = _skip;
+    emit LogSetSkipExposureCheck(_vaultToken, _skip);
   }
 }
