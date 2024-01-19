@@ -584,6 +584,16 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
     }
   }
 
+  function pauseDeposit(address _vaultToken, bool _isPaused) external {
+    if (!isManager[_vaultToken][msg.sender]) {
+      revert AutomatedVaultManager_Unauthorized();
+    }
+
+    vaultInfos[_vaultToken].isDepositPaused = _isPaused;
+
+    emit LogSetIsDepositPaused(_vaultToken, _isPaused);
+  }
+
   function setIsWithdrawPaused(address[] calldata _vaultTokens, bool _isPaused) external onlyOwner {
     uint256 _len = _vaultTokens.length;
     for (uint256 _i; _i < _len;) {
