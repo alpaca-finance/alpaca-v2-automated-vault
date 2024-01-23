@@ -4,10 +4,13 @@ pragma solidity 0.8.19;
 // fixtures
 import "test/fixtures/PancakeV3WorkerFixture.f.sol";
 
+import { LibTickMath } from "src/libraries/LibTickMath.sol";
+import { LibLiquidityAmounts } from "src/libraries/LibLiquidityAmounts.sol";
+
 contract PancakeV3WorkerHarvestTest is PancakeV3WorkerFixture {
   using stdStorage for StdStorage;
 
-  constructor() PancakeV3WorkerFixture() { }
+  constructor() PancakeV3WorkerFixture() {}
 
   function _swapExactInput(address tokenIn_, address tokenOut_, uint24 fee_, uint256 swapAmount) internal {
     deal(tokenIn_, address(this), swapAmount);
@@ -48,6 +51,9 @@ contract PancakeV3WorkerHarvestTest is PancakeV3WorkerFixture {
     vm.prank(IN_SCOPE_EXECUTOR);
     worker.openPosition(TICK_LOWER, TICK_UPPER, 10_000 ether, 1 ether);
 
+    uint256 _token0Before = token0.balanceOf(address(worker));
+    uint256 _token1Before = token1.balanceOf(address(worker));
+
     // Assuming some trades happened
     // pool current Tick at -57856
     _swapExactInput(address(token1), address(token0), poolFee, 500 ether);
@@ -69,10 +75,10 @@ contract PancakeV3WorkerHarvestTest is PancakeV3WorkerFixture {
       })
     );
 
-    uint256 _token0ToBucket = _token0CollectAmount * TRADING_PERFORMANCE_FEE_BPS / 10_000;
-    uint256 _token1ToBucket = _token1CollectAmount * TRADING_PERFORMANCE_FEE_BPS / 10_000;
+    uint256 _token0ToBucket = (_token0CollectAmount * TRADING_PERFORMANCE_FEE_BPS) / 10_000;
+    uint256 _token1ToBucket = (_token1CollectAmount * TRADING_PERFORMANCE_FEE_BPS) / 10_000;
     uint256 _harvestAmount = pancakeV3MasterChef.harvest(worker.nftTokenId(), address(worker));
-    uint256 _cakeToBucket = _harvestAmount * REWARD_PERFORMANCE_FEE_BPS / 10_000;
+    uint256 _cakeToBucket = (_harvestAmount * REWARD_PERFORMANCE_FEE_BPS) / 10_000;
     uint256 _swapAmount = _harvestAmount - _cakeToBucket;
 
     cake.approve(address(pancakeV3Router), _swapAmount);
@@ -97,8 +103,11 @@ contract PancakeV3WorkerHarvestTest is PancakeV3WorkerFixture {
     assertEq(cake.balanceOf(PERFORMANCE_FEE_BUCKET), _cakeToBucket);
 
     // Assert worker Balance
-    assertEq(token0.balanceOf(address(worker)), _token0CollectAmount - _token0ToBucket);
-    assertEq(token1.balanceOf(address(worker)), _token1CollectAmount + _token1SwapAmountOut - _token1ToBucket);
+    assertEq(token0.balanceOf(address(worker)), _token0Before + (_token0CollectAmount - _token0ToBucket));
+    assertEq(
+      token1.balanceOf(address(worker)),
+      _token1Before + (_token1CollectAmount + _token1SwapAmountOut - _token1ToBucket)
+    );
     // Invariant: Cake after harvest should remain the same
     assertEq(cake.balanceOf(address(worker)), 1 ether);
   }
@@ -168,10 +177,10 @@ contract PancakeV3WorkerHarvestTest is PancakeV3WorkerFixture {
       })
     );
 
-    uint256 _token0ToBucket = _token0CollectAmount * TRADING_PERFORMANCE_FEE_BPS / 10_000;
-    uint256 _token1ToBucket = _token1CollectAmount * TRADING_PERFORMANCE_FEE_BPS / 10_000;
+    uint256 _token0ToBucket = (_token0CollectAmount * TRADING_PERFORMANCE_FEE_BPS) / 10_000;
+    uint256 _token1ToBucket = (_token1CollectAmount * TRADING_PERFORMANCE_FEE_BPS) / 10_000;
     uint256 _harvestAmount = pancakeV3MasterChef.harvest(worker.nftTokenId(), address(worker));
-    uint256 _cakeToBucket = _harvestAmount * REWARD_PERFORMANCE_FEE_BPS / 10_000;
+    uint256 _cakeToBucket = (_harvestAmount * REWARD_PERFORMANCE_FEE_BPS) / 10_000;
     // No swap happen since tokenOut is cake because current tick is closer to tickLower
     vm.stopPrank();
     vm.revertTo(snapShotId);
@@ -227,10 +236,10 @@ contract PancakeV3WorkerHarvestTest is PancakeV3WorkerFixture {
       })
     );
 
-    uint256 _token0ToBucket = _token0CollectAmount * TRADING_PERFORMANCE_FEE_BPS / 10_000;
-    uint256 _token1ToBucket = _token1CollectAmount * TRADING_PERFORMANCE_FEE_BPS / 10_000;
+    uint256 _token0ToBucket = (_token0CollectAmount * TRADING_PERFORMANCE_FEE_BPS) / 10_000;
+    uint256 _token1ToBucket = (_token1CollectAmount * TRADING_PERFORMANCE_FEE_BPS) / 10_000;
     uint256 _harvestAmount = pancakeV3MasterChef.harvest(worker.nftTokenId(), address(worker));
-    uint256 _cakeToBucket = _harvestAmount * REWARD_PERFORMANCE_FEE_BPS / 10_000;
+    uint256 _cakeToBucket = (_harvestAmount * REWARD_PERFORMANCE_FEE_BPS) / 10_000;
     // Swap cake reward to usdt because current tick is close to tickUpper
     uint256 _swapAmount = _harvestAmount - _cakeToBucket;
 
@@ -281,14 +290,14 @@ contract PancakeV3WorkerHarvestTest is PancakeV3WorkerFixture {
     vm.startPrank(IN_SCOPE_EXECUTOR);
     worker.openPosition(12000, 12400, 100 ether, 100 ether);
 
-    (,,,,,,, uint128 _liquidity,,,,) = worker.nftPositionManager().positions(worker.nftTokenId());
+    (, , , , , , , uint128 _liquidity, , , , ) = worker.nftPositionManager().positions(worker.nftTokenId());
 
     // remove all position's liquidity
     worker.decreasePosition(_liquidity);
 
     vm.stopPrank();
 
-    // warp 
+    // warp
     vm.warp(block.timestamp + 1);
     // harvest should not revert
     worker.harvest();
