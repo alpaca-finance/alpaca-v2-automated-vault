@@ -226,23 +226,18 @@ contract PancakeV3Worker is Initializable, Ownable2StepUpgradeable, ReentrancyGu
     int24 _tickLower = posTickLower;
     int24 _tickUpper = posTickUpper;
 
-    // Prepare optimal tokens for adding liquidity
-    (uint256 _amount0Desired, uint256 _amount1Desired) = _prepareOptimalTokensForIncrease(
-      address(_token0), address(_token1), _tickLower, _tickUpper, _amountIn0, _amountIn1
-    );
-
     // Increase existing position liquidity
     // SLOAD
     IPancakeV3MasterChef _masterChef = masterChef;
     uint256 _nftTokenId = nftTokenId;
 
-    _token0.safeApprove(address(_masterChef), _amount0Desired);
-    _token1.safeApprove(address(_masterChef), _amount1Desired);
+    _token0.safeApprove(address(_masterChef), _amountIn0);
+    _token1.safeApprove(address(_masterChef), _amountIn1);
     (, uint256 _amount0, uint256 _amount1) = _masterChef.increaseLiquidity(
       IPancakeV3MasterChef.IncreaseLiquidityParams({
         tokenId: _nftTokenId,
-        amount0Desired: _amount0Desired,
-        amount1Desired: _amount1Desired,
+        amount0Desired: _amountIn0,
+        amount1Desired: _amountIn1,
         amount0Min: 0,
         amount1Min: 0,
         deadline: block.timestamp
