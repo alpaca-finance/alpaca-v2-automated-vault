@@ -187,10 +187,12 @@ contract AutomatedVaultManagerSetCapacityTest is AutomatedVaultManagerSettersTes
   }
 
   function testCorrectness_SetCapacity() public {
-    vm.startPrank(DEPLOYER);
+    vm.prank(DEPLOYER);
     vaultManager.setCapacity(vaultToken, 10);
     (,, uint32 compressedCapacity,,,,,,,,,) = vaultManager.vaultInfos(vaultToken);
     assertEq(compressedCapacity, 10);
+    
+    vm.prank(MANAGER);
     vaultManager.setCapacity(vaultToken, 0);
     (,, compressedCapacity,,,,,,,,,) = vaultManager.vaultInfos(vaultToken);
     assertEq(compressedCapacity, 0);
