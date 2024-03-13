@@ -566,9 +566,13 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
 
   function setCapacity(address _vaultToken, uint32 _compressedCapacity)
     external
-    onlyOwner
     onlyExistedVault(_vaultToken)
   {
+
+    if (!isManager[_vaultToken][msg.sender] && msg.sender != owner()) {
+      revert AutomatedVaultManager_Unauthorized();
+    }
+
     vaultInfos[_vaultToken].compressedCapacity = _compressedCapacity;
     emit LogSetCapacity(_vaultToken, _compressedCapacity);
   }
@@ -582,16 +586,6 @@ contract AutomatedVaultManager is Initializable, Ownable2StepUpgradeable, Reentr
         ++_i;
       }
     }
-  }
-
-  function pauseDeposit(address _vaultToken, bool _isPaused) external {
-    if (!isManager[_vaultToken][msg.sender]) {
-      revert AutomatedVaultManager_Unauthorized();
-    }
-
-    vaultInfos[_vaultToken].isDepositPaused = _isPaused;
-
-    emit LogSetIsDepositPaused(_vaultToken, _isPaused);
   }
 
   function setIsWithdrawPaused(address[] calldata _vaultTokens, bool _isPaused) external onlyOwner {
