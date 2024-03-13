@@ -20,7 +20,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const PARAMS = [
     {
-      vaultTokenAddress: "0x8Ee3A53720ED344e7CBfAe63292c18E4183CCE8a",
+      vaultTokenAddress: "0xd99386173CF5A93d83d1958e985f361696A75A3e",
       managementFee: 0,
     },
   ];
