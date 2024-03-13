@@ -338,7 +338,10 @@
           }
         }
       },
-      "allAddresses": ["0x188033081DB272Bcf04Cc62053b4135F00EB80C1", "0x2f44C3a223ccB3da6FCD9Abe4c3aeda79e4ebd34"]
+      "allAddresses": [
+        "0x188033081DB272Bcf04Cc62053b4135F00EB80C1",
+        "0x2f44C3a223ccB3da6FCD9Abe4c3aeda79e4ebd34"
+      ]
     },
     "781db0ed2df032642bcee7f7a6b0e2326da0e3efd78a5c2a4249111d07cfcf8b": {
       "address": "0x0F77E9f9cC8a9D2a9210a98AAAd2c9fc6E9dEcf4",
@@ -1983,6 +1986,460 @@
           "t_uint40": {
             "label": "uint40",
             "numberOfBytes": "5"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "407fa5afc287f8df311049185eb4cd1dcc191c6f6eca9eab62443c50434351b2": {
+      "address": "0x43bA549883514c9ceEA5D437A7c12918035Ca5AE",
+      "txHash": "0x407e9440d7a030885e9e712da7f3bd7e5e9e8ae2f2850cef50465ff90b3f8d11",
+      "layout": {
+        "solcVersion": "0.8.19",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:63",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:68"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_pendingOwner",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "Ownable2StepUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol:27"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "Ownable2StepUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol:70"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:88"
+          },
+          {
+            "label": "vaultTokenImplementation",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_address",
+            "contract": "AutomatedVaultManager",
+            "src": "src/AutomatedVaultManager.sol:123"
+          },
+          {
+            "label": "managementFeeTreasury",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_address",
+            "contract": "AutomatedVaultManager",
+            "src": "src/AutomatedVaultManager.sol:124"
+          },
+          {
+            "label": "withdrawalFeeTreasury",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_address",
+            "contract": "AutomatedVaultManager",
+            "src": "src/AutomatedVaultManager.sol:125"
+          },
+          {
+            "label": "EXECUTOR_IN_SCOPE",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_address",
+            "contract": "AutomatedVaultManager",
+            "src": "src/AutomatedVaultManager.sol:128"
+          },
+          {
+            "label": "vaultInfos",
+            "offset": 0,
+            "slot": "205",
+            "type": "t_mapping(t_address,t_struct(VaultInfo)6597_storage)",
+            "contract": "AutomatedVaultManager",
+            "src": "src/AutomatedVaultManager.sol:130"
+          },
+          {
+            "label": "isManager",
+            "offset": 0,
+            "slot": "206",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_bool))",
+            "contract": "AutomatedVaultManager",
+            "src": "src/AutomatedVaultManager.sol:131"
+          },
+          {
+            "label": "allowTokens",
+            "offset": 0,
+            "slot": "207",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_bool))",
+            "contract": "AutomatedVaultManager",
+            "src": "src/AutomatedVaultManager.sol:132"
+          },
+          {
+            "label": "workerExisted",
+            "offset": 0,
+            "slot": "208",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "AutomatedVaultManager",
+            "src": "src/AutomatedVaultManager.sol:133"
+          },
+          {
+            "label": "isExemptWithdrawalFee",
+            "offset": 0,
+            "slot": "209",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "AutomatedVaultManager",
+            "src": "src/AutomatedVaultManager.sol:134"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_bool))": {
+            "label": "mapping(address => mapping(address => bool))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(VaultInfo)6597_storage)": {
+            "label": "mapping(address => struct AutomatedVaultManager.VaultInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(VaultInfo)6597_storage": {
+            "label": "struct AutomatedVaultManager.VaultInfo",
+            "members": [
+              {
+                "label": "worker",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "compressedMinimumDeposit",
+                "type": "t_uint32",
+                "offset": 20,
+                "slot": "0"
+              },
+              {
+                "label": "compressedCapacity",
+                "type": "t_uint32",
+                "offset": 24,
+                "slot": "0"
+              },
+              {
+                "label": "isDepositPaused",
+                "type": "t_bool",
+                "offset": 28,
+                "slot": "0"
+              },
+              {
+                "label": "withdrawalFeeBps",
+                "type": "t_uint16",
+                "offset": 29,
+                "slot": "0"
+              },
+              {
+                "label": "isWithdrawalPaused",
+                "type": "t_bool",
+                "offset": 31,
+                "slot": "0"
+              },
+              {
+                "label": "executor",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "managementFeePerSec",
+                "type": "t_uint32",
+                "offset": 20,
+                "slot": "1"
+              },
+              {
+                "label": "lastManagementFeeCollectedAt",
+                "type": "t_uint40",
+                "offset": 24,
+                "slot": "1"
+              },
+              {
+                "label": "vaultOracle",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "toleranceBps",
+                "type": "t_uint16",
+                "offset": 20,
+                "slot": "2"
+              },
+              {
+                "label": "maxLeverage",
+                "type": "t_uint8",
+                "offset": 22,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          },
+          "t_uint40": {
+            "label": "uint40",
+            "numberOfBytes": "5"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "186acecf0df6d28d59d2f30f642e5598d82c719800c3c6009a409fd58ec56ca2": {
+      "address": "0x4Cf7402e8b4a9c4B8048Ea8dDb4550eC349Aedaa",
+      "txHash": "0x93ecc7f8dee4454442a3eb7a1791acf0083e7c194e841018daacd10ef750b728",
+      "layout": {
+        "solcVersion": "0.8.19",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:63",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:68"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_pendingOwner",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "Ownable2StepUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol:27"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "Ownable2StepUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol:70"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "MulticallUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol:37"
+          },
+          {
+            "label": "vaultManager",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_address",
+            "contract": "Executor",
+            "src": "src/executors/Executor.sol:20"
+          },
+          {
+            "label": "bank",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_contract(IBank)13610",
+            "contract": "Executor",
+            "src": "src/executors/Executor.sol:21"
+          },
+          {
+            "label": "CURRENT_WORKER",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_address",
+            "contract": "Executor",
+            "src": "src/executors/Executor.sol:22"
+          },
+          {
+            "label": "CURRENT_VAULT_TOKEN",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_address",
+            "contract": "Executor",
+            "src": "src/executors/Executor.sol:23"
+          },
+          {
+            "label": "vaultOracle",
+            "offset": 0,
+            "slot": "205",
+            "type": "t_contract(PancakeV3VaultOracle)16537",
+            "contract": "PCSV3Executor01",
+            "src": "src/executors/PCSV3Executor01.sol:70"
+          },
+          {
+            "label": "repurchaseSlippageBps",
+            "offset": 20,
+            "slot": "205",
+            "type": "t_uint16",
+            "contract": "PCSV3Executor01",
+            "src": "src/executors/PCSV3Executor01.sol:71"
+          },
+          {
+            "label": "skipExposureChecks",
+            "offset": 0,
+            "slot": "206",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "PCSV3Executor01",
+            "src": "src/executors/PCSV3Executor01.sol:72"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_contract(IBank)13610": {
+            "label": "contract IBank",
+            "numberOfBytes": "20"
+          },
+          "t_contract(PancakeV3VaultOracle)16537": {
+            "label": "contract PancakeV3VaultOracle",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
           },
           "t_uint8": {
             "label": "uint8",

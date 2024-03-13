@@ -18,7 +18,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   */
 
   const pcsV3Executor01 = config.automatedVault.pancakeV3Vault.executor01.proxy;
-
+  
   const deployer = await getDeployer();
 
   const PCSV3Executor01Factory = await ethers.getContractFactory("PCSV3Executor01", deployer);
